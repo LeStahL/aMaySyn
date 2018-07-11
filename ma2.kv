@@ -1,0 +1,111 @@
+#:kivy 1.10.0
+
+<TrackWidget>:
+    canvas:
+
+<PatternWidget>:
+    canvas:
+
+#<SongViewWidget>:
+
+<Widget>:
+    font_name: 'RobotoMono-Regular'
+    font_size: dp(17)
+
+<Ma2Widget>:
+
+    theTrkWidget: thisTrkWidget
+    thePtnWidget: thisPtnWidget
+
+    BoxLayout:
+        orientation: "vertical"
+        size: root.size        
+        
+        BoxLayout:
+            orientation: "horizontal"
+            height: root.height * 0.05
+            size_hint_y: None
+            
+            Button:
+                text: 'Title: Is IQ150-Guy Deleting My Code?'
+            Button:
+                text: 'TRK +'
+            Button:
+                text: 'TRK -'
+            Button:
+                text: 'TRK Details (Name, Inst, Transpose)'
+                    
+        TrackWidget:
+            id: thisTrkWidget
+        
+        BoxLayout:
+            orientation: "horizontal"
+            height: root.height * 0.05
+            size_hint_y: None
+            Button:
+                text: "MOD +"
+            Button:
+                text: "MOD -"
+            Button:
+                text: "MOD: PAT?"
+            Button:
+                text: "MOD: POS?"
+            Button:
+                text: "MOD: PITCH?"
+            
+        BoxLayout:
+            orientation: "horizontal"
+            height: root.height * 0.05
+            size_hint_y: None
+            Button:
+                text: "<"
+                size_hint_x: 0.15
+            Button:
+                text: "PATTERN: bad performance"
+            Button:
+                text: ">"
+                size_hint_x: 0.15
+            Button:
+                text: "PAT +"
+            Button:
+                text: "PAT -"
+            Button:
+                text: "PAT LEN (Beats)"
+
+        PatternWidget:
+            id: thisPtnWidget
+            
+        BoxLayout:
+            orientation: "horizontal"
+            height: root.height * 0.05
+            size_hint_y: None
+            Button:
+                text: "NOTE +"
+            Button:
+                text: "NOTE -"
+            Button:
+                text: "NOTE PITCH (or Drum)"
+            Button:
+                text: "NOTE ON"
+            Button:
+                text: "NOTE LEN"
+            Button:
+                text: "NOTE VEL"
+
+        BoxLayout:
+            orientation: "horizontal"
+            height: root.height * 0.05
+            size_hint_y: None
+            Button:
+                text: "Load .ma2"
+            Button:
+                text: "Save .ma2"
+            Button:
+                text: "Export .cpp"
+            Button:
+                text: "Import(!).cpp"
+
+        
+#Widget:
+    #Ma2Widget:
+        #size: root.size
