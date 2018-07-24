@@ -11,6 +11,7 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, Line
 from kivy.core.text import Label as CoreLabel
 
+import csv
 import operator
 import os
 
@@ -30,22 +31,27 @@ class Ma2Widget(Widget):
     current_note = None
     tracks = []
     patterns = []
+
     synths = ['I_Bass', 'D_Kick']
+    
+    title = "is it π/2 yet?"
+    
+    btnTitle = ObjectProperty()
     
     #updateAll = True # ah, fuck it. always update everythig.
     
     #helpers...
-    def getTrack(self):        return self.tracks[self.current_track]
+    def getTrack(self):        return self.tracks[self.current_track] if self.current_track is not None else None
     def getLastTrack(self):    return self.tracks[-1] if self.tracks else None
     #def getTrackModules(self): return self.getTrack().modules
-    def getModule(self):       return self.getTrack().getModule()
+    def getModule(self):       return self.getTrack().getModule() if self.getTrack() else None
     def getModuleTranspose(self): return self.getModule().transpose if self.getModule() else 0
     #def getNextModule
     #def getPrevModule
     #def getFirstModule
     #def getLastModule
     #def getModuleLen(self):   return self.getTrack().getModuleLen()
-    def getPattern(self):      return self.getTrack().getModulePattern()
+    def getPattern(self):      return self.getTrack().getModulePattern() if self.getTrack() else None
     #def getPattern(self):     return self.patterns[self.current_pattern] if isinstance(self.current_pattern, int) and self.patterns else None
     #def getNextPattern(self): return self.patterns[(self.current_pattern + 1) % len(patterns)] if isinstance(self.current_pattern, int) and self.patterns else None
     #def getPrevPattern(self): return self.patterns[(self.current_pattern - 1) % len(patterns)] if isinstance(self.current_pattern, int) and self.patterns else None
@@ -65,17 +71,24 @@ class Ma2Widget(Widget):
 
         if debug: self.setupDebug()
         Clock.schedule_once(self.update, 0)
+        Clock.schedule_once(self.updateLabels, 0)
         
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down = self._on_keyboard_down)
         self._keyboard = None
         
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        
         k = keycode[1]
         if   k == 'escape':         App.get_running_app().stop() 
         elif k == 'backspace':      self.printDebug()
         elif k == 'tab':            self.switchActive()
-    
+
+        if 'ctrl' in modifiers:
+            if k == 'n':            self.clearSong()
+            elif k == 'l':          self.loadCSV("test.ma2")
+            elif k == 's':          self.saveCSV("test.ma2")
+
         #vorerst: nur tastatursteuerung TODO - is vllt eh cooler :)
         if(self.theTrkWidget.active):
             if 'shift' in modifiers:
@@ -116,6 +129,9 @@ class Ma2Widget(Widget):
         #if self.thePtnWidget.active:
             self.thePtnWidget.drawPianoRoll(self.getPattern(), self.getModuleTranspose())
 
+    def updateLabels(self, dt = 0):
+        self.btnTitle.text = 'TITLE: ' + self.title
+
     def switchActive(self):
         self.theTrkWidget.active = not self.theTrkWidget.active
         self.thePtnWidget.active = not self.thePtnWidget.active
@@ -131,6 +147,21 @@ class Ma2Widget(Widget):
         
     def addPattern(self, pname, plen = 1):
         self.patterns.append(Pattern(name = pname, length = plen))
+
+    def clearSong(self):
+        del self.tracks[:]
+        del self.patterns[:]
+        self.tracks = [Track(name = 'new Track', synth = 'I_None')]
+        self.patterns = [Pattern(name = 'new Pattern', length = 1)]
+        self.tracks[0].addModule(0, self.patterns[0])
+        
+        self.current_track = 0
+        self.current_module = None
+        self.current_pattern = 0
+        self.current_note = None
+        self.title = 'new Song'
+
+        self.update()
 
 ###################### DEBUG FUNCTIONS ######################
 
@@ -168,7 +199,7 @@ class Ma2Widget(Widget):
         self.getPattern().addNote(1.00,0.50,24)
         self.getPattern().addNote(1.50,0.50,31)
         
-        self.getPattern().printNoteList()
+        #self.getPattern().printNoteList()
         
         self.update()
         
@@ -176,9 +207,103 @@ class Ma2Widget(Widget):
         for t in self.tracks:
             print(t.name, len(t.modules))
             for m in t.modules:
-                print(m.start, m.pattern.name)
+                print(m.mod_on, m.pattern.name)
     
+###################### EXPORT FUNCTIONS #####################
+
+    def loadCSV(self, filename):
+        with open(filename) as in_csv:
+            in_read = csv.reader(in_csv, delimiter='|')
+            
+            for r in in_read:
+                self.title = r[0]
+                self.tracks = []
+
+                c = 2
+                ### read tracks -- with modules assigned to dummy patterns
+                for _ in range(int(r[1])):
+                    track = Track(name = r[c], synth = (self.synths[int(r[c+1])] if r[c+1]!='-1' else 'I_None'))
+
+                    c += 2
+                    for _ in range(int(r[c])):
+                        track.modules.append(Module(float(r[c+2]), Pattern(name=r[c+1]), int(r[c+3])))
+                        c += 3
+
+                    self.tracks.append(track)
+                    c += 1
+
+                ### read patterns
+                for _ in range(int(r[c])):
+                    pattern = Pattern(name = r[c+1], length = int(r[c+2]))
+                    
+                    c += 3
+                    for _ in range(int(r[c])):
+                        pattern.notes.append(Note(*(float(s) for s in r[c+1:c+4])))
+                        c += 4
+                        
+                    self.patterns.append(pattern)
+
+                ### reassign modules to patterns
+                for t in self.tracks:
+                    for m in t.modules:
+                        for p in self.patterns:
+                            if m.pattern.name == p.name: m.setPattern(p)
+
+
+    def saveCSV(self, filename):
+        out_str = self.title + '|' + str(len(self.tracks)) + '|'
+        
+        for t in self.tracks:
+            out_str += t.name + '|' + (str(self.synths.index(t.synth)) if t.synth in self.synths else '-1') + '|' + str(len(t.modules)) + '|'
+            
+            for m in t.modules:
+                out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
+                # TODO check: pattern names have to be unique! in str(self.patterns.index(m.pattern.name))
+        
+        out_str += str(len(self.patterns))
+        
+        for p in self.patterns:
+            out_str += '|' + p.name + '|' + str(p.length) + '|' + str(len(p.notes))
+            
+            for n in p.notes:
+                out_str += '|' + str(n.noteon) + '|' + str(n.notelen) + '|' + str(n.notepitch) + '|' + str(n.notevel)
+
+        # write to file
+        out_csv = open("test.ma2", "w")
+        out_csv.write(out_str)
+        out_csv.close()
+        
+        print('out_str = ' + out_str)
+
+###################### HANDLE BUTTONS #######################
+
 #############################################################
+
+    def pressTitle(self):     pass
+    def pressTrkAdd(self):    pass
+    def pressTrkDel(self):    pass
+    def pressTrkInfo(self):   pass
+    def pressModAdd(self):    pass
+    def pressModDel(self):    pass
+    def pressModPtn(self):    pass
+    def pressModStart(self):  pass
+    def pressModTransp(self): pass
+    def pressPtnLast(self):   pass
+    def pressPtnTitle(self):  pass
+    def pressPtnNext(self):   pass
+    def pressPtnAdd(self):    pass
+    def pressPtnDel(self):    pass
+    def pressPtnInfo(self):   pass
+    def pressNoteAdd(self):   pass
+    def pressNoteDel(self):   pass
+    def pressNotePitch(self): pass
+    def pressNoteOn(self):    pass
+    def pressNoteLen(self):   pass
+    def pressNoteVel(self):   pass
+    def pressLoadCSV(self):   pass
+    def pressSaveCSV(self):   self.saveCSV(self.title + ".ma2")
+    def pressBuildCode(self): pass
+
 
 class Track():
     
@@ -197,8 +322,8 @@ class Track():
     #def getLastModule(self):  return self.modules[-1] if len(self.modules) > 0 else None
     def getModuleLen(self):     return getModule().pattern.length
 
-    def addModule(self, start, pattern, transpose = 0):
-        self.modules.append(Module(start, pattern, transpose))
+    def addModule(self, mod_on, pattern, transpose = 0):
+        self.modules.append(Module(mod_on, pattern, transpose))
 
     def switchModule(self, inc):
         if self.modules:
@@ -223,26 +348,27 @@ class Track():
 
 class Module():
 
-    start = 0
+    mod_on = 0
+    #mod_off = 0
     pattern = None
     transpose = 0
     
-    def __init__(self, start, pattern, transpose = 0):
-        self.start = start
+    def __init__(self, mod_on, pattern, transpose = 0):
+        self.mod_on = mod_on
+        #self.mod_off = mod_on + pattern.length
         self.pattern = pattern
         self.transpose = transpose
 
     def setPattern(self, pattern):
-        if Ma2Widget.existsPattern(pattern):
+        if App.get_running_app().root.existsPattern(pattern):
             self.pattern = pattern
 
 class Pattern():
     
-    def __init__(self, name, length = 1, transpose = 0):
+    def __init__(self, name, length = 1):
         self.name = name
         self.notes = []
         self.length = length # after adding, jump to "len field" in order to change it if required TODO
-        self.transpose = transpose
         self.current_note = 0
         self.color = (0, .5, 1.) # TODO randomize color upon creating, it's more fun.
 
@@ -307,9 +433,11 @@ class Note():
         self.noteon = noteon
         self.noteoff = noteon + notelen
         self.notelen = notelen
-        self.notepitch = notepitch
+        self.notepitch = int(notepitch)
         self.notevel = notevel
         # some safety checks TODO
+
+
 
 class TrackWidget(Widget):
     active = BooleanProperty(True)
@@ -375,21 +503,21 @@ class TrackWidget(Widget):
                 ### MODULES ###
                 for m in t.modules:
                     Color(*m.pattern.color,0.4)
-                    Rectangle(pos=(grid_l + beat_w * m.start, draw_y), size=(beat_w * m.pattern.length - 1,row_h))
+                    Rectangle(pos=(grid_l + beat_w * m.mod_on, draw_y), size=(beat_w * m.pattern.length - 1,row_h))
                     
                     Color(*(0.5+0.5*c for c in m.pattern.color),1)
                     label = CoreLabel(text = m.pattern.name[0:3*int(m.pattern.length)], font_size = 10, font_name = self.font_name)
                     label.refresh()
-                    Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.start, draw_y-1), texture = label.texture)
+                    Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y-1), texture = label.texture)
                     
                     if m.transpose != 0:
                         label = CoreLabel(text = "%+d" % m.transpose, font_size = 10, font_name = self.font_name)
                         label.refresh()
-                        Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.start, draw_y + row_h/2 - 2), texture = label.texture)
+                        Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y + row_h/2 - 2), texture = label.texture)
 
                     if m == t.getModule() and i == current_track:
                         Color(1,.5,.5,.8)
-                        Line(rectangle = (grid_l + beat_w * m.start - 1 , draw_y - 1, beat_w * m.pattern.length, row_h + 2), width = 1.5)
+                        Line(rectangle = (grid_l + beat_w * m.mod_on - 1 , draw_y - 1, beat_w * m.pattern.length, row_h + 2), width = 1.5)
 
 
             draw_x = grid_l

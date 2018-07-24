@@ -16,6 +16,18 @@
 
     theTrkWidget: thisTrkWidget
     thePtnWidget: thisPtnWidget
+    
+    btnTitle:     btnTitleID
+    btnTrkInfo:   btnTrkInfoID
+    btnModPtn:    btnModPtnID
+    btnModStart:  btnModStartID
+    btnModTransp: btnModTranspID
+    btnPtnTitle:  btnPtnTitleID
+    btnPtnInfo:   btnPtnInfoID
+    btnNotePitch: btnNotePitchID
+    btnNoteOn:    btnNoteOnID
+    btnNoteLen:   btnNoteLenID
+    btnNoteVel:   btnNoteVelID
 
     BoxLayout:
         orientation: "vertical"
@@ -27,13 +39,18 @@
             size_hint_y: None
             
             Button:
-                text: 'Title: Is IQ150-Guy Deleting My Code?'
+                id: btnTitleID
+                on_press: root.pressTitle()
             Button:
+                on_press: root.pressTrkAdd()
                 text: 'TRK +'
             Button:
+                on_press: root.pressTrkDel()
                 text: 'TRK -'
             Button:
-                text: 'TRK Details (Name, Inst, Transpose)'
+                id: btnTrkInfoID
+                on_press: root.pressTrkInfo()
+                text: 'TRK Info (Name, Inst, Transpose)'
                     
         TrackWidget:
             id: thisTrkWidget
@@ -43,14 +60,22 @@
             height: root.height * 0.05
             size_hint_y: None
             Button:
+                on_press: root.pressModAdd()
                 text: "MOD +"
             Button:
+                on_press: root.pressModDel()
                 text: "MOD -"
             Button:
+                id: btnModPtnID
+                on_press: root.pressModPtn()
                 text: "MOD: PAT?"
             Button:
-                text: "MOD: POS?"
+                id: btnModStartID
+                on_press: root.pressModStart()
+                text: "MOD: STRT?"
             Button:
+                id: btnModTranspID
+                on_press: root.pressModTransp()
                 text: "MOD: PITCH?"
             
         BoxLayout:
@@ -58,18 +83,26 @@
             height: root.height * 0.05
             size_hint_y: None
             Button:
+                on_press: root.pressPtnLast()
                 text: "<"
                 size_hint_x: 0.15
-            Button:
+            Button:        
+                id: btnPtnTitleID
+                on_press: root.pressPtnTitle()
                 text: "PATTERN: bad performance"
             Button:
+                on_press: root.pressPtnNext()
                 text: ">"
                 size_hint_x: 0.15
             Button:
+                on_press: root.pressPtnAdd()
                 text: "PAT +"
             Button:
+                on_press: root.pressPtnDel()
                 text: "PAT -"
             Button:
+                id: btnPtnInfoID
+                on_press: root.pressPtnInfo()
                 text: "PAT LEN (Beats)"
 
         PatternWidget:
@@ -80,16 +113,26 @@
             height: root.height * 0.05
             size_hint_y: None
             Button:
+                on_press: root.pressNoteAdd()
                 text: "NOTE +"
             Button:
+                on_press: root.pressNoteDel()
                 text: "NOTE -"
             Button:
+                id: btnNotePitchID
+                on_press: root.pressNotePitch()
                 text: "NOTE PITCH (or Drum)"
             Button:
+                id: btnNoteOnID
+                on_press: root.pressNoteOn()
                 text: "NOTE ON"
             Button:
+                id: btnNoteLenID
+                on_press: root.pressNoteLen()
                 text: "NOTE LEN"
             Button:
+                id: btnNoteVelID
+                on_press: root.pressNoteVel()
                 text: "NOTE VEL"
 
         BoxLayout:
@@ -97,13 +140,16 @@
             height: root.height * 0.05
             size_hint_y: None
             Button:
+                on_press: root.pressLoadCSV()
                 text: "Load .ma2"
             Button:
+                on_press: root.pressSaveCSV()
                 text: "Save .ma2"
             Button:
-                text: "Export .cpp"
-            Button:
-                text: "Import(!).cpp"
+                on_press: root.pressBuildCode()
+                text: "Export GLSL"
+#           Button:
+#               text: "Import GLSL"
 
         
 #Widget:
