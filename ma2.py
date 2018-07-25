@@ -41,17 +41,18 @@ class Ma2Widget(Widget):
     #updateAll = True # ah, fuck it. always update everythig.
     
     #helpers...
-    def getTrack(self):        return self.tracks[self.current_track] if self.current_track is not None else None
-    def getLastTrack(self):    return self.tracks[-1] if self.tracks else None
-    #def getTrackModules(self): return self.getTrack().modules
-    def getModule(self):       return self.getTrack().getModule() if self.getTrack() else None
-    def getModuleTranspose(self): return self.getModule().transpose if self.getModule() else 0
+    def getTrack(self):             return self.tracks[self.current_track] if self.current_track is not None else None
+    def getLastTrack(self):         return self.tracks[-1] if self.tracks else None
+    #def getTrackModules(self):     return self.getTrack().modules
+    def getModule(self):            return self.getTrack().getModule() if self.getTrack() else None
+    def getModuleTranspose(self):   return self.getModule().transpose if self.getModule() else 0
     #def getNextModule
     #def getPrevModule
     #def getFirstModule
     #def getLastModule
     #def getModuleLen(self):   return self.getTrack().getModuleLen()
     def getPattern(self):      return self.getTrack().getModulePattern() if self.getTrack() else None
+    def getPatternLen(self):   return self.getPattern().length if self.getPattern() else None
     #def getPattern(self):     return self.patterns[self.current_pattern] if isinstance(self.current_pattern, int) and self.patterns else None
     #def getNextPattern(self): return self.patterns[(self.current_pattern + 1) % len(patterns)] if isinstance(self.current_pattern, int) and self.patterns else None
     #def getPrevPattern(self): return self.patterns[(self.current_pattern - 1) % len(patterns)] if isinstance(self.current_pattern, int) and self.patterns else None
@@ -80,45 +81,63 @@ class Ma2Widget(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         
         k = keycode[1]
-        if   k == 'escape':         App.get_running_app().stop() 
-        elif k == 'backspace':      self.printDebug()
-        elif k == 'tab':            self.switchActive()
+        #print(k)
+        
+        if   k == 'escape':                     App.get_running_app().stop() 
+        elif k == 'backspace':                  self.printDebug()
+        elif k == 'tab':                        self.switchActive()
 
         if 'ctrl' in modifiers:
-            if k == 'n':            self.clearSong()
-            elif k == 'l':          self.loadCSV("test.ma2")
-            elif k == 's':          self.saveCSV("test.ma2")
+            if k == 'n':                        self.clearSong()
+            elif k == 'l':                      self.loadCSV("test.ma2")
+            elif k == 's':                      self.saveCSV("test.ma2")
 
-        #vorerst: nur tastatursteuerung TODO - is vllt eh cooler :)
+        #vorerst: nur tastatursteuerung - nerdfaktor und so :)
         if(self.theTrkWidget.active):
             if 'shift' in modifiers:
-                if   k == 'up':         self.getTrack().transposeModule(+1)
-                elif k == 'down':       self.getTrack().transposeModule(-1)
+                if   k == 'up':                 self.getTrack().transposeModule(+1)
+                elif k == 'down':               self.getTrack().transposeModule(-1)
+                elif k == 'left':               self.getTrack().moveModule(-1)
+                elif k == 'right':              self.getTrack().moveModule(+1)
+                
+                elif k == 'numpadadd':          self.getTrack().switchModulePattern(+1)
+                elif k == 'numpadsubtract':     self.getTrack().switchModulePattern(-1)
+
             else:
-                if   k == 'left':       self.getTrack().switchModule(-1)
-                elif k == 'right':      self.getTrack().switchModule(+1)
-                elif k == 'up':         self.switchTrack(-1)
-                elif k == 'down':       self.switchTrack(+1)
+                if   k == 'left':               self.getTrack().switchModule(-1)
+                elif k == 'right':              self.getTrack().switchModule(+1)
+                elif k == 'up':                 self.switchTrack(-1)
+                elif k == 'down':               self.switchTrack(+1)
+                
+                elif k == 'numpadadd':          self.getTrack().addModule(self.getTrack().getLastModuleOff(), Pattern('nju', length=1), select = True) 
+                elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), select = True)
+                elif k == 'numpadsubstract':    self.getTrack().delModule()
 
         if(self.thePtnWidget.active) and self.getPattern():
             if all(x in modifiers for x in ['shift','ctrl']):
-                if   k == 'left':       self.getPattern().moveNote(-1/32)
-                elif k == 'right':      self.getPattern().moveNote(+1/32)
+                if   k == 'left':               self.getPattern().moveNote(-1/32)
+                elif k == 'right':              self.getPattern().moveNote(+1/32)
+
             elif 'shift' in modifiers:
-                if   k == 'left':       self.getPattern().stretchNote(-1/8)
-                elif k == 'right':      self.getPattern().stretchNote(+1/8)
-                elif k == 'up':         self.getPattern().shiftAllNotes(+1)
-                elif k == 'down':       self.getPattern().shiftAllNotes(-1)
+                if   k == 'left':               self.getPattern().stretchNote(-1/8)
+                elif k == 'right':              self.getPattern().stretchNote(+1/8)
+                elif k == 'up':                 self.getPattern().shiftAllNotes(+1)
+                elif k == 'down':               self.getPattern().shiftAllNotes(-1)
+
             elif 'ctrl' in modifiers:
-                if   k == 'left':       self.getPattern().moveNote(-1/8)
-                elif k == 'right':      self.getPattern().moveNote(+1/8)
-                elif k == 'up':         self.getPattern().shiftNote(+12)
-                elif k == 'down':       self.getPattern().shiftNote(-12)
+                if   k == 'left':               self.getPattern().moveNote(-1/8)
+                elif k == 'right':              self.getPattern().moveNote(+1/8)
+                elif k == 'up':                 self.getPattern().shiftNote(+12)
+                elif k == 'down':               self.getPattern().shiftNote(-12)
+
+                elif k == 'numpadadd':          self.addPattern("new")
+                elif k == 'numpadsubstract':    self.delPattern()
+
             else:
-                if   k == 'left':       self.getPattern().switchNote(-1)
-                elif k == 'right':      self.getPattern().switchNote(+1)
-                elif k == 'up':         self.getPattern().shiftNote(+1)
-                elif k == 'down':       self.getPattern().shiftNote(-1)
+                if   k == 'left':               self.getPattern().switchNote(-1)
+                elif k == 'right':              self.getPattern().switchNote(+1)
+                elif k == 'up':                 self.getPattern().shiftNote(+1)
+                elif k == 'down':               self.getPattern().shiftNote(-1)
 
         self.update()
         return True
@@ -145,14 +164,22 @@ class Ma2Widget(Widget):
         self.current_track = (self.current_track + inc) % len(self.tracks)
         self.update()
         
-    def addPattern(self, pname, plen = 1):
-        self.patterns.append(Pattern(name = pname, length = plen))
+    def addPattern(self, name, length = None):
+        if not length: length = self.getPatternLen()
+        self.patterns.append(Pattern(name = name, length = length))
+
+    def delPattern(self):
+        print('hjehe', len(self.patterns), self.current_pattern)
+        if self.patterns and self.current_pattern is not None:
+            del self.patterns[self.current_pattern]
+            
+            print(*(p.name for p in self.patterns))
 
     def clearSong(self):
         del self.tracks[:]
         del self.patterns[:]
-        self.tracks = [Track(name = 'new Track', synth = 'I_None')]
-        self.patterns = [Pattern(name = 'new Pattern', length = 1)]
+        self.tracks = [Track(name = 'nju Track', synth = 'I_None')]
+        self.patterns = [Pattern(name = 'nju Pattern', length = 1)]
         self.tracks[0].addModule(0, self.patterns[0])
         
         self.current_track = 0
@@ -314,16 +341,24 @@ class Track():
         self.setSynth(synth)
 
     # helpers...
-    def getModule(self):        return self.modules[self.current_module % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
-    def getModulePattern(self): return self.getModule().pattern if self.getModule() else None 
-    #def getNextModule(self):  return self.modules[(self.current_module + 1) % len(self.modules)] if isinstance(self.current_module, int) else None
-    #def getPrevModule(self):  return self.modules[(self.current_module - 1) % len(self.modules)] if isinstance(self.current_module, int) else None
-    #def getFirstModule(self): return self.modules[0]  if len(self.modules) > 0 else None
-    #def getLastModule(self):  return self.modules[-1] if len(self.modules) > 0 else None
-    def getModuleLen(self):     return getModule().pattern.length
+    def getModule(self, offset=0):      return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
+    def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None 
+    def getModuleOn(self, offset=0):    return self.getModule(offset).mod_on
+    def getModuleLen(self, offset=0):   return self.getModule(offset).pattern.length
+    def getModuleOff(self, offset=0):   return self.getModuleOn(offset) + self.getModuleLen(offset)
+    def getFirstModule(self):           return self.modules[0]  if len(self.modules) > 0 else None
+    def getLastModule(self):            return self.modules[-1] if len(self.modules) > 0 else None
+    def getLastModuleOff(self):         return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else None
 
-    def addModule(self, mod_on, pattern, transpose = 0):
+    def addModule(self, mod_on, pattern, transpose = 0, select = False):
         self.modules.append(Module(mod_on, pattern, transpose))
+        if select:
+            self.current_module = len(self.modules) - 1
+
+    def delModule(self):
+        if self.modules:
+            del self.modules[-1]
+            self.current_module -= 1
 
     def switchModule(self, inc):
         if self.modules:
@@ -333,7 +368,16 @@ class Track():
         if self.modules:
             self.getModule().transpose += inc
 
+    def moveModule(self, inc):
+        if self.modules:
+            if (self.getModule() != self.getFirstModule()) and (self.getModuleOn() + inc < self.getModuleOff(-1)): return
+            if (self.getModule() != self.getLastModule()) and (self.getModuleOff() + inc > self.getModuleOn(+1)): return
+            if (self.getModuleOn() + inc < 0): return
 
+            self.getModule().mod_on += inc
+        #cool TODO: jump into gaps if possible somewhere - rearrange!
+        #TODO: in filling, appending: order has to be maintained!
+            
     def checkModuleCollision(self, module):
         pass
         
@@ -368,7 +412,7 @@ class Pattern():
     def __init__(self, name, length = 1):
         self.name = name
         self.notes = []
-        self.length = length # after adding, jump to "len field" in order to change it if required TODO
+        self.length = length if length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
         self.current_note = 0
         self.color = (0, .5, 1.) # TODO randomize color upon creating, it's more fun.
 
