@@ -13,15 +13,15 @@ class Track():
         self.setSynth(synth)
 
     # helpers...
-    def getModule(self, offset=0):      return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
-    def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None 
-    def getModuleOn(self, offset=0):    return self.getModule(offset).mod_on
-    def getModuleLen(self, offset=0):   return self.getModule(offset).pattern.length
-    def getModuleOff(self, offset=0):   return self.getModuleOn(offset) + self.getModuleLen(offset)
-    def getFirstModule(self):           return self.modules[0]  if len(self.modules) > 0 else None
-    def getFirstModuleOn(self):         return self.getFirstModule().mod_on if self.getFirstModule() else None
-    def getLastModule(self):            return self.modules[-1] if len(self.modules) > 0 else None
-    def getLastModuleOff(self):         return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else None
+    def getModule(self, offset=0):        return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
+    def getModulePattern(self, offset=0): return self.getModule(offset).pattern if self.getModule(offset) else None 
+    def getModuleOn(self, offset=0):      return self.getModule(offset).mod_on
+    def getModuleLen(self, offset=0):     return self.getModule(offset).pattern.length
+    def getModuleOff(self, offset=0):     return self.getModuleOn(offset) + self.getModuleLen(offset)
+    def getFirstModule(self):             return self.modules[0]  if len(self.modules) > 0 else None
+    def getFirstModuleOn(self):           return self.getFirstModule().mod_on if self.getFirstModule() else None
+    def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
+    def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else None
 
     def addModule(self, mod_on, pattern, transpose = 0, select = False):
         self.modules.append(Module(mod_on, pattern, transpose))
@@ -31,7 +31,7 @@ class Track():
     def delModule(self):
         if self.modules:
             del self.modules[-1]
-            self.current_module -= 1
+            self.current_module = min(self.current_module, len(self.modules)-1)
 
     def switchModule(self, inc, to = None):
         if self.modules:
@@ -61,6 +61,17 @@ class Track():
         for m in self.modules:
             m.mod_on += inc
         
+    def switchModulePattern(self, pattern):
+        if self.modules:
+
+            # maybe we need to move all the following modules
+            if self.current_module < len(self.modules) - 1:
+                offset = pattern.length - self.getModuleLen()
+                for f in self.modules[self.current_module + 1:]:
+                    f.mod_on += offset
+
+            self.getModule().pattern = pattern
+
         
     def checkModuleCollision(self, module):
         pass

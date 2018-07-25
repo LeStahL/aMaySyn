@@ -1,20 +1,21 @@
 import kivy
 kivy.require('1.10.0') # replace with your current kivy version !
 from kivy.app import App
+from kivy.graphics import Color
+
+import random
 
 class Pattern():
     
-    def __init__(self, name, length = 1):
+    def __init__(self, name = 'NJU', length = 1):
         self.name = name
         self.notes = []
         self.length = length if length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
         self.current_note = 0
-        self.color = (0, .5, 1.) # TODO randomize color upon creating, it's more fun.
+        self.color = Color(random.uniform(.05,.95), 1, .8, mode = 'hsv').rgb
 
     # helpers...
-    def getNote(self):      return self.notes[ self.current_note      % len(self.notes)] if self.notes else None
-    #def getNextNote(self):  return self.notes[(self.current_note + 1) % len(self.notes)] if isinstance(self.current_note,int) else None
-    #def getPrevNote(self):  return self.notes[(self.current_note - 1) % len(self.notes)] if isinstance(self.current_note,int) else None
+    def getNote(self, offset=0):      return self.notes[ (self.current_note + offset) % len(self.notes)] if self.notes else None
     #def getFirstNote(self): return self.notes[0]  if len(self.notes) > 0 else None
     #def getLastNote(self):  return self.notes[-1] if len(self.notes) > 0 else None
         

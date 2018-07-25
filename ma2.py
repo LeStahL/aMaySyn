@@ -17,6 +17,7 @@ import os
 
 from ma2_track import *
 from ma2_pattern import *
+from ma2_widgets import *
 
 Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
@@ -35,36 +36,22 @@ class Ma2Widget(Widget):
     tracks = []
     patterns = []
 
-    synths = ['I_Bass', 'D_Kick']
+    synths = ['I_Bass', 'D_Kick', 'G_Graphics']
     
     title = "is it π/2 yet?"
     
     btnTitle = ObjectProperty()
     
-    #updateAll = True # ah, fuck it. always update everythig.
+    #updateAll = True # ah, fuck it. always update everythig. TODO improve performance... somehow.
     
     #helpers...
-    def getTrack(self):             return self.tracks[self.current_track] if self.current_track is not None else None
-    def getLastTrack(self):         return self.tracks[-1] if self.tracks else None
-    #def getTrackModules(self):     return self.getTrack().modules
-    def getModule(self):            return self.getTrack().getModule() if self.getTrack() else None
-    def getModuleTranspose(self):   return self.getModule().transpose if self.getModule() else 0
-    #def getNextModule
-    #def getPrevModule
-    #def getFirstModule
-    #def getLastModule
-    #def getModuleLen(self):   return self.getTrack().getModuleLen()
-    def getPattern(self):      return self.getTrack().getModulePattern() if self.getTrack() else None
-    def getPatternLen(self):   return self.getPattern().length if self.getPattern() else None
-    #def getPattern(self):     return self.patterns[self.current_pattern] if isinstance(self.current_pattern, int) and self.patterns else None
-    #def getNextPattern(self): return self.patterns[(self.current_pattern + 1) % len(patterns)] if isinstance(self.current_pattern, int) and self.patterns else None
-    #def getPrevPattern(self): return self.patterns[(self.current_pattern - 1) % len(patterns)] if isinstance(self.current_pattern, int) and self.patterns else None
-    #def getLastPattern(self): return self.patterns[-1] if self.patterns else None
-    #def getNote
-    #def getNextNote
-    #def getPrevNote
-    #def getLastNote
-    #def getSongLength
+    def getTrack(self):                 return self.tracks[self.current_track] if self.current_track is not None else None
+    def getLastTrack(self):             return self.tracks[-1] if self.tracks else None
+    def getModule(self, offset=0):      return self.getTrack().getModule(offset) if self.getTrack() else None
+    def getModuleTranspose(self):       return self.getModule().transpose if self.getModule() else 0
+    def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None
+    def getPattern(self, offset=0):     return self.patterns[(self.patterns.index(self.getModulePattern()) + offset) % len(self.patterns)] if self.getModulePattern() in self.patterns else None
+    def getPatternLen(self, offset=0):  return self.getPattern(offset).length if self.getPattern(offset) else None
 
     def existsPattern(self, pattern): return pattern in self.patterns
 
@@ -108,8 +95,8 @@ class Ma2Widget(Widget):
                 elif k == 'left':               self.getTrack().moveModule(-1)
                 elif k == 'right':              self.getTrack().moveModule(+1)
                 
-                elif k == 'numpadadd':          self.getTrack().switchModulePattern(+1)
-                elif k == 'numpadsubtract':     self.getTrack().switchModulePattern(-1)
+                elif k == 'numpadadd':          self.getTrack().switchModulePattern(self.getPattern(+1))
+                elif k == 'numpadsubstract':    self.getTrack().switchModulePattern(self.getPattern(-1))
 
             else:
                 if   k == 'left':               self.getTrack().switchModule(-1)
@@ -119,7 +106,7 @@ class Ma2Widget(Widget):
                 elif k == 'up':                 self.switchTrack(-1)
                 elif k == 'down':               self.switchTrack(+1)
                 
-                elif k == 'numpadadd':          self.getTrack().addModule(self.getTrack().getLastModuleOff(), Pattern('nju', length=1), select = True) 
+                elif k == 'numpadadd':          self.getTrack().addModule(self.getTrack().getLastModuleOff(), Pattern(), select = True) 
                 elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), select = True)
                 elif k == 'numpadsubstract':    self.getTrack().delModule()
 
@@ -148,6 +135,9 @@ class Ma2Widget(Widget):
                 elif k == 'right':              self.getPattern().switchNote(+1)
                 elif k == 'up':                 self.getPattern().shiftNote(+1)
                 elif k == 'down':               self.getPattern().shiftNote(-1)
+                
+#                elif k == '+':                  self.getPattern().addNote(self.getPattern().getNote()
+#                elif k == '-':
 
         self.update()
         return True
@@ -188,8 +178,8 @@ class Ma2Widget(Widget):
     def clearSong(self):
         del self.tracks[:]
         del self.patterns[:]
-        self.tracks = [Track(name = 'nju Track', synth = 'I_None')]
-        self.patterns = [Pattern(name = 'nju Pattern', length = 1)]
+        self.tracks = [Track(name = 'NJU TREK', synth = 'I_None')]
+        self.patterns = [Pattern()]
         self.tracks[0].addModule(0, self.patterns[0])
         
         self.current_track = 0
@@ -200,52 +190,6 @@ class Ma2Widget(Widget):
 
         self.update()
 
-###################### DEBUG FUNCTIONS ######################
-
-    def setupDebug(self):
-        #DEBUG: test_list
-        self.addTrack("Bassline", synth = "I_Bass")
-        self.addTrack("Penetrator", synth = "Shit")
-        self.addTrack("DerberScheißkick")
-        self.addTrack("...")
-        self.addTrack("N R 4")
-        self.addTrack("      a n d")
-        self.addTrack("             Q M")
-        self.addTrack("")
-        self.addTrack("      a r e")
-        self.addTrack("       ...")
-        self.addTrack("")
-        self.addTrack("[T][E][A][M]")
-        self.addTrack("       (2)(1)(0)")
-        
-        self.addPattern("bad performance", 7)
-        self.addPattern("Lässig",2)
-        self.current_pattern = 0
-        
-        self.tracks[1].addModule(5.5, self.patterns[0],-2)
-        self.tracks[0].addModule(0, self.patterns[1], 0)
-        self.tracks[0].addModule(2, self.patterns[1], 0)
-        self.tracks[0].addModule(4, self.patterns[1], -3)
-        self.tracks[0].addModule(6, self.patterns[1], -7)
-        
-        self.current_module = 0
-        
-        self.getPattern().addNote(0.00,0.50,24)
-        self.getPattern().addNote(0.50,0.25,24)
-        self.getPattern().addNote(0.75,0.25,24)
-        self.getPattern().addNote(1.00,0.50,24)
-        self.getPattern().addNote(1.50,0.50,31)
-        
-        #self.getPattern().printNoteList()
-        
-        self.update()
-        
-    def printDebug(self):
-        for t in self.tracks:
-            print(t.name, len(t.modules))
-            for m in t.modules:
-                print(m.mod_on, m.pattern.name)
-    
 ###################### EXPORT FUNCTIONS #####################
 
     def loadCSV(self, filename):
@@ -341,201 +285,52 @@ class Ma2Widget(Widget):
     def pressSaveCSV(self):   self.saveCSV(self.title + ".ma2")
     def pressBuildCode(self): pass
 
+###################### DEBUG FUNCTIONS ######################
 
-class TrackWidget(Widget):
-    active = BooleanProperty(True)
-
-    def __init__(self, **kwargs):
-        super(TrackWidget, self).__init__(**kwargs)
-
-    def drawTrackList(self, tracklist = [], current_track = None):
-
-        pad_l = 10
-        pad_r = 20
-        #pad_b = 10
-        pad_t = 10
-        row_h = 22
-        gap_h = 4
-        beat_w = 20
+    def setupDebug(self):
+        #DEBUG: test_list
+        self.addTrack("Bassline", synth = "I_Bass")
+        self.addTrack("Penetrator", synth = "Shit")
+        self.addTrack("DerberScheißkick")
+        self.addTrack("...")
+        self.addTrack("N R 4")
+        self.addTrack("      a n d")
+        self.addTrack("             Q M")
+        self.addTrack("")
+        self.addTrack("      a r e")
+        self.addTrack("       ...")
+        self.addTrack("")
+        self.addTrack("[T][E][A][M]")
+        self.addTrack("       (2)(1)(0)")
         
-        font_size = 16
-        char_w = 10
-        chars_name = 16
-        chars_synth = 10
-
-        # TODO: fixed size for now (15 tracks, 64 modules).. extend when it becomes necessary
-
-        grid_l = self.x + pad_l + 2 + char_w*(chars_name+chars_synth+2) + 8
-
-        self.canvas.clear()
-        with self.canvas:
-            
-            if self.active:
-                Color(1.,0.,1,.5)
-                Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 7], width = 1.5)
-            
-            for i,t in enumerate(tracklist[0:15]):
-                #height: 375
-                draw_x = self.x + pad_l
-                draw_y = self.top - pad_t - (i+1)*row_h - i*gap_h;
-                
-                Color(*((.2,.2,.2) if i!=current_track else (.5,.2,.2)))
-                Rectangle(pos = (draw_x, draw_y), size = (char_w*chars_name + 4,row_h))
-
-                ### TRACK NAME ###
-                draw_x += 2
-                Color(1,1,1,1)
-                label = CoreLabel(text = t.name[0:chars_name], font_size = font_size, font_name = self.font_name)
-                label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
-
-                ### SYNTH NAME ###
-                draw_x += char_w*(chars_name+1) + 4
-                Color(.8,.8,.8,1)
-                label = CoreLabel(text = t.synth[2:2+chars_synth], font_size = font_size, font_name = self.font_name)
-                label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
-                                
-                ### GRID ###
-                draw_x = grid_l
-                Color(*((.2,.2,.2) if i != current_track else (.5,.2,.2)))
-                while draw_x + beat_w <= self.right - pad_r:
-                    Rectangle(pos = (draw_x, draw_y), size = (beat_w-1,row_h))
-                    draw_x += beat_w
-                    
-                ### MODULES ###
-                for m in t.modules:
-                    Color(*m.pattern.color,0.4)
-                    Rectangle(pos=(grid_l + beat_w * m.mod_on, draw_y), size=(beat_w * m.pattern.length - 1,row_h))
-                    
-                    Color(*(0.5+0.5*c for c in m.pattern.color),1)
-                    label = CoreLabel(text = m.pattern.name[0:3*int(m.pattern.length)], font_size = 10, font_name = self.font_name)
-                    label.refresh()
-                    Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y-1), texture = label.texture)
-                    
-                    if m.transpose != 0:
-                        label = CoreLabel(text = "%+d" % m.transpose, font_size = 10, font_name = self.font_name)
-                        label.refresh()
-                        Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y + row_h/2 - 2), texture = label.texture)
-
-                    if m == t.getModule() and i == current_track:
-                        Color(1,.5,.5,.8)
-                        Line(rectangle = (grid_l + beat_w * m.mod_on - 1 , draw_y - 1, beat_w * m.pattern.length, row_h + 2), width = 1.5)
-
-
-            draw_x = grid_l
-            draw_y = self.top - pad_t - (len(tracklist)+.5)*(row_h+gap_h) - 4
-
-            beat_max = (self.right - pad_r - draw_x) // beat_w
-            
-            for i in range(beat_max+1):
-                Color(.6,.8,.8)
-                label = CoreLabel(text = str(i), font_size = 12, font_name = self.font_name)
-                label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x-label.texture.width/2, draw_y), texture = label.texture)
-                
-                draw_x += beat_w
-            
-    
-class PatternWidget(Widget):
-    active = BooleanProperty(False)
-    
-    def __init__(self, **kwargs):
-        super(PatternWidget, self).__init__(**kwargs)
-
-    claviature = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-    def isKeyBlack(self, key): return '#' in self.claviature[key % 12]
-
-    def drawPianoRoll(self, pattern = None, transpose = 0):
+        self.addPattern("bad performance", 7)
+        self.addPattern("Lässig",2)
+        self.current_pattern = 0
         
-        pad_l = 10
-        pad_r = 20
-        pad_t = 5
-        pad_b = 25
-        key_h = 9
-        key_w = 32
-        font_size = 11
-        bars = 4 * (0 if not pattern else pattern.length)
-        bar_w = 48
-        bar_max = 1
-        #for now: no length > 16 bars! TODO
-
-            #all the note_visible functions!
-            #function to clearly calculate position of note TODO, draw current note, draw grid TODO but this time, respect pattern length!
-
-        offset_v = 12
-        offset_h = 0
-
-        draw_y = self.y + pad_b
-        key = offset_v
-
-        self.canvas.clear()
-        with self.canvas:
-            
-            if self.active:
-                Color(1.,0.,1,.5)
-                Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 7], width = 1.5)
-
-            ### KEYBOARD ###
-            while draw_y + key_h <= self.top - pad_t:
-                draw_x = self.x + pad_l
-                
-                Color(*((1,1,1) if not self.isKeyBlack(key) else (.1,.1,.1)))
-                Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
-
-                Color(*((1,1,1) if self.isKeyBlack(key) else (.3,.3,.3)),1)
-                label = CoreLabel(text = self.claviature[key % 12] + str(key//12), font_size = font_size, font_name = self.font_name)
-                label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-2.5), texture = label.texture)                
-                Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-3), texture = label.texture)                
-
-                draw_x += 2 + key_w
-                Color(*((.1,.1,.1) if self.isKeyBlack(key) else (.1,.3,.2)))
-                Rectangle(pos = (draw_x, draw_y), size = (self.right - pad_r - draw_x, key_h))
-              
-                draw_y += key_h+1
-                key += 1
-
-            draw_x = self.x + pad_l + key_w + 2
-            draw_y = self.y + pad_b
-            draw_h = (key_h+1) * (key - offset_v)
-
-            ### GRID ###
-            Color(.6,.8,.8)
-            label = CoreLabel(text = "0.00", font_size = 12, font_name = self.font_name)
-            label.refresh()
-            Rectangle(size = label.texture.size, pos = (draw_x-label.texture.width/2, draw_y - label.texture.height), texture = label.texture)
-            for b in range(bars):
-                Color(*(0.05,0,0.05,0.8))
-                Line(points = [draw_x, draw_y, draw_x, draw_y + draw_h], width = 1.5 if b % 4 == 0 else 1)
-                Line(points = [draw_x + .25*bar_w, draw_y, draw_x + .25*bar_w, draw_y + draw_h], width = .3)
-                Line(points = [draw_x + .50*bar_w, draw_y, draw_x + .50*bar_w, draw_y + draw_h], width = .3)
-                Line(points = [draw_x + .75*bar_w, draw_y, draw_x + .75*bar_w, draw_y + draw_h], width = .3)
-
-                draw_x += bar_w
-
-                Color(.6,.8,.8)
-                label = CoreLabel(text = "%.2f" % (.25*(b+1)), font_size = 12, font_name = self.font_name)
-                label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x-label.texture.width/2, draw_y - label.texture.height), texture = label.texture)
-
-            Color(0,0,0)
-            Line(points = [draw_x, draw_y, draw_x, draw_y + draw_h], width = 1.5)
-
-            Color(0,0,0,.3)
-            Rectangle(pos = (draw_x, draw_y), size = (self.right - pad_r - draw_x, draw_h))
-
-            ### NOTES ###
-            if pattern:
-                for n in pattern.notes:
-                    Color(*(0,.8,1),.6) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER
-                    draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * n.noteon
-                    draw_y = self.y + pad_b + (key_h + 1) * (n.notepitch + transpose - offset_v)
-                    Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.notelen - 2, key_h))
-
-                    if n == pattern.getNote():
-                        Color(1,1,1,.6)
-                        Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.notelen - 2, key_h))
+        self.tracks[1].addModule(5.5, self.patterns[0],-2)
+        self.tracks[0].addModule(0, self.patterns[1], 0)
+        self.tracks[0].addModule(2, self.patterns[1], 0)
+        self.tracks[0].addModule(4, self.patterns[1], -3)
+        self.tracks[0].addModule(6, self.patterns[1], -7)
+        
+        self.current_module = 0
+        
+        self.getPattern().addNote(0.00,0.50,24)
+        self.getPattern().addNote(0.50,0.25,24)
+        self.getPattern().addNote(0.75,0.25,24)
+        self.getPattern().addNote(1.00,0.50,24)
+        self.getPattern().addNote(1.50,0.50,31)
+        
+        #self.getPattern().printNoteList()
+        
+        self.update()
+        
+    def printDebug(self):
+        for t in self.tracks:
+            print(t.name, len(t.modules))
+            for m in t.modules:
+                print(m.mod_on, m.pattern.name)
+    
                 
 class Ma2App(App):
     title = 'Matze trying to be the Great Emperor again'
