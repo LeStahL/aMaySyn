@@ -15,6 +15,9 @@ import csv
 import operator
 import os
 
+from ma2_track import *
+from ma2_pattern import *
+
 Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
 #Config.set('graphics', 'fullscreen', 'auto')
@@ -81,7 +84,8 @@ class Ma2Widget(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         
         k = keycode[1]
-        #print(k)
+        if 'alt' in modifiers:
+            print(k)
         
         if   k == 'escape':                     App.get_running_app().stop() 
         elif k == 'backspace':                  self.printDebug()
@@ -94,7 +98,11 @@ class Ma2Widget(Widget):
 
         #vorerst: nur tastatursteuerung - nerdfaktor und so :)
         if(self.theTrkWidget.active):
-            if 'shift' in modifiers:
+            if all(x in modifiers for x in ['shift', 'ctrl']):
+                if   k == 'left':               self.getTrack().moveAllModules(-1)
+                elif k == 'right':              self.getTrack().moveAllModules(+1)
+            
+            elif 'shift' in modifiers:
                 if   k == 'up':                 self.getTrack().transposeModule(+1)
                 elif k == 'down':               self.getTrack().transposeModule(-1)
                 elif k == 'left':               self.getTrack().moveModule(-1)
@@ -106,6 +114,8 @@ class Ma2Widget(Widget):
             else:
                 if   k == 'left':               self.getTrack().switchModule(-1)
                 elif k == 'right':              self.getTrack().switchModule(+1)
+                elif k == 'end':                self.getTrack().switchModule(0, to = -1)
+                elif k == 'home':               self.getTrack().switchModule(0, to = +0)
                 elif k == 'up':                 self.switchTrack(-1)
                 elif k == 'down':               self.switchTrack(+1)
                 
@@ -114,7 +124,7 @@ class Ma2Widget(Widget):
                 elif k == 'numpadsubstract':    self.getTrack().delModule()
 
         if(self.thePtnWidget.active) and self.getPattern():
-            if all(x in modifiers for x in ['shift','ctrl']):
+            if all(x in modifiers for x in ['shift', 'ctrl']):
                 if   k == 'left':               self.getPattern().moveNote(-1/32)
                 elif k == 'right':              self.getPattern().moveNote(+1/32)
 
@@ -330,157 +340,6 @@ class Ma2Widget(Widget):
     def pressLoadCSV(self):   pass
     def pressSaveCSV(self):   self.saveCSV(self.title + ".ma2")
     def pressBuildCode(self): pass
-
-
-class Track():
-    
-    def __init__(self, name, synth = None):
-        self.name = name
-        self.modules = []
-        self.current_module = 0
-        self.setSynth(synth)
-
-    # helpers...
-    def getModule(self, offset=0):      return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
-    def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None 
-    def getModuleOn(self, offset=0):    return self.getModule(offset).mod_on
-    def getModuleLen(self, offset=0):   return self.getModule(offset).pattern.length
-    def getModuleOff(self, offset=0):   return self.getModuleOn(offset) + self.getModuleLen(offset)
-    def getFirstModule(self):           return self.modules[0]  if len(self.modules) > 0 else None
-    def getLastModule(self):            return self.modules[-1] if len(self.modules) > 0 else None
-    def getLastModuleOff(self):         return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else None
-
-    def addModule(self, mod_on, pattern, transpose = 0, select = False):
-        self.modules.append(Module(mod_on, pattern, transpose))
-        if select:
-            self.current_module = len(self.modules) - 1
-
-    def delModule(self):
-        if self.modules:
-            del self.modules[-1]
-            self.current_module -= 1
-
-    def switchModule(self, inc):
-        if self.modules:
-            self.current_module = (self.current_module + inc) % len(self.modules)
-
-    def transposeModule(self, inc):
-        if self.modules:
-            self.getModule().transpose += inc
-
-    def moveModule(self, inc):
-        if self.modules:
-            if (self.getModule() != self.getFirstModule()) and (self.getModuleOn() + inc < self.getModuleOff(-1)): return
-            if (self.getModule() != self.getLastModule()) and (self.getModuleOff() + inc > self.getModuleOn(+1)): return
-            if (self.getModuleOn() + inc < 0): return
-
-            self.getModule().mod_on += inc
-        #cool TODO: jump into gaps if possible somewhere - rearrange!
-        #TODO: in filling, appending: order has to be maintained!
-            
-    def checkModuleCollision(self, module):
-        pass
-        
-    def clearModules(self):
-        self.modules=[]
-
-    def setSynth(self, synth):
-        self.synth = synth if synth in Ma2Widget.synths else 'I_None'
-            
-    def isDrum(self):
-        return self.synth[0]=='D'
-
-class Module():
-
-    mod_on = 0
-    #mod_off = 0
-    pattern = None
-    transpose = 0
-    
-    def __init__(self, mod_on, pattern, transpose = 0):
-        self.mod_on = mod_on
-        #self.mod_off = mod_on + pattern.length
-        self.pattern = pattern
-        self.transpose = transpose
-
-    def setPattern(self, pattern):
-        if App.get_running_app().root.existsPattern(pattern):
-            self.pattern = pattern
-
-class Pattern():
-    
-    def __init__(self, name, length = 1):
-        self.name = name
-        self.notes = []
-        self.length = length if length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
-        self.current_note = 0
-        self.color = (0, .5, 1.) # TODO randomize color upon creating, it's more fun.
-
-    # helpers...
-    def getNote(self):      return self.notes[ self.current_note      % len(self.notes)] if self.notes else None
-    #def getNextNote(self):  return self.notes[(self.current_note + 1) % len(self.notes)] if isinstance(self.current_note,int) else None
-    #def getPrevNote(self):  return self.notes[(self.current_note - 1) % len(self.notes)] if isinstance(self.current_note,int) else None
-    #def getFirstNote(self): return self.notes[0]  if len(self.notes) > 0 else None
-    #def getLastNote(self):  return self.notes[-1] if len(self.notes) > 0 else None
-        
-    def addNote(self, noteon, notelen, notepitch, notevel=100):
-        self.notes.append(Note(noteon, notelen, notepitch, notevel)) #actually, don't append, but insert at the right position TODO --> check ordering, noteons should be ordered (POLYPHONY THIS TIME!)
-
-    def switchNote(self, inc):
-        if self.notes:
-            self.current_note = (self.current_note + inc) % len(self.notes)
-        
-    def shiftNote(self, inc):
-        if self.notes:
-            self.getNote().notepitch = max(0, min(88, self.getNote().notepitch + inc)) # TODO find out whether 88 is way too high..
-
-    def shiftAllNotes(self, inc):
-        for n in self.notes:
-            n.notepitch = max(0, min(88, n.notepitch + inc))
-
-    def stretchNote(self, inc):
-        # here I had lots of possibilities .. is inc > or < 0? but these where on the monophonic synth. Let's rethink polyphonic!
-        if self.notes:
-            if inc < 0:
-                if self.getNote().notelen <= 1/16:
-                    self.getNote().notelen = 1/32
-                elif self.getNote().notelen <= -inc:
-                    self.getNote().notelen /= 2
-                else:
-                    self.getNote().notelen -= -inc
-            else:
-                if self.getNote().notelen <= inc:
-                    self.getNote().notelen *= 2
-                else:
-                    self.getNote().notelen = max(0, min(self.length - self.getNote().noteon, self.getNote().notelen + inc)) # TODO find out whether 88 is way too high..
-            
-            self.getNote().noteoff = self.getNote().noteon + self.getNote().notelen
-    
-    def moveNote(self, inc):
-        # same as with stretch: rethink for special Käses?
-        if self.notes and inc != 0:
-            if abs(self.getNote().notelen) < abs(inc): inc = abs(inc)/inc * self.getNote().notelen
-
-            self.getNote().noteon = max(0, min(self.length - self.getNote().notelen, self.getNote().noteon + inc)) # TODO find out whether 88 is way too high..
-            self.getNote().noteoff = self.getNote().noteon + self.getNote().notelen
-    
-    # HEUTE NOCH: diese beiden funktionen und die load/save funktionen (export to code dann morgen aufm stammtisch schreiben!)
-
-    ### DEBUG ###
-    def printNoteList(self):
-        for n in self.notes:
-            print(n.noteon, n.noteoff, n.notelen, n.notepitch, n.notevel)
-
-class Note():
-
-    def __init__(self, noteon=0, notelen=1, notepitch=24, notevel=100): # set notelen to last default TODO
-        self.noteon = noteon
-        self.noteoff = noteon + notelen
-        self.notelen = notelen
-        self.notepitch = int(notepitch)
-        self.notevel = notevel
-        # some safety checks TODO
-
 
 
 class TrackWidget(Widget):
