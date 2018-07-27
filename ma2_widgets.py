@@ -25,7 +25,7 @@ class TrackWidget(Widget):
         pad_l = 10
         pad_r = 20
         #pad_b = 10
-        pad_t = 10
+        pad_t = 15
         row_h = 22
         gap_h = 4
         beat_w = 20
@@ -64,7 +64,7 @@ class TrackWidget(Widget):
                 ### SYNTH NAME ###
                 draw_x += char_w*(chars_name+1) + 4
                 Color(.8,.8,.8,1)
-                label = CoreLabel(text = t.synth[2:2+chars_synth], font_size = font_size, font_name = self.font_name)
+                label = CoreLabel(text = t.getSynthName()[2:2+chars_synth], font_size = font_size, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
                                 
@@ -123,7 +123,7 @@ class PatternWidget(Widget):
         pad_l = 10
         pad_r = 20
         pad_t = 5
-        pad_b = 25
+        pad_b = 22
         key_h = 9
         key_w = 32
         font_size = 11
@@ -200,12 +200,12 @@ class PatternWidget(Widget):
             ### NOTES ###
             if pattern:
                 for n in pattern.notes:
-                    Color(*(0,.8,1),.6) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER
-                    draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * n.noteon
-                    draw_y = self.y + pad_b + (key_h + 1) * (n.notepitch + transpose - offset_v)
-                    Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.notelen - 2, key_h))
+                    Color(*pattern.color,.6) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER
+                    draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * n.note_on
+                    draw_y = self.y + pad_b + (key_h + 1) * (n.note_pitch + transpose - offset_v)
+                    Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.note_len - 2, key_h))
 
                     if n == pattern.getNote():
                         Color(1,1,1,.6)
-                        Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.notelen - 2, key_h))
+                        Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.note_len - 2, key_h))
                 

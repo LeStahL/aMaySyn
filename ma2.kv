@@ -12,6 +12,26 @@
     font_name: 'RobotoMono-Regular'
     font_size: dp(17)
 
+<RetroButton@Button>:
+    text: ''
+    
+    background_normal: ''
+    background_color: 0,0,0,1
+    
+    canvas:
+        Color:
+            rgb: (.8,.8,.8)
+        Line:
+            rectangle: self.x+3, self.y+3, self.width-6, self.height-6
+            width: 1.2
+            joint: 'miter'
+            
+    Label:
+        text_size: self.size
+        font_name: root.font_name
+        text: root.text
+        halign: 'center'
+    
 <Ma2Widget>:
 
     theTrkWidget: thisTrkWidget
@@ -19,9 +39,6 @@
     
     btnTitle:     btnTitleID
     btnTrkInfo:   btnTrkInfoID
-    btnModPtn:    btnModPtnID
-    btnModStart:  btnModStartID
-    btnModTransp: btnModTranspID
     btnPtnTitle:  btnPtnTitleID
     btnPtnInfo:   btnPtnInfoID
     btnNotePitch: btnNotePitchID
@@ -38,72 +55,65 @@
             height: root.height * 0.05
             size_hint_y: None
             
-            Button:
+            RetroButton:
                 id: btnTitleID
                 on_press: root.pressTitle()
-            Button:
+            RetroButton:
                 on_press: root.pressTrkAdd()
                 text: 'TRK +'
-            Button:
+                size_hint_x: 0.1
+            RetroButton:
                 on_press: root.pressTrkDel()
                 text: 'TRK -'
-            Button:
+                size_hint_x: 0.1
+            RetroButton:
                 id: btnTrkInfoID
                 on_press: root.pressTrkInfo()
                 text: 'TRK Info (Name, Inst, Transpose)'
-                    
+                size_hint_x: 0.4
+                
         TrackWidget:
             id: thisTrkWidget
-        
-        BoxLayout:
-            orientation: "horizontal"
-            height: root.height * 0.05
+            height: 280
             size_hint_y: None
-            Button:
-                on_press: root.pressModAdd()
-                text: "MOD +"
-            Button:
-                on_press: root.pressModDel()
-                text: "MOD -"
-            Button:
-                id: btnModPtnID
-                on_press: root.pressModPtn()
-                text: "MOD: PAT?"
-            Button:
-                id: btnModStartID
-                on_press: root.pressModStart()
-                text: "MOD: STRT?"
-            Button:
-                id: btnModTranspID
-                on_press: root.pressModTransp()
-                text: "MOD: PITCH?"
             
         BoxLayout:
             orientation: "horizontal"
             height: root.height * 0.05
             size_hint_y: None
-            Button:
+            RetroButton:
+                on_press: root.pressModAdd()
+                text: "MOD+"
+                size_hint_x: 0.15
+            RetroButton:
+                on_press: root.pressModDel()
+                text: "MOD-"
+                size_hint_x: 0.15
+            RetroButton:
                 on_press: root.pressPtnLast()
                 text: "<"
                 size_hint_x: 0.15
-            Button:        
+            RetroButton:        
                 id: btnPtnTitleID
                 on_press: root.pressPtnTitle()
-                text: "PATTERN: bad performance"
-            Button:
+                text: "PTN: bad performance"
+            RetroButton:
                 on_press: root.pressPtnNext()
                 text: ">"
                 size_hint_x: 0.15
-            Button:
+            RetroButton:
                 on_press: root.pressPtnAdd()
-                text: "PAT +"
-            Button:
+                text: "PTN+"
+                size_hint_x: 0.15
+            RetroButton:
                 on_press: root.pressPtnDel()
-                text: "PAT -"
-            Button:
+                text: "PTN-"
+                size_hint_x: 0.15
+            RetroButton:
                 id: btnPtnInfoID
                 on_press: root.pressPtnInfo()
                 text: "PAT LEN (Beats)"
+                size_hint_x: 0.4
 
         PatternWidget:
             id: thisPtnWidget
@@ -112,25 +122,25 @@
             orientation: "horizontal"
             height: root.height * 0.05
             size_hint_y: None
-            Button:
+            RetroButton:
                 on_press: root.pressNoteAdd()
                 text: "NOTE +"
-            Button:
+            RetroButton:
                 on_press: root.pressNoteDel()
                 text: "NOTE -"
-            Button:
+            RetroButton:
                 id: btnNotePitchID
                 on_press: root.pressNotePitch()
                 text: "NOTE PITCH (or Drum)"
-            Button:
+            RetroButton:
                 id: btnNoteOnID
                 on_press: root.pressNoteOn()
                 text: "NOTE ON"
-            Button:
+            RetroButton:
                 id: btnNoteLenID
                 on_press: root.pressNoteLen()
                 text: "NOTE LEN"
-            Button:
+            RetroButton:
                 id: btnNoteVelID
                 on_press: root.pressNoteVel()
                 text: "NOTE VEL"
@@ -139,16 +149,16 @@
             orientation: "horizontal"
             height: root.height * 0.05
             size_hint_y: None
-            Button:
+            RetroButton:
                 on_press: root.pressLoadCSV()
                 text: "Load .ma2"
-            Button:
+            RetroButton:
                 on_press: root.pressSaveCSV()
                 text: "Save .ma2"
-            Button:
+            RetroButton:
                 on_press: root.pressBuildCode()
                 text: "Export GLSL"
-#           Button:
+#           RetroButton:
 #               text: "Import GLSL"
 
         

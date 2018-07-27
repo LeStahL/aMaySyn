@@ -5,25 +5,30 @@ from kivy.app import App
 from ma2 import Ma2Widget
 
 class Track():
+
+    synths = Ma2Widget.synths
     
-    def __init__(self, name, synth = None):
+    def __init__(self, name, synth = ''):
         self.name = name
         self.modules = []
         self.current_module = 0
-        self.setSynth(synth)
+        self.current_synth = self.synths.index(synth) if synth in self.synths else -1
 
     # helpers...
     def getModule(self, offset=0):        return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
     def getModulePattern(self, offset=0): return self.getModule(offset).pattern if self.getModule(offset) else None 
     def getModuleOn(self, offset=0):      return self.getModule(offset).mod_on
     def getModuleLen(self, offset=0):     return self.getModule(offset).pattern.length
-    def getModuleOff(self, offset=0):     return self.getModuleOn(offset) + self.getModuleLen(offset)
+    def getModuleOff(self, offset=0):     return self.getModule(offset).getModuleOff()
     def getFirstModule(self):             return self.modules[0]  if len(self.modules) > 0 else None
     def getFirstModuleOn(self):           return self.getFirstModule().mod_on if self.getFirstModule() else None
     def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
-    def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else None
+    def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else 0
 
-    def addModule(self, mod_on, pattern, transpose = 0, select = False):
+    def getSynthName(self):               return self.synths[self.current_synth] if self.synths else ''
+    def getSynthFinalIndex(self):         return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
+
+    def addModule(self, mod_on, pattern, transpose = 0, select = True):
         self.modules.append(Module(mod_on, pattern, transpose))
         if select:
             self.current_module = len(self.modules) - 1
@@ -51,9 +56,7 @@ class Track():
             if (self.getModuleOn() + inc < 0): return
 
             self.getModule().mod_on += inc
-        #cool TODO: jump into gaps if possible somewhere - rearrange!
-        #TODO: in filling, appending: order has to be maintained!
-
+        #cool TODO: jump into gaps if possible somewhere -> automatic sorting
     def moveAllModules(self, inc):
         if self.modules:
             if (self.getFirstModuleOn() + inc < 0): return
@@ -71,7 +74,6 @@ class Track():
                     f.mod_on += offset
 
             self.getModule().pattern = pattern
-
         
     def checkModuleCollision(self, module):
         pass
@@ -79,8 +81,12 @@ class Track():
     def clearModules(self):
         self.modules=[]
 
-    def setSynth(self, synth):
-        self.synth = synth if synth in Ma2Widget.synths else 'I_None'
+    def switchSynth(self, inc):
+        if self.synths:
+            self.current_synth = (self.current_synth + inc) % len(self.synths)
+            
+        # TODO: option to set specific synth (find out which number that one should be)
+        #self.synth = synth if synth in self.synths else 'I_None'
             
     def isDrum(self):
         return self.synth[0]=='D'
@@ -98,6 +104,9 @@ class Module():
         #self.mod_off = mod_on + pattern.length
         self.pattern = pattern
         self.transpose = transpose
+
+    def getModuleOff(self):
+        return self.mod_on + (self.pattern.length if self.pattern else 0)
 
     def setPattern(self, pattern):
         if App.get_running_app().root.existsPattern(pattern):
