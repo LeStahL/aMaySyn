@@ -1,0 +1,389 @@
+#define DEBUG_ONLY_DRUMS false
+#define DEBUG_ONLY_MELO  false
+#define DEBUG_ONLY_TRACK -1
+
+#define index(it, in) (track_sep[it]+in)
+
+#define PI radians(180.)
+float _sin(float a) { return sin(2. * PI * mod(a,1.)); }
+float _unisin(float a,float b) { return (.5*_sin(a) + .5*_sin((1.+b)*a)); }
+float _sq(float a) { return sign(2.*fract(a) - 1.); }
+float _squ(float a,float pwm) { return sign(2.*fract(a) - 1. + pwm); }
+float _tri(float a) { return (4.*abs(fract(a)-.5) - 1.); }
+float _saw(float a) { return (2.*fract(a) - 1.); }
+float quant(float a,float div,float invdiv) { return floor(div*a+.5)*invdiv; }
+float quanti(float a,float div) { return floor(div*a+.5)/div; }
+float clip(float a) { return clamp(a,-1.,1.); }
+float theta(float x) { return smoothstep(0., 0.01, x); }
+float freqC1(int note){ return 27.5 * pow(2.,float(note+3)/12.); }
+float minus1hochN(int n) { return (1. - 2.*float(n % 2)); }
+
+const float BPM = 155. * .5;
+const float BPS = BPM/60.;
+const float SPB = 60./BPM;
+
+float doubleslope(float t, float a, float d, float s)
+{
+    return smoothstep(-.00001,a,t) - (1.-s) * smoothstep(0.,d,t-a);
+}
+
+float TRISQ(float t, float f, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q)
+{
+    float ret = 0.;
+    
+    for(int N=0; N<=MAXN; N++)
+    {
+        float mode     = 2.*float(N) + 1.;
+        float inv_mode = 1./mode; 		// avoid division? save table of Nmax <= 20 in some array or whatever
+        float comp_TRI = (N % 2 == 1 ? -1. : 1.) * inv_mode*inv_mode;
+        float comp_SQU = inv_mode;
+        float filter_N = pow(1. + pow(float(N) * INR,2.*NDECAY),-.5) + RES * exp(-pow(float(N)*INR*RES_Q,2.));
+
+        ret += (MIX * comp_TRI + (1.-MIX) * comp_SQU) * filter_N * _sin(mode * f * t);
+    }
+    
+    return ret;
+}
+
+float QTRISQ(float t, float f, float QUANT, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q)
+{
+    return TRISQ(quant(t,QUANT,1./QUANT), f, MAXN, MIX, INR, NDECAY, RES, RES_Q);
+}
+
+float env_ADSR(float x, float L, float A, float D, float S, float R)
+{
+    float att = pow(x/A,8.);
+    float dec = S + (1.-S) * exp(-(x-A)/D);
+    float rel = (x < L-R) ? 1. : pow((L-x)/R,4.);
+
+    return (x < A ? att : dec) * rel;
+    
+}
+
+float macesaw(float t, float f, float CO, float Q, float det1, float det2, float res, float resQ)
+{
+    float s = 0.;
+    float inv_CO = 1./CO;
+    float inv_resQ = 1./resQ;
+    float p = f*t;
+        for(int N=1; N<=200; N++)
+        {
+            // saw
+            float sawcomp = 2./PI * (1. - 2.*float(N % 2)) * 1./float(N);
+            float filterN  = pow(1. + pow(float(N)*f*inv_CO,Q),-.5)
+                     + res * exp(-pow((float(N)*f-CO)*inv_resQ,2.));
+            
+            if(abs(filterN*sawcomp) < 1e-6) break;
+        		
+            if(det1 > 0. || det2 > 0.)
+            {
+                s += 0.33 * (_sin(float(N)*p) + _sin(float(N)*p*(1.+det1)) + _sin(float(N)*p*(1.+det2)));
+            }
+            else
+            {
+                s += filterN * sawcomp * _sin(float(N)*p);
+            }
+        }
+    return s;
+}
+
+float maceskuh(float t, float f, float CO, float Q, float det1, float det2, float res, float resQ, float pw)
+{
+    float s = 0.;
+    float inv_CO = 1./CO;
+    float inv_resQ = 1./resQ;
+    float p = f*t;
+        for(int N=1; N<=200; N++)
+        {
+            // variable pulse wave: voll verrechnet, klingt aber geil =D
+            float plscomp  = 1./float(N) * (1. + (2.*float(N%2)-1.)*_sin(pw)); 
+            float filterN  = pow(1. + pow(float(N)*f*inv_CO,Q),-.5)
+                     + res * exp(-pow((float(N)*f-CO)*inv_resQ,2.));
+            
+            if(abs(filterN*plscomp) < 1e-6) break;
+        		
+            if(det1 > 0. || det2 > 0.)
+            {
+                s += 0.33 * (_sin(float(N)*p) + _sin(float(N)*p*(1.+det1)) + _sin(float(N)*p*(1.+det2)));
+            }
+            else
+            {
+                s += filterN * plscomp * _sin(float(N)*p);
+            }
+        }
+    return 2.*s-1.;
+}
+
+
+float macesanderekuh(float t, float f, float CO, float Q, float det1, float det2, float res, float resQ, float pw)
+{
+    float s = 0.;
+    float inv_CO = 1./CO;
+    float inv_resQ = 1./resQ;
+    float p = f*t;
+        for(int N=1; N<=200; N++)
+        {
+            // varialbe pulse wave:
+            float plscomp  = 1./(2.*PI*float(N)) * (minus1hochN(N)*_sin(pw*float(N)+.25) - 1.);
+            float filterN  = pow(1. + pow(float(N)*f*inv_CO,Q),-.5)
+                     + res * exp(-pow((float(N)*f-CO)*inv_resQ,2.));
+            
+            if(abs(filterN*plscomp) < 1e-6) break;
+        		
+            if(det1 > 0. || det2 > 0.)
+            {
+                s += 0.33 * (_sin(float(N)*p) + _sin(float(N)*p*(1.+det1)) + _sin(float(N)*p*(1.+det2)));
+            }
+            else
+            {
+                s += filterN * plscomp * _sin(float(N)*p);
+            }
+        }
+    return 2.*s-1.;
+}
+
+
+float freq_malformation(float t, float t_on, int vel, int Bsyn)
+{
+    t = t - min(t, t_on);
+    
+    float f = 80.;
+    
+    float fFM = 100.;
+    float aFM = 0.01 * doubleslope(t, 0.8, 0.4, 0.5);
+    float aFB = 0.000;
+    
+    float E = doubleslope(t, 0.2, 1., 0.);
+    float r = _sin(t * f * (1. + aFM * _sin(t * fFM * (1. + aFB * _sin(t*fFM)))));
+    return E * r;
+}
+
+float snare(float t, float t_on, int vel, int Bsyn)
+{
+    // #define _tri(a) (4.*abs(fract(a)-.5) - 1.)
+    t = t - min(t, t_on);
+    float f1 = 6000.;
+    float f2 = 800.;
+    float f3 = 350.;
+    float dec12 = 0.01;
+    float dec23 = 0.01;
+    float rel = 0.1;
+    float snr = _tri(t * (f3 + (f1-f2)*smoothstep(-dec12,0.,-t)
+                             + (f2-f3)*smoothstep(-dec12-dec23,-dec12,-t))) * smoothstep(-rel,-dec12-dec23,-t);
+        
+    //noise part
+    float noise = fract(sin(t * 90.) * 45000.) * doubleslope(t,0.05,0.3,0.3);
+    
+    float overdrv = 2.;
+    
+    return float(vel)/100. * clamp(overdrv * snr + noise, -1., 1.) * doubleslope(t,0.0,0.25,0.3);
+}
+
+float hut(float t, float t_on, int vel, int Bsyn)
+{
+    t = t - min(t, t_on);
+    float noise = fract(sin(t * 90.) * 45000.);
+    noise = 1./(1.+noise);
+    return float(vel)/100. * noise * doubleslope(t,0.,0.12,0.0);
+    
+    // might think of this one! - maybe tune length / pitch
+    //float kick_blubb = (1.-exp(-1000.*t))*exp(-30.*t) * _sin((400.-200.*t)*t * _saw(4.*f*t));
+}
+
+float shake(float t, float t_on, int vel, int Bsyn) // shaker is just some mod of hihat (hut)
+{
+    t = t - min(t, t_on);
+    return float(vel)/100. * 0.5 * fract(sin(t * 90.) * 45000.) * doubleslope(t,0.03,0.15,0.15);
+}
+
+float hoskins_noise(float t) // thanks to https://www.shadertoy.com/view/4sjSW1 !
+{
+    float p = floor(t * (1500.0 * exp(-t*.100)));
+	vec2 p2 = fract(vec2(p * 5.3983, p * 5.4427));
+    p2 += dot(p2.yx, p2.xy + vec2(21.5351, 14.3137));
+	return fract(p2.x * p2.y * 3.4337) * .5 * smoothstep(-.3,0.,-t);    
+}
+
+float facekick(float t, float t_on, int vel, int Bsyn)
+{
+    t = t - min(t, t_on); // reset time to Bon event
+    
+    float f   = 50. + 150. * smoothstep(-0.12, 0., -t);
+    float env = smoothstep(0.,0.015,t) * smoothstep(-0.08, 0., 0.16 - t);
+    
+    float kick_body = env * TRISQ(t, f, 3, 1., 0.8, 8., 4., 1.); // more heavy bass drum: increase reso parameters?
+    
+    float kick_click = 0.4 * step(t,0.03) * _sin(t*1100. * _saw(t*800.));
+    
+    float kick_blobb = (1.-exp(-1000.*t))*exp(-40.*t) * _sin((400.-200.*t)*t * _sin(1.*f*t));
+    
+	return float(vel)/100. * (kick_body + kick_blobb + kick_click);
+}
+
+float distsin(float t, float B, float Bon, float Boff, int note, int Bsyn) //Bsyn: select synth. ignore for now.
+{
+    if(note > 100) note = note % 100; // this is for duophony, but my editor doesn't support it
+
+    float Bprog = B-Bon;			// progress within Bar
+    float Bproc = Bprog/(Boff-Bon); // relative progress
+    float _t = SPB*(B - Bon); // reset time to Bon event
+    float f = freqC1(note);
+
+    float env = theta(B-Bon) * theta(Boff-B);
+	float sound = clamp(1.1 * _sin(freqC1(note)*t), -0.999,0.999);
+
+    if(Bsyn == -1) return 0.;
+    
+    if(Bsyn == 0)
+    	return env * sound; // test reasons: just give out something simple
+   
+    if(Bsyn == 14) // test of mace-sq (matzeskuh)
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,2.,0.,0.2,2.);
+        
+        env *= 0.5;
+        
+        float filterCO = 600. * env_ADSR(Bprog,Boff-Bon,2.,0.,1.,2.) + 40. * sqrt(f);
+
+        sound += 0.3*macesanderekuh(t, f, filterCO, 30., 0.002, -0.01, 0.0, 0.0, 0.1);
+        
+        sound = clip(0.8*sound);
+    }
+
+    return clamp(env,0.,1.) * clamp(sound, -1., 1.);
+}
+
+
+float mainSynth(float time)
+{
+    // START TRACK INFO
+int drum_index_lower = 5;
+int drum_index_upper = 11;
+    
+int NO_trks = 2;
+int trk_sep[3] = int[3](0,4,5);
+int trk_syn[2] = int[2](0,0);
+float mod_on[5] = float[5](0.,2.,4.,6.,5.5);
+float mod_off[5] = float[5](2.,4.,6.,8.,12.5);
+int mod_ptn[5] = int[5](1,1,1,1,0);
+int mod_transp[5] = int[5](0,0,-3,-7,-2);
+float inv_NO_tracks = 0.5;
+float max_mod_off = 12.5;
+int NO_ptns = 2;
+int ptn_sep[3] = int[3](0,7,13);
+float note_on[13] = float[13](0.,1.,2.,3.,4.,5.,6.,0.,0.25,0.5,0.75,1.,1.5);
+float note_off[13] = float[13](1.,2.,3.,4.,5.,6.,7.,0.5,1.,0.75,1.,1.5,2.);
+int note_pitch[13] = int[13](24,31,35,40,41,53,55,24,36,24,24,24,31);
+int note_vel[13] = int[13](100,100,100,100,100,100,100,100,100,100,100,100,100);
+
+float global_norm = .7;
+float track_norm[2] = float[2](.5,.5);
+    
+	float r = 0.;
+    float d = 0.;
+
+    //which beat are we at?
+    float BT = mod(BPS * time, max_mod_off); // mod for looping
+    if(BT > max_mod_off) return r;
+
+    // drum / sidechaining parameters
+    float amt_drum = 0.3;
+    float r_sidechain = 1.;
+    float amt_sidechain = 0.99;
+    float dec_sidechain = 0.6;
+
+    //defaults (should lead to no sound)
+    float Bon = -1.;
+    float Boff = -1.;
+    int Bpitch = -1;
+    int Bsyn = -1;
+
+    for(int trk = 0; trk < NO_trks; trk++)
+    {
+        //if(DEBUG_ONLY_TRACK >=0 && trk != DEBUG_ONLY_TRACK) continue;
+
+        int TLEN = trk_sep[trk+1] - trk_sep[trk];
+        
+        int _mod = TLEN;
+        for(int i=0; i<TLEN; i++) if(BT < mod_off[(trk_sep[trk]+i)]) {_mod = i; break;}
+		if(_mod == TLEN) continue;
+        
+        float B = BT - mod_on[trk_sep[trk]+_mod];
+        
+        int ptn = mod_ptn[trk_sep[trk]+_mod];
+        int PLEN = ptn_sep[ptn+1] - ptn_sep[ptn];
+        
+        int _noteU = PLEN-1;
+        for(int i=0; i<PLEN-1; i++) if(B < note_on[(ptn_sep[ptn]+i+1)]) {_noteU = i; break;}
+
+        int _noteL = PLEN-1;
+        for(int i=0; i<PLEN-1; i++) if(B <= note_off[(ptn_sep[ptn]+i)]) {_noteL = i; break;}
+        
+        for(int _note = _noteL; _note <= _noteU; _note++)
+        {
+            Bon    = note_on[(ptn_sep[ptn]+_note)];
+            Boff   = note_off[(ptn_sep[ptn]+_note)];
+            Bpitch = note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[_mod];
+            Bsyn   = trk_syn[trk];
+
+            if (Bsyn < drum_index_lower || Bsyn > drum_index_upper)
+            {
+                r += track_norm[trk] * distsin(time, B, Bon, Boff, Bpitch, Bsyn);
+            }
+            else // DRUMS
+            {
+                Bsyn = Bpitch;
+                float _d = 0.;
+                float anticlick = 1.-exp(-1000.*(B-Bon));
+                if(Bsyn == 6) // KICK (WITH SIDECHAIN)
+                {
+                    _d = facekick(B*SPB, Bon*SPB, 80, Bsyn) * theta(Boff-B);
+                    r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
+                }
+                else if(Bsyn == 5) // SIDECHAIN ONLY
+                {
+                        r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
+                }
+                else if(Bsyn == 7) // SNARE
+                {
+                        _d = snare(B*SPB, Bon*SPB, 100, Bsyn);
+                }
+                else if(Bsyn == 8) // HIHAT
+                {
+                        _d = hut(B*SPB, Bon*SPB, 100, Bsyn);
+                }
+                else if(Bsyn == 9) // SHAKE
+                {
+                        _d = shake(B*SPB, Bon*SPB, 100, Bsyn);
+                }
+
+                d += track_norm[trk] * _d;
+            }
+        }
+    }
+
+    d *= global_norm;
+    r *= global_norm;
+
+    if(DEBUG_ONLY_DRUMS) return 0.99 * clamp(d, -1., 1.);
+    if(DEBUG_ONLY_MELO) return 0.99 * clamp(r, -1., 1.);
+
+    r_sidechain = 1.;
+    amt_drum = .5;
+
+    float snd = clamp((1.-amt_drum) * r_sidechain * r + amt_drum * d, -1., 1.);
+
+    return snd;
+//    return sign(snd) * sqrt(abs(snd)); // eine von Matzes "besseren" Ideen
+}
+
+vec2 mainSound(float t)
+{
+    //maybe this works in enhancing the stereo feel
+    float stereo_width = 0.1;
+    float stereo_delay = 0.00001;
+    //nah, screw it
+    
+    return vec2(mainSynth(t));
+}
+
