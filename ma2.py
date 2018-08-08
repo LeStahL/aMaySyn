@@ -26,6 +26,7 @@ Config.set('graphics', 'height', '1000')
 
 debug = True
 
+
 class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
     thePtnWidget = ObjectProperty(None)
@@ -282,39 +283,42 @@ class Ma2Widget(Widget):
         
         print('out_str = ' + out_str)
 
-
     def buildGLSL(self, filename):
-        '''
-        int NO_tracks = 1;
-        int[] track_sep = int[](0,5);
-        int[] note_pitch = int[](29,55,59,60,64);
-        float[] note_on = float[](0.0,2.0,3.0,4.0,6.0);
-        float[] note_off = float[](10.0,3.0,4.0,5.0,7.0);
-        int[] note_synth = int[](0,6,6,6,6);
-        float inv_NO_tracks = 1.;
-        float max_note_off = 10.0;
-        int drum_index_lower = 5;
-        int drum_index_upper = 9;
-        int[] oct = int[](-2); //change to transpose some tracks for whole octaves
-        '''
-
         # brilliant idea: first, treat modules like notes from the old sequencer --> e.g. play only note 24 + module.transpose (then put together -- which note in module?)
 
         # ignore empty tracks
         tracks = [t for t in self.tracks if t.modules]
 
         track_sep = [0] + list(accumulate([len(t.modules) for t in tracks]))
-
+        pattern_sep = [0] + list(accumulate([len(p.notes) for p in self.patterns]))
+        
         max_mod_off = max(t.getLastModuleOff() for t in tracks)
 
-        out_str =  'int NO_tracks = ' + str(len(tracks)) + ';\n'
-        out_str += 'int[] track_sep = int[](' + ','.join(map(str, track_sep)) + ');\n'
-        out_str += 'float[] mod_on = float[](' + ','.join(str(m.mod_on) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'float[] mod_off = float[](' + ','.join(str(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'float[] mod_transp = float[](' + ','.join(str(m.transpose) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'int[] track_synth = int[](' + ','.join(str(t.getSynthFinalIndex()) for t in tracks) + ');\n'
-        out_str += 'float inv_NO_tracks = ' + str(1./len(tracks)) + ';\n'
-        out_str += 'float max_mod_off = ' + str(max_mod_off) + ';\n'
+        float2str = lambda f: str(int(f)) + '.' if f==int(f) else str(f)
+
+        nT  = str(len(tracks))
+        nT1 = str(len(tracks) + 1)
+        nM  = str(track_sep[-1])
+        nP  = str(len(self.patterns))
+        nP1 = str(len(self.patterns) + 1)
+        nN  = str(pattern_sep[-1])
+
+        out_str =  'int NO_trks = ' + nT + ';\n'
+        out_str += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n'
+        out_str += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()) for t in tracks) + ');\n'
+        out_str += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.mod_on) for t in tracks for m in t.modules) + ');\n'
+        out_str += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n'
+        out_str += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n'
+        out_str += 'int mod_transp[' + nM + '] = int[' + nM + '](' + ','.join(str(m.transpose) for t in tracks for m in t.modules) + ');\n'
+        out_str += 'float inv_NO_tracks = ' + float2str(1./len(tracks)) + ';\n' # was this just for normalization? then call it global_volume or fix it via sigmoid
+        out_str += 'float max_mod_off = ' + float2str(max_mod_off) + ';\n'
+
+        out_str += 'int NO_ptns = ' + nP + ';\n'
+        out_str += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n'
+        out_str += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_on) for p in self.patterns for n in p.notes) + ');\n'
+        out_str += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_off) for p in self.patterns for n in p.notes) + ');\n'
+        out_str += 'int note_pitch[' + nN + '] = int[' + nN + '](' + ','.join(str(int(n.note_pitch)) for p in self.patterns for n in p.notes) + ');\n'
+        out_str += 'int note_vel[' + nN + '] = int[' + nN + '](' + ','.join(str(int(n.note_vel)) for p in self.patterns for n in p.notes) + ');\n'        
 
         # TODO: helper functions to find out which ones are the drums
 
@@ -322,6 +326,7 @@ class Ma2Widget(Widget):
         
         print()
         print(out_str)
+        
     
 ###################### HANDLE BUTTONS #######################
 
@@ -415,3 +420,4 @@ if __name__ == '__main__':
 # TAB oder so: switch between track and pattern editor; rahmen um welches aktiv ist.
 
 # TODO custom button, more nerd-stylish..
+

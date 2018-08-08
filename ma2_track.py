@@ -26,7 +26,7 @@ class Track():
     def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else 0
 
     def getSynthName(self):               return self.synths[self.current_synth] if self.synths else ''
-    def getSynthFinalIndex(self):         return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
+    def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
 
     def addModule(self, mod_on, pattern, transpose = 0, select = True):
         self.modules.append(Module(mod_on, pattern, transpose))
@@ -111,4 +111,3 @@ class Module():
     def setPattern(self, pattern):
         if App.get_running_app().root.existsPattern(pattern):
             self.pattern = pattern
-
