@@ -38,7 +38,7 @@ class Pattern():
 
     def delNote(self):
         if self.notes:
-            del self.notes[-1]
+            del self.notes[self.current_note if self.current_note is not None else -1]
             self.current_note = min(self.current_note, len(self.notes)-1)
 
     def switchNote(self, inc):

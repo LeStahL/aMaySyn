@@ -19,13 +19,13 @@ import os
 from ma2_track import *
 from ma2_pattern import *
 from ma2_widgets import *
+from ma2_globals import *
 
 Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
 #Config.set('graphics', 'fullscreen', 'auto')
 
 debug = True
-
 
 class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
@@ -38,7 +38,8 @@ class Ma2Widget(Widget):
     tracks = []
     patterns = []
 
-    synths = ['I_Bass', 'D_Kick', '__GFX', '__None']
+    #synths = ['I_Bass', 'I_Synth2', 'I_synthIII', 'I_synthie', 'I_sympf', 'D_Drums', '__GFX', '__None']
+    #drumkit = ['SC', 'KIK', 'KIK2', 'SNR', 'SNR2', 'HH', 'SHK', 'MTY1', 'MTY2', 'MTY3', 'MTY4'] 
     
     title = "is it π/2 yet?"
     
@@ -49,6 +50,7 @@ class Ma2Widget(Widget):
     #helpers...
     def getTrack(self):                 return self.tracks[self.current_track] if self.current_track is not None else None
     def getLastTrack(self):             return self.tracks[-1] if self.tracks else None
+    def isDrumTrack(self):              return (synths[self.getTrack().current_synth][0] == 'D')
     def getModule(self, offset=0):      return self.getTrack().getModule(offset) if self.getTrack() else None
     def getModuleTranspose(self):       return self.getModule().transpose if self.getModule() else 0
     def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None
@@ -74,8 +76,7 @@ class Ma2Widget(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         
         k = keycode[1]
-        if 'alt' in modifiers:
-            print(k)
+        # print(k)
         
         if   k == 'escape':                     App.get_running_app().stop() 
         elif k == 'backspace':                  self.printDebug()
@@ -90,18 +91,24 @@ class Ma2Widget(Widget):
             elif k == 's':                      self.saveCSV("test.ma2")
             elif k == 'b':                      self.buildGLSL("test.glsl")
 
+        # for precision work, press 'alt'
+        inc_step = 1 if 'alt' not in modifiers else .25
+
         #vorerst: nur tastatursteuerung - nerdfaktor und so :)
         if(self.theTrkWidget.active):
             if all(x in modifiers for x in ['shift', 'ctrl']):
-                if   k == 'left':               self.getTrack().moveAllModules(-1)
-                elif k == 'right':              self.getTrack().moveAllModules(+1)
+                if   k == 'left':               self.getTrack().moveAllModules(-inc_step)
+                elif k == 'right':              self.getTrack().moveAllModules(+inc_step)
             
             elif 'shift' in modifiers:
                 if   k == 'up':                 self.getTrack().transposeModule(+1)
                 elif k == 'down':               self.getTrack().transposeModule(-1)
-                elif k == 'left':               self.getTrack().moveModule(-1)
-                elif k == 'right':              self.getTrack().moveModule(+1)
-                
+                elif k == 'left':               self.getTrack().moveModule(-inc_step)
+                elif k == 'right':              self.getTrack().moveModule(+inc_step)
+
+            elif 'ctrl' in modifiers:
+                pass
+            
             else:
                 if   k == 'left':               self.getTrack().switchModule(-1)
                 elif k == 'right':              self.getTrack().switchModule(+1)
@@ -119,31 +126,33 @@ class Ma2Widget(Widget):
 
                 elif k == 'a':                  self.getTrack().switchSynth(-1)
                 elif k == 's':                  self.getTrack().switchSynth(+1)
+                
+                elif k == 'f2':                 self.printPatterns()
 
         if(self.thePtnWidget.active) and self.getPattern():
             if all(x in modifiers for x in ['shift', 'ctrl']):
                 if   k == 'left':               self.getPattern().moveNote(-1/32)
                 elif k == 'right':              self.getPattern().moveNote(+1/32)
 
-                elif k == 'pageup':             self.getPattern().stretchPattern(+1, scale = True)
-                elif k == 'pagedown':           self.getPattern().stretchPattern(-1, scale = True)
+                elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step, scale = True)
+                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step, scale = True)
 
             elif 'shift' in modifiers:
-                if   k == 'left':               self.getPattern().stretchNote(-1/8)
-                elif k == 'right':              self.getPattern().stretchNote(+1/8)
+                if   k == 'left':               self.getPattern().stretchNote(-inc_step/8)
+                elif k == 'right':              self.getPattern().stretchNote(+inc_step/8)
                 elif k == 'up':                 self.getPattern().shiftAllNotes(+1)
                 elif k == 'down':               self.getPattern().shiftAllNotes(-1)
 
-                elif k == 'pageup':             self.getPattern().stretchPattern(+1)
-                elif k == 'pagedown':           self.getPattern().stretchPattern(-1)
+                elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step)
+                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step)
 
             elif 'ctrl' in modifiers:
-                if   k == 'left':               self.getPattern().moveNote(-1/8)
-                elif k == 'right':              self.getPattern().moveNote(+1/8)
+                if   k == 'left':               self.getPattern().moveNote(-inc_step/8)
+                elif k == 'right':              self.getPattern().moveNote(+inc_step/8)
                 elif k == 'up':                 self.getPattern().shiftNote(+12)
                 elif k == 'down':               self.getPattern().shiftNote(-12)
 
-                elif k == 'numpadadd':          self.addPattern("new")
+                elif k == 'numpadadd':          self.addPattern()
                 elif k == 'numpadsubstract':    self.delPattern()
 
             else:
@@ -159,6 +168,11 @@ class Ma2Widget(Widget):
                 elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(+1))
                 elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(-1))
 
+                elif k == 'f2':                 self.getPattern().printNoteList()
+
+        # MISSING:
+        #       moveAllNotes()
+
         self.update()
         return True
         
@@ -166,7 +180,7 @@ class Ma2Widget(Widget):
         #if self.theTrkWidget.active:
             self.theTrkWidget.drawTrackList(self.tracks, self.current_track) 
         #if self.thePtnWidget.active:
-            self.thePtnWidget.drawPianoRoll(self.getPattern(), self.getModuleTranspose())
+            self.thePtnWidget.drawPianoRoll(self.getPattern(), self.getModuleTranspose(), self.isDrumTrack())
             
             self.updateLabels()
             
@@ -188,8 +202,10 @@ class Ma2Widget(Widget):
         self.current_track = (self.current_track + inc) % len(self.tracks)
         self.update()
         
-    def addPattern(self, name, length = None):
+    def addPattern(self, name = "", length = None):
         if not length: length = self.getPatternLen()
+        if name == "":
+            name = input("enter pattern name: ") # TODO: better input field...
         self.patterns.append(Pattern(name = name, length = length))
 
     def delPattern(self):
@@ -226,11 +242,12 @@ class Ma2Widget(Widget):
             for r in in_read:
                 self.title = r[0]
                 self.tracks = []
+                self.patterns = []
 
                 c = 2
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[1])):
-                    track = Track(name = r[c], synth = int(r[c+1]))
+                    track = Track(name = r[c], synth = synths[int(r[c+1])])
 
                     c += 2
                     for _ in range(int(r[c])):
@@ -242,13 +259,14 @@ class Ma2Widget(Widget):
 
                 ### read patterns
                 for _ in range(int(r[c])):
-                    pattern = Pattern(name = r[c+1], length = int(r[c+2]))
+                    pattern = Pattern(name = r[c+1], length = float(r[c+2]))
                     
                     c += 3
                     for _ in range(int(r[c])):
                         pattern.notes.append(Note(*(float(s) for s in r[c+1:c+4])))
                         c += 4
                         
+                    #if pattern.name not in [p.name for p in self.patterns]: # filter for duplicates -- TODO is this a good idea?
                     self.patterns.append(pattern)
 
                 ### reassign modules to patterns
@@ -262,7 +280,7 @@ class Ma2Widget(Widget):
         out_str = self.title + '|' + str(len(self.tracks)) + '|'
         
         for t in self.tracks:
-            out_str += t.name + '|' + str(t.current_synth) + '|' + str(len(t.modules)) + '|'
+            out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(len(t.modules)) + '|'
             
             for m in t.modules:
                 out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
@@ -305,7 +323,7 @@ class Ma2Widget(Widget):
 
         out_str =  'int NO_trks = ' + nT + ';\n'
         out_str += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n'
-        out_str += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()) for t in tracks) + ');\n'
+        out_str += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n'
         out_str += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.mod_on) for t in tracks for m in t.modules) + ');\n'
         out_str += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n'
         out_str += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n'
@@ -387,8 +405,6 @@ class Ma2Widget(Widget):
         self.getPattern().addNote(Note(0.75,0.25,24), select = False)
         self.getPattern().addNote(Note(0.25,0.75,36), select = False)
         
-        #self.getPattern().printNoteList()
-        
         self.update()
         
     def printDebug(self):
@@ -396,7 +412,10 @@ class Ma2Widget(Widget):
             print(t.name, len(t.modules))
             for m in t.modules:
                 print(m.mod_on, m.pattern.name)
-    
+
+    def printPatterns(self):
+        for p in self.patterns:
+            print(p.name, len(p.notes), p.length)
                 
 class Ma2App(App):
     title = 'Matze trying to be the Great Emperor again'
