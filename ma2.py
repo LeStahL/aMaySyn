@@ -312,7 +312,7 @@ class Ma2Widget(Widget):
         
         max_mod_off = max(t.getLastModuleOff() for t in tracks)
 
-        float2str = lambda f: str(int(f)) + '.' if f==int(f) else str(f)
+        float2str = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f >= 1 else 1:]
 
         nT  = str(len(tracks))
         nT1 = str(len(tracks) + 1)
@@ -327,7 +327,7 @@ class Ma2Widget(Widget):
         out_str += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.mod_on) for t in tracks for m in t.modules) + ');\n'
         out_str += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n'
         out_str += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'int mod_transp[' + nM + '] = int[' + nM + '](' + ','.join(str(m.transpose) for t in tracks for m in t.modules) + ');\n'
+        out_str += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.transpose) for t in tracks for m in t.modules) + ');\n'
         out_str += 'float inv_NO_tracks = ' + float2str(1./len(tracks)) + ';\n' # was this just for normalization? then call it global_volume or fix it via sigmoid
         out_str += 'float max_mod_off = ' + float2str(max_mod_off) + ';\n'
 
@@ -335,10 +335,8 @@ class Ma2Widget(Widget):
         out_str += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n'
         out_str += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_on) for p in self.patterns for n in p.notes) + ');\n'
         out_str += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_off) for p in self.patterns for n in p.notes) + ');\n'
-        out_str += 'int note_pitch[' + nN + '] = int[' + nN + '](' + ','.join(str(int(n.note_pitch)) for p in self.patterns for n in p.notes) + ');\n'
-        out_str += 'int note_vel[' + nN + '] = int[' + nN + '](' + ','.join(str(int(n.note_vel)) for p in self.patterns for n in p.notes) + ');\n'        
-
-        # TODO: helper functions to find out which ones are the drums
+        out_str += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n'
+        out_str += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n'        
 
         # TODO: format for the notes, but develop that in parallel with the pattern sequencer itself! (NITODO ~ NEXT IMPORTANT TASK)
         
