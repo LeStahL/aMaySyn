@@ -105,6 +105,8 @@ class Ma2Widget(Widget):
                 elif k == 'down':               self.getTrack().transposeModule(-1)
                 elif k == 'left':               self.getTrack().moveModule(-inc_step)
                 elif k == 'right':              self.getTrack().moveModule(+inc_step)
+                elif k == 'home':               self.getTrack().moveModule(0, move_home = True)
+                elif k == 'end':                self.getTrack().moveModule(0, move_end = True)
 
             elif 'ctrl' in modifiers:
                 pass
@@ -153,6 +155,7 @@ class Ma2Widget(Widget):
                 elif k == 'down':               self.getPattern().shiftNote(-12)
 
                 elif k == 'numpadadd':          self.addPattern()
+                elif k == 'numpadmul':          self.addPattern(clone_current = True)
                 elif k == 'numpadsubstract':    self.delPattern()
 
             else:
@@ -202,11 +205,16 @@ class Ma2Widget(Widget):
         self.current_track = (self.current_track + inc) % len(self.tracks)
         self.update()
         
-    def addPattern(self, name = "", length = None):
-        if not length: length = self.getPatternLen()
+    def addPattern(self, name = "", length = None, clone_current = False):
         if name == "":
             name = input("enter pattern name: ") # TODO: better input field...
+        if not length:
+            length = self.getPatternLen()
         self.patterns.append(Pattern(name = name, length = length))
+
+        if clone_current:
+            for n in self.getPattern().notes:
+                self.patterns[-1].addNote(n);
 
     def delPattern(self):
         if self.patterns and self.current_pattern is not None:
@@ -299,8 +307,6 @@ class Ma2Widget(Widget):
         out_csv.write(out_str)
         out_csv.close()
         
-        print('out_str = ' + out_str)
-
     def buildGLSL(self, filename):
         # brilliant idea: first, treat modules like notes from the old sequencer --> e.g. play only note 24 + module.transpose (then put together -- which note in module?)
 

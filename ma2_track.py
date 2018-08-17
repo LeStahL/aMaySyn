@@ -48,14 +48,49 @@ class Track():
         if self.modules:
             self.getModule().transpose += inc
 
-    def moveModule(self, inc):
-        if self.modules:
-            if (self.getModule() != self.getFirstModule()) and (self.getModuleOn() + inc < self.getModuleOff(-1)): return
-            if (self.getModule() != self.getLastModule()) and (self.getModuleOff() + inc > self.getModuleOn(+1)): return
-            if (self.getModuleOn() + inc < 0): return
+    #def wouldModuleCollide(self, test_on, test_len):
+        #for m in self.modules:
+            #print(m.mod_on, m.mod_on + m.pattern.length, test_on, test_on + test_len)
+            #if m.mod_on < test_on and m.mod_on + m.pattern.length > test_on + test_len: return True
+        #return False
 
-            self.getModule().mod_on += inc
-        #cool TODO: jump into gaps if possible somewhere -> automatic sorting
+    def moveModule(self, inc, move_home = None, move_end = None):
+        if self.modules:
+            move_to = self.getModuleOn() + inc
+            if move_to < 0: return
+            try_leap = 0
+            
+            if inc < 0:
+                if self.getModule() != self.getFirstModule():
+                    while move_to < self.getModuleOff(try_leap-1): 
+                        try_leap -=1
+                        move_to = self.getModuleOn(try_leap) - self.getModuleLen()
+                        if move_to < 0: return
+                        if move_to + self.getModuleLen() <= self.getFirstModuleOn(): break
+                
+            else:
+                if self.getModule() != self.getLastModule():
+                    while move_to + self.getModuleLen() > self.getModuleOn(try_leap+1):
+                        try_leap += 1
+                        move_to = self.getModuleOff(try_leap)
+                        if move_to >= self.getLastModuleOff(): break
+                    
+            self.getModule().mod_on = move_to
+            self.current_module += try_leap
+
+            self.modules.sort(key = lambda m: m.mod_on)
+
+        if move_home:
+            if self.getModule() == self.getFirstModule() or self.getFirstModuleOn() >= self.getModuleLen():
+                self.getModule().mod_on = 0
+                self.modules.sort(key = lambda m: m.mod_on)            
+                self.current_module = 0
+        if move_end:
+            if self.getModule() != self.getLastModule():
+                self.getModule().mod_on = self.getLastModuleOff()
+                self.modules.sort(key = lambda m: m.mod_on)            
+                self.current_module = len(self.modules) - 1
+
     def moveAllModules(self, inc):
         if self.modules:
             if (self.getFirstModuleOn() + inc < 0): return
