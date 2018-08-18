@@ -336,7 +336,8 @@ class Ma2Widget(Widget):
         out_str += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.transpose) for t in tracks for m in t.modules) + ');\n'
         out_str += 'float inv_NO_tracks = ' + float2str(1./len(tracks)) + ';\n' # was this just for normalization? then call it global_volume or fix it via sigmoid
         out_str += 'float max_mod_off = ' + float2str(max_mod_off) + ';\n'
-
+        out_str += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n'
+        out_str += 'float drum_synths = ' + float2str(len(drumkit)) + ';\n'
         out_str += 'int NO_ptns = ' + nP + ';\n'
         out_str += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n'
         out_str += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_on) for p in self.patterns for n in p.notes) + ');\n'

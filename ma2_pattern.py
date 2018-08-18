@@ -34,7 +34,10 @@ class Pattern():
         self.notes.sort(key = lambda n: n.note_on)
 
         if select:
-            self.current_note = len(self.notes) - 1
+            if append:
+                self.current_note += 1
+            else:
+                self.current_note = len(self.notes) - 1
 
     def delNote(self):
         if self.notes:
