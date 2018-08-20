@@ -124,7 +124,7 @@ class PatternWidget(Widget):
         pad_l = 10
         pad_r = 20
         pad_t = 5
-        pad_b = 22 if not isDrum else 42
+        pad_b = 22
         key_h = 9 if not isDrum else 25
         key_w = 32
         font_size = 11

@@ -1,17 +1,21 @@
 import kivy
-kivy.require('1.10.0') # replace with your current kivy version !
+kivy.require('1.10.0')
 from kivy.app import App
 
 from ma2 import Ma2Widget
 from ma2_globals import synths
 
 class Track():
+
+    name = ''
+    current_synth = -1
     
-    def __init__(self, name, synth = ''):
+    def __init__(self, name = '', synth = -1):
         self.name = name
         self.modules = []
         self.current_module = 0
-        self.current_synth = synths.index(synth) if synth in synths else -1
+        self.current_synth = synth
+        print(name, self.current_synth)
 
     # helpers...
     def getModule(self, offset=0):        return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
@@ -24,7 +28,7 @@ class Track():
     def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
     def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else 0
 
-    def getSynthName(self):               return synths[self.current_synth] if synths else ''
+    def getSynthName(self):               return synths[self.current_synth if self.current_synth is not None else 0] if synths else ''
     def getSynthIndex(self):              return (self.current_synth - len(synths)) if synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
 
     def addModule(self, mod_on, pattern, transpose = 0, select = True):

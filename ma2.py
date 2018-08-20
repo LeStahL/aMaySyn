@@ -10,8 +10,12 @@ from kivy.config import Config
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, Line
 from kivy.core.text import Label as CoreLabel
+from kivy.uix.modalview import ModalView
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
 
 from itertools import accumulate
+from functools import partial
 import csv
 import operator
 import os
@@ -85,6 +89,8 @@ class Ma2Widget(Widget):
         # THE MOST IMPORTANT KEY!
         elif k == 'f1':                         self.reRandomizeColors()
 
+        elif k == 'f2':                         self.renameSong()
+
         if 'ctrl' in modifiers:
             if k == 'n':                        self.clearSong()
             elif k == 'l':                      self.loadCSV("test.ma2")
@@ -129,7 +135,7 @@ class Ma2Widget(Widget):
                 elif k == 'a':                  self.getTrack().switchSynth(-1)
                 elif k == 's':                  self.getTrack().switchSynth(+1)
                 
-                elif k == 'f2':                 self.printPatterns()
+                elif k == 'f12':                 self.printPatterns()
 
         if(self.thePtnWidget.active) and self.getPattern():
             if all(x in modifiers for x in ['shift', 'ctrl']):
@@ -171,7 +177,7 @@ class Ma2Widget(Widget):
                 elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(+1))
                 elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(-1))
 
-                elif k == 'f2':                 self.getPattern().printNoteList()
+                elif k == 'f12':                 self.getPattern().printNoteList()
 
         # MISSING:
         #       moveAllNotes()
@@ -195,6 +201,13 @@ class Ma2Widget(Widget):
     def switchActive(self):
         self.theTrkWidget.active = not self.theTrkWidget.active
         self.thePtnWidget.active = not self.thePtnWidget.active
+
+    def renameSong(self):
+        #popup = Popup(title='fuggju', content=Label('shiddishid'), size_hint=(None,None), size=(400,200), auto_dismiss=False)
+        #popup.open()
+        #popup = Popup(title='hehe', content=PopupLayout, size_hint=(None, None), size=(400,250))
+        popup = InputPrompt(self, title = 'RENAME SONG', title_font = self.font_name, default_text = self.title)
+        popup.open()
 
     def addTrack(self, name, synth = None):
         self.tracks.append(Track(name = name, synth = synth))
@@ -251,11 +264,13 @@ class Ma2Widget(Widget):
                 self.title = r[0]
                 self.tracks = []
                 self.patterns = []
-
+                synths = []
+                drumkit = []
+                
                 c = 2
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[1])):
-                    track = Track(name = r[c], synth = synths[int(r[c+1])])
+                    track = Track(name = r[c], synth = int(r[c+1]))
 
                     c += 2
                     for _ in range(int(r[c])):
@@ -283,6 +298,17 @@ class Ma2Widget(Widget):
                         for p in self.patterns:
                             if m.pattern.name == p.name: m.setPattern(p)
 
+                c += 1
+                print(int(r[c]))
+                for _ in range(int(r[c])):
+                    c += 1
+                    synths.append(r[c])
+
+                c += 1
+                for _ in range(int(r[c])):
+                    c += 1
+                    drumkit.append(r[c])
+                print(drumkit[-1])
 
     def saveCSV(self, filename):
         out_str = self.title + '|' + str(len(self.tracks)) + '|'
@@ -301,6 +327,9 @@ class Ma2Widget(Widget):
             
             for n in p.notes:
                 out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) + '|' + str(n.note_vel)
+
+        out_str += '|' + str(len(synths)) + '|' + '|'.join(synths)
+        out_str += '|' + str(len(drumkit)) + '|' + '|'.join(drumkit)
 
         # write to file
         out_csv = open("test.ma2", "w")
@@ -381,8 +410,8 @@ class Ma2Widget(Widget):
 
     def setupDebug(self):
         #DEBUG: test_list
-        self.addTrack("Bassline", synth = "I_Bass")
-        self.addTrack("Penetrator", synth = "Shit")
+        self.addTrack("Bassline", synth = 0)
+        self.addTrack("Penetrator", synth = 3)
         self.addTrack("DerberScheißkick")
         self.addTrack("N R 4")
         self.addTrack("        &")
@@ -421,7 +450,60 @@ class Ma2Widget(Widget):
     def printPatterns(self):
         for p in self.patterns:
             print(p.name, len(p.notes), p.length)
-                
+
+class InputPrompt(ModalView):
+    
+    text = ''
+    parent = None
+
+    def __init__(self, parent, **kwargs):
+        print(kwargs)
+        title = kwargs.pop('title')
+        title_font = kwargs.pop('title_font')
+        default_text = kwargs.pop('default_text')
+        text = default_text
+        super(InputPrompt, self).__init__(**kwargs)
+
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+        self._keyboard.bind(on_key_down = self._on_keyboard_down)
+
+        self.auto_dismiss = False
+        
+        self.size_hint = (None, None)
+        self.size = (500, 110)
+        self.background = './transparent.png'
+        
+        content = BoxLayout(orientation = 'vertical')
+        title = Label(text = title + 'TODO! THIS DOES NOT WORK YET', font_name = title_font, size_hint=(None,.2), pos_hint={'center_x':.5, 'top':0})
+        content.add_widget(title)
+        tfield = TextInput(text = default_text, size_hint=(.9, None), height=36, pos_hint={'center_x':.5, 'bottom':0}, multiline=False)
+        tfield.font_name = title_font
+        tfield.focus = True
+        tfield.select_all()
+        content.add_widget(tfield)
+
+        self.add_widget(content)
+
+        print(tfield.text)
+        print(default_text)
+
+        tfield.bind(on_text_validate = partial(self.release, tfield.text))
+        #self.bind(on_dismiss = partial(self.release, text = default_text))
+
+    def _keyboard_closed(self):
+        self._keyboard.unbind(on_key_down = self._on_keyboard_down)
+        self._keyboard = None
+        
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        print(keycode[0], keycode[1])
+        if keycode[1] == 'escape': self.release('shit')
+            
+    def release(self, text):
+        self.text = text
+        print(self.parent)
+        self.parent.focus = True
+        self.dismiss()
+        
 class Ma2App(App):
     title = 'Matze trying to be the Great Emperor again'
     
@@ -444,4 +526,3 @@ if __name__ == '__main__':
 # TAB oder so: switch between track and pattern editor; rahmen um welches aktiv ist.
 
 # TODO custom button, more nerd-stylish..
-
