@@ -26,12 +26,6 @@
             width: 1.2
             joint: 'miter'
             
-    Label:
-        text_size: self.size
-        font_name: root.font_name
-        text: root.text
-        halign: 'center'
-
 <Ma2Widget>:
 
     theTrkWidget: thisTrkWidget
@@ -150,13 +144,14 @@
             height: root.height * 0.05
             size_hint_y: None
             RetroButton:
+                id: a
                 on_press: root.pressLoadCSV()
                 text: "Load .ma2"
             RetroButton:
+                id: b
                 on_press: root.pressSaveCSV()
                 text: "Save .ma2"
             RetroButton:
+                id: c
                 on_press: root.pressBuildCode()
                 text: "Export GLSL"
-#           RetroButton:
-#               text: "Import GLSL"

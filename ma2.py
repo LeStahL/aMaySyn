@@ -80,10 +80,10 @@ class Ma2Widget(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         
         k = keycode[1]
-        # print(k)
+        #print(k)
         
         if   k == 'escape':                     App.get_running_app().stop() 
-        elif k == 'backspace':                  self.printDebug()
+        elif k == 'f8':                         self.printDebug()
         elif k == 'tab':                        self.switchActive()
 
         # THE MOST IMPORTANT KEY!
@@ -125,9 +125,11 @@ class Ma2Widget(Widget):
                 elif k == 'up':                 self.switchTrack(-1)
                 elif k == 'down':               self.switchTrack(+1)
 
-                elif k == 'numpadadd':          self.getTrack().addModule(self.getTrack().getLastModuleOff(), Pattern()) 
+                elif k == '+'\
+                  or k == 'numpadadd':          self.getTrack().addModule(self.getTrack().getLastModuleOff(), Pattern()) 
                 elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern())
-                elif k == 'numpadsubstract':    self.getTrack().delModule()
+                elif k == '-'\
+                  or k == 'numpadsubstract':    self.getTrack().delModule()
 
                 elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(+1))
                 elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(-1))
@@ -160,19 +162,30 @@ class Ma2Widget(Widget):
                 elif k == 'up':                 self.getPattern().shiftNote(+12)
                 elif k == 'down':               self.getPattern().shiftNote(-12)
 
-                elif k == 'numpadadd':          self.addPattern()
-                elif k == 'numpadmul':          self.addPattern(clone_current = True)
-                elif k == 'numpadsubstract':    self.delPattern()
+                elif k == '+'\
+                  or k == 'numpadadd':          self.addPattern()
+                elif k == '*'\
+                  or k == 'numpadmul':          self.addPattern(clone_current = True)
+                elif k == '-'\
+                  or k == 'numpadsubstract':    self.delPattern()
 
             else:
                 if   k == 'left':               self.getPattern().switchNote(-1)
                 elif k == 'right':              self.getPattern().switchNote(+1)
+                elif k == 'home':               self.getPattern().switchNote(0, to = 0)
+                elif k == 'end':                self.getPattern().switchNote(0, to = -1)
+
                 elif k == 'up':                 self.getPattern().shiftNote(+1)
                 elif k == 'down':               self.getPattern().shiftNote(-1)
                 
-                elif k == 'numpadadd':          self.getPattern().addNote(self.getNote(), append = True)
-                elif k == 'c':                  self.getPattern().addNote(self.getNote(), append = False)
-                elif k == 'numpadsubstract':    self.getPattern().delNote()
+                elif k == '+'\
+                  or k == 'numpadadd':          self.getPattern().addNote(self.getNote(), append = True)
+                elif k == 'c':                  self.getPattern().addNote(self.getNote(), append = True, clone = True)
+                elif k == '-'\
+                  or k == 'numpadsubstract':    self.getPattern().delNote()
+                elif k == 'spacebar':           self.getPattern().setGap(inc = True)
+                elif k == 'backspace':          self.getPattern().setGap(dec = True)
+                
                 
                 elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(+1))
                 elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(-1))

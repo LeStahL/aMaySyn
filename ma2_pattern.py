@@ -12,6 +12,7 @@ class Pattern():
         self.notes = []
         self.length = length if length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
         self.current_note = 0
+        self.current_gap = 0
         self.randomizeColor()
 
     # helpers...
@@ -20,33 +21,66 @@ class Pattern():
     def getNoteOff(self, offset=0): return self.getNote(offset).note_off if self.getNote(offset) else None
     def getFirstNote(self):         return self.notes[0]  if self.notes else None
     def getLastNote(self):          return self.notes[-1] if self.notes else None
+    def getFirstTaggedNote(self):   return next(i for i in range(len(self.notes)) if self.notes[i].tagged)
 
     # THE MOST IMPORTANT FUNCTION!
     def randomizeColor(self):
         self.color = Color(random.uniform(.05,.95), .8, .88, mode = 'hsv').rgb
         
-    def addNote(self, note = None, select = True, append = False):
+    def addNote(self, note = None, select = True, append = False, clone = False):
         if note is None: note = Note()
+        if clone: select = False
         
-        note_info = (note.note_on + append * note.note_len, note.note_len, note.note_pitch, note.note_vel)
+        note_info = (note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch, note.note_vel)
+        note = Note(*note_info)
+        note.tag()
         
-        self.notes.append(Note(*note_info))
+        if note.note_off > self.length: return
+        
+        self.notes.append(note)
         self.notes.sort(key = lambda n: n.note_on)
 
         if select:
-            if append:
-                self.current_note += 1
-            else:
-                self.current_note = len(self.notes) - 1
+            self.current_note = self.getFirstTaggedNote()
+        elif clone:
+            self.current_note += 1
+            # since we have polyphonic mode now, we can not just assign the right gap - have to do it via space/backspace
+            
+        self.untagAllNotes()
+
+        if not clone: self.setGap(to = 0)
 
     def delNote(self):
+        self.printNoteList()
+        print('test', self.current_note, self.current_note if self.current_note is not None else -1)
+
         if self.notes:
             del self.notes[self.current_note if self.current_note is not None else -1]
-            self.current_note = min(self.current_note, len(self.notes)-1)
+            if self.current_note > 0:
+                self.current_note = min(self.current_note-1, len(self.notes)-1)
 
-    def switchNote(self, inc):
+    def setGap(self, to = 0, inc = False, dec = False):
+        if inc:
+            self.current_gap += self.getNote().note_len
+        elif dec:
+            self.current_gap = max(self.current_gap - self.getNote().note_len, 0)
+        elif to is not None:
+            self.current_gap = to
+        else:
+            pass
+        
+        print(self.current_gap)
+
+    def untagAllNotes(self):
+        for n in self.notes:
+            n.tagged = False
+
+    def switchNote(self, inc, to = -1):
         if self.notes:
-            self.current_note = (self.current_note + inc) % len(self.notes)
+            if inc != 0:
+                self.current_note = (self.current_note + inc) % len(self.notes)
+            else:
+                self.current_note = (len(self.notes) + to) % len(self.notes)
         
     def shiftNote(self, inc):
         if self.notes:
@@ -79,29 +113,21 @@ class Pattern():
         if self.notes and inc > 0:
                 if abs(self.getNote().note_len) < abs(inc): inc = abs(inc)/inc * self.getNote().note_len
 
-        # first check wraparound TODO: something doesn't work if you wrap around and then match a note of same note_on and note_len ... anyway. don't care now.
-        if self.getNoteOff() == self.length and self.getNote() == self.getLastNote() and inc > 0:
+        self.getNote().tag()
+
+        if self.getNoteOff() == self.length and inc > 0:
             self.getNote().moveNoteOn(0)
-            self.current_note = 0
             
-        elif self.getNoteOn() == 0 and self.getNote() == self.getFirstNote() and inc < 0:
+        elif self.getNoteOn() == 0 and inc < 0:
             self.getNote().moveNoteOff(self.length)
-            self.current_note = len(self.notes) - 1
             
         else:
-
             self.getNote().note_on = max(0, min(self.length - self.getNote().note_len, self.getNote().note_on + inc)) # TODO find out whether 88 is way too high..
             self.getNote().note_off = self.getNote().note_on + self.getNote().note_len
 
-            if inc > 0 and self.getNoteOn(+1) < self.getNoteOn() and self.current_note < len(self.notes)-1:
-                self.current_note += 1
-
-            if inc < 0 and self.getNoteOn(-1) > self.getNoteOn() and self.current_note > 0:
-                self.current_note -= 1
-
         self.notes.sort(key = lambda n: n.note_on)
-        #print(*(n.note_on for n in self.notes))
-
+        self.current_note = self.getFirstTaggedNote()
+        self.untagAllNotes()
 
     def stretchPattern(self, inc, scale = False):
         if self.length + inc <= 0: return
@@ -140,6 +166,7 @@ class Note():
         self.note_len = note_len
         self.note_pitch = int(note_pitch)
         self.note_vel = note_vel
+        self.tagged = False
         # some safety checks TODO
 
     def moveNoteOn(self, to):
@@ -149,3 +176,6 @@ class Note():
     def moveNoteOff(self, to):
         self.note_off = to
         self.note_on = to - self.note_len
+
+    def tag(self):
+        self.tagged = True

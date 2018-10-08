@@ -14,7 +14,7 @@ class Track():
         self.name = name
         self.modules = []
         self.current_module = 0
-        self.current_synth = synth
+        if synth is not None: self.current_synth = synth
         print(name, self.current_synth)
 
     # helpers...
