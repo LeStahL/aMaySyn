@@ -155,6 +155,8 @@ class Ma2Widget(Widget):
 
                 elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step)
                 elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step)
+                
+                elif k == 'backspace':          self.getPattern().setGap(to = 0)
 
             elif 'ctrl' in modifiers:
                 if   k == 'left':               self.getPattern().moveNote(-inc_step/8)
