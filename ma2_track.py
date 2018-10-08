@@ -15,7 +15,6 @@ class Track():
         self.modules = []
         self.current_module = 0
         if synth is not None: self.current_synth = synth
-        print(name, self.current_synth)
 
     # helpers...
     def getModule(self, offset=0):        return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
@@ -51,12 +50,6 @@ class Track():
     def transposeModule(self, inc):
         if self.modules:
             self.getModule().transpose += inc
-
-    #def wouldModuleCollide(self, test_on, test_len):
-        #for m in self.modules:
-            #print(m.mod_on, m.mod_on + m.pattern.length, test_on, test_on + test_len)
-            #if m.mod_on < test_on and m.mod_on + m.pattern.length > test_on + test_len: return True
-        #return False
 
     def moveModule(self, inc, move_home = None, move_end = None):
         if self.modules:
@@ -104,13 +97,11 @@ class Track():
         
     def switchModulePattern(self, pattern):
         if self.modules:
-
-            # maybe we need to move all the following modules
             if self.current_module < len(self.modules) - 1:
                 offset = pattern.length - self.getModuleLen()
                 for f in self.modules[self.current_module + 1:]:
                     f.mod_on += offset
-
+                    
             self.getModule().pattern = pattern
         
     def checkModuleCollision(self, module):
@@ -122,21 +113,15 @@ class Track():
     def switchSynth(self, inc):
         if synths:
             self.current_synth = (self.current_synth + inc) % len(synths)
-            
-        # TODO: option to set specific synth (find out which number that one should be)
-        #self.synth = synth if synth in synths else 'I_None'
-
 
 class Module():
 
     mod_on = 0
-    #mod_off = 0
     pattern = None
     transpose = 0
     
     def __init__(self, mod_on, pattern, transpose = 0):
         self.mod_on = mod_on
-        #self.mod_off = mod_on + pattern.length
         self.pattern = pattern
         self.transpose = transpose
 

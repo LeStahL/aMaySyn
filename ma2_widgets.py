@@ -232,4 +232,5 @@ class PatternWidget(Widget):
                         Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.note_len - 2, key_h))
                         
                         if pattern.current_gap:
+                            Color(1,1,1,.4)
                             Rectangle(pos = (draw_x + 4 * bar_w * n.note_len - 1, draw_y), size = (4 * bar_w * pattern.current_gap, key_h / 4))

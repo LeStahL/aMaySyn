@@ -68,8 +68,6 @@ class Pattern():
             self.current_gap = to
         else:
             pass
-        
-        print(self.current_gap)
 
     def untagAllNotes(self):
         for n in self.notes:
