@@ -8,14 +8,17 @@ from kivy.properties import NumericProperty, ObjectProperty, BooleanProperty
 from kivy.core.window import Window
 from kivy.config import Config
 from kivy.clock import Clock
-from kivy.graphics import Color, Rectangle, Line
+from kivy.graphics import Color, Rectangle, Line, Ellipse
 from kivy.core.text import Label as CoreLabel
 from kivy.uix.modalview import ModalView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
+from kivy.animation import Animation
 
 from itertools import accumulate
 from functools import partial
+from numpy import clip
+from math import sin, exp, pi
 import csv
 import operator
 import os
@@ -91,6 +94,8 @@ class Ma2Widget(Widget):
         elif k == 'f1':                         self.reRandomizeColors()
 
         elif k == 'f2':                         self.renameSong()
+
+        elif k == 'f11':                        self.editCurve()
 
         if 'ctrl' in modifiers:
             if k == 'n':                        self.clearSong()
@@ -477,6 +482,17 @@ class Ma2Widget(Widget):
         for p in self.patterns:
             print(p.name, len(p.notes), p.length)
 
+##################### NOW THE MIGHTY SHIT ##################
+
+    def editCurve(self):
+        popup = CurvePrompt(self, title = 'EDIT THE CURVE IF U DARE', title_font = self.font_name)
+        popup.bind(on_dismiss = self.handleEditCurve)
+        popup.open()
+    def handleEditCurve(self, *args):
+        self._keyboard_request()
+        self.title = args[0].text
+        self.update()        
+
 class InputPrompt(ModalView):
     
     text = ''
@@ -510,6 +526,110 @@ class InputPrompt(ModalView):
     def release(self, *args):
         self.text = args[0].text
         self.dismiss()
+
+class CurvePrompt(ModalView):
+    
+    text = ''
+
+    def __init__(self, parent, **kwargs):
+        title = kwargs.pop('title')
+        title_font = kwargs.pop('title_font')
+        super(CurvePrompt, self).__init__(**kwargs)
+
+        self.auto_dismiss = False
+        
+        self.size_hint = (None, None)
+        self.size = (parent.width, parent.height*.8)
+        self.background = './transparent.png'
+        
+        content = BoxLayout(orientation = 'vertical')
+        title = Label(text = title, font_name = title_font, size_hint=(None,0.01), pos_hint={'center_x':.5, 'top':0})
+        content.add_widget(title)
+
+        cfield = CurveWidget(parent = self)
+        content.add_widget(cfield)
+               
+        tfield = TextInput(text = 'hehe. hehe.', size_hint=(.9, None), height=36, pos_hint={'center_x':.5, 'bottom':0}, multiline=False, font_name = title_font)
+        tfield.focus = True
+        tfield.select_all()
+        content.add_widget(tfield)
+
+        self.add_widget(content)
+
+        tfield.bind(on_text_validate = self.release)
+        #tfield.bind(focus = self.dismiss)
+        
+    def _curveprompt_keydown(self, key, scancode, codepoint, modifiers):
+        print("HA!")
+        
+    def release(self, *args):
+        self.text = args[0].text
+        self.dismiss()
+
+class CurveWidget(Widget):
+
+    w = 1200
+    h = 600
+    b = 150
+    o = 15
+    
+    res = 100
+    
+    c_x = 0
+    c_y = 0
+    
+    fit_plot = []
+    fit_dots = 5
+    
+    def __init__(self, parent, **kwargs):
+        super(CurveWidget, self).__init__(**kwargs)
+        self.c_x = parent.center_x
+        self.c_y = parent.center_y
+        self.update()
+                               
+    def on_touch_down(self, touch):
+        self.fit_plot.append([touch.x, touch.y])
+        
+        self.update()
+
+        if len(self.fit_plot) == self.fit_dots:
+            print("FIT NOW!")
+            
+            print(self.fit_plot)
+            self.fit_plot = []
+            
+    def update(self):
+        self.canvas.clear()
+        with self.canvas:
+            
+            Color(0,0,0)
+            Rectangle(pos=(self.c_x - self.w/2, self.c_y - self.b), size=(self.w, self.h))
+            
+            Color(1,0,1,.5)
+            Line(rectangle = (self.c_x - self.w/2, self.c_y - self.b, self.w, self.h), width = 4)
+
+            plot = []
+            for ix in range(self.res):
+                plot.append([self.c_x + (self.w-2*self.o)*(ix / (self.res+1) - .5), self.c_y - (self.b+self.o) + (self.h-2*self.o)*self.curve(ix / self.res)])
+
+            Color(.6,.8,.8)
+            Line(points = plot, width = 3)
+                
+            for ic in range(len(self.fit_plot)):
+                Color(.1,.3,.2)
+                Ellipse(pos = (self.fit_plot[ic][0] - self.o/2, self.fit_plot[ic][1] - self.o/2), size=(self.o, self.o))
+
+    def curve(self,x):
+        a = .5
+        b = 0
+        c = 0.5
+        d = -.2
+        e = 10
+        f = pi/2
+        g = -.2
+        h = .2
+        i = .3
+        return clip(a + b*x + c*x*x + d*sin(e*x + f) + g*exp(-h*x), 0, 1)
         
 class Ma2App(App):
     title = 'Matze trying to be the Great Emperor again'

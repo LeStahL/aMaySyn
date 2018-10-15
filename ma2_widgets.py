@@ -200,7 +200,7 @@ class PatternWidget(Widget):
             label.refresh()
             Rectangle(size = label.texture.size, pos = (draw_x-label.texture.width/2, draw_y - label.texture.height), texture = label.texture)
             for b in range(int(bars)):
-                Color(*(0.05,0,0.05,0.8))
+                Color(0.05,0,0.05,0.8)
                 Line(points = [draw_x, draw_y, draw_x, draw_y + draw_h], width = 1.5 if b % 4 == 0 else 1)
                 Line(points = [draw_x + .25*bar_w, draw_y, draw_x + .25*bar_w, draw_y + draw_h], width = .3)
                 Line(points = [draw_x + .50*bar_w, draw_y, draw_x + .50*bar_w, draw_y + draw_h], width = .3)
