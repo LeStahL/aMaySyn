@@ -40,11 +40,8 @@ class Pattern():
         self.notes.append(note)
         self.notes.sort(key = lambda n: n.note_on)
 
-        if select:
-            self.current_note = self.getFirstTaggedNote()
-        elif clone:
-            self.current_note += 1
-            # since we have polyphonic mode now, we can not just assign the right gap - have to do it via space/backspace
+        self.current_note = self.getFirstTaggedNote()
+        # cloning: since we have polyphonic mode now, we can not just assign the right gap - have to do it via space/backspace - will be changed to polyphonic cloning
             
         self.untagAllNotes()
 

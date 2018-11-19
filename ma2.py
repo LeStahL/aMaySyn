@@ -379,7 +379,7 @@ class Ma2Widget(Widget):
         out_str += '|' + str(len(drumkit)) + '|' + '|'.join(drumkit)
 
         # write to file
-        out_csv = open("test.ma2", "w")
+        out_csv = open(filename, "w")
         out_csv.write(out_str)
         out_csv.close()
         
