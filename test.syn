@@ -1,0 +1,17 @@
+random r0 0.1 0.2 2
+osc base sin .5*f 0
+form baseD detune base 0.01
+form subb pitchshift base +16
+form baseQ quantize base 256
+form f2 mix 0.5 2*f 0*base
+lfo lfo1 tri 0.5
+form l1 mix 0.7 0.5*lfo1
+env slowenv adsr 0.5 2. .5 .1
+osc FMsyn sin 0.5*f base .2
+form subc chorus subb 4 1e-2
+env dec expdecay .03 time
+form maini mix baseD dec*0.15*FMsyn dec*.8*subc*l1
+form mainc chorus maini 10 .3
+main Someshit mainc
+
+main Bass base r0*baseQ

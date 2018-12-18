@@ -3,14 +3,15 @@ kivy.require('1.10.0')
 from kivy.app import App
 
 from ma2 import Ma2Widget
-from ma2_globals import synths
 
 class Track():
 
+    synths = []
     name = ''
     current_synth = -1
     
-    def __init__(self, name = '', synth = -1):
+    def __init__(self, synths, name = '', synth = -1):
+        self.synths = synths
         self.name = name
         self.modules = []
         self.current_module = 0
@@ -27,8 +28,8 @@ class Track():
     def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
     def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else 0
 
-    def getSynthName(self):               return synths[self.current_synth if self.current_synth is not None else 0] if synths else ''
-    def getSynthIndex(self):              return (self.current_synth - len(synths)) if synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
+    def getSynthName(self):               return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else ''
+    def getSynthIndex(self):              return (self.current_synth - len(synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
 
     def addModule(self, mod_on, pattern, transpose = 0, select = True):
         self.modules.append(Module(mod_on, pattern, transpose))
@@ -111,8 +112,13 @@ class Track():
         self.modules=[]
 
     def switchSynth(self, inc):
-        if synths:
-            self.current_synth = (self.current_synth + inc) % len(synths)
+        if self.synths:
+            self.current_synth = (self.current_synth + inc) % len(self.synths)
+
+    def updateSynths(self, synths):
+        oldname = self.getSynthName()
+        self.synths = synths
+        if oldname not in synths: self.current_synth = -1
 
 class Module():
 

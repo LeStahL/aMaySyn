@@ -22,15 +22,22 @@ from math import sin, exp, pi
 import csv
 import operator
 import os
+import pyperclip
 
 from ma2_track import *
 from ma2_pattern import *
 from ma2_widgets import *
 from ma2_globals import *
+from ma2_synatize import synatize, synatize_build
 
 Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
 #Config.set('graphics', 'fullscreen', 'auto')
+
+GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f >= 1 else 1:]
+
+synths = ['I_Bass', 'I_Synth2', 'I_synthIII', 'I_synthie', 'I_sympf', 'D_Drums', '__GFX', '__None']
+BPM = 80.;
 
 class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
@@ -43,10 +50,10 @@ class Ma2Widget(Widget):
     tracks = []
     patterns = []
 
-    #synths = ['I_Bass', 'I_Synth2', 'I_synthIII', 'I_synthie', 'I_sympf', 'D_Drums', '__GFX', '__None']
-    #drumkit = ['SC', 'KIK', 'KIK2', 'SNR', 'SNR2', 'HH', 'SHK', 'MTY1', 'MTY2', 'MTY3', 'MTY4'] 
+    synatize_form_list = []
+    synatize_main_list = []
     
-    title = "is it π/2 yet?"
+    title = "piover2"
     
     btnTitle = ObjectProperty()
     
@@ -94,6 +101,8 @@ class Ma2Widget(Widget):
         elif k == 'f1':                         self.reRandomizeColors()
 
         elif k == 'f2':                         self.renameSong()
+
+        elif k == 'f5':                         self.loadSynths(self.title + '.syn', update = True)
 
         elif k == 'f11':                        self.editCurve()
 
@@ -243,7 +252,7 @@ class Ma2Widget(Widget):
         self.update()
 
     def addTrack(self, name, synth = None):
-        self.tracks.append(Track(name = name, synth = synth))
+        self.tracks.append(Track(synths, name = name, synth = synth))
         if len(self.tracks) == 1: self.current_track = 0
         self.update()
 
@@ -293,6 +302,25 @@ class Ma2Widget(Widget):
     def reRandomizeColors(self):
         for p in self.patterns:
             p.randomizeColor()
+
+################## AND THE OTHER ONE... #####################
+
+    def loadSynths(self, filename, update = False):
+        
+        global synths
+        
+        if not os.path.exists(filename): filename = 'test.syn'
+        
+        self.synatize_form_list, self.synatize_main_list = synatize(filename)
+        
+        synths = ['I_' + m['ID'] for m in self.synatize_main_list]
+        synths.extend(['D_Drums', '__GFX', '__None'])
+        
+        print(synths)
+        
+        if update:
+            for t in self.tracks: t.updateSynths(synths)
+            self.update()
 
 ###################### EXPORT FUNCTIONS #####################
 
@@ -385,6 +413,7 @@ class Ma2Widget(Widget):
         
     def buildGLSL(self, filename):
         # brilliant idea: first, treat modules like notes from the old sequencer --> e.g. play only note 24 + module.transpose (then put together -- which note in module?)
+        # spätere anm. des matze: was hab ich damit gemeint?
 
         # ignore empty tracks
         tracks = [t for t in self.tracks if t.modules]
@@ -394,8 +423,6 @@ class Ma2Widget(Widget):
         
         max_mod_off = max(t.getLastModuleOff() for t in tracks)
 
-        float2str = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f >= 1 else 1:]
-
         nT  = str(len(tracks))
         nT1 = str(len(tracks) + 1)
         nM  = str(track_sep[-1])
@@ -403,29 +430,40 @@ class Ma2Widget(Widget):
         nP1 = str(len(self.patterns) + 1)
         nN  = str(pattern_sep[-1])
 
-        out_str =  'int NO_trks = ' + nT + ';\n'
-        out_str += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n'
-        out_str += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n'
-        out_str += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.mod_on) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(float2str(m.transpose) for t in tracks for m in t.modules) + ');\n'
-        out_str += 'float inv_NO_tracks = ' + float2str(1./len(tracks)) + ';\n' # was this just for normalization? then call it global_volume or fix it via sigmoid
-        out_str += 'float max_mod_off = ' + float2str(max_mod_off) + ';\n'
-        out_str += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n'
-        out_str += 'float drum_synths = ' + float2str(len(drumkit)) + ';\n'
-        out_str += 'int NO_ptns = ' + nP + ';\n'
-        out_str += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n'
-        out_str += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_on) for p in self.patterns for n in p.notes) + ');\n'
-        out_str += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_off) for p in self.patterns for n in p.notes) + ');\n'
-        out_str += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n'
-        out_str += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(float2str(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n'        
+        gf = open("framework.matzethemightyemperor")
+        glslcode = gf.read()
+        gf.close()
+
+        syncode = synatize_build(self.synatize_form_list, self.synatize_main_list)
+
+        seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
+        seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
+        seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
+        seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        seqcode += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.transpose) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        seqcode += 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
+        seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
+        seqcode += 'float drum_synths = ' + GLfloat(len(drumkit)) + ';\n' + 4*' '
+        seqcode += 'int NO_ptns = ' + nP + ';\n' + 4*' '
+        seqcode += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n' + 4*' '
+        seqcode += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_on) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
+        seqcode += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_off) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
+        seqcode += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
+        seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
 
         # TODO: format for the notes, but develop that in parallel with the pattern sequencer itself! (NITODO ~ NEXT IMPORTANT TASK)
+
+        glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(BPM)+";")
+        
+        with open(filename, "w") as out_file:
+            out_file.write(glslcode)
+        
+        pyperclip.copy(glslcode)
         
         print()
-        print(out_str)
-        
+        print(seqcode)
     
 ###################### HANDLE BUTTONS #######################
 
@@ -456,6 +494,8 @@ class Ma2Widget(Widget):
 ###################### DEBUG FUNCTIONS ######################
 
     def setupInit(self):
+        
+        self.loadSynths(self.title + '.syn')
 
         self.addTrack("Bassline", synth = 0)
 
