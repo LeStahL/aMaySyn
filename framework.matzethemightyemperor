@@ -199,45 +199,18 @@ float mainSynth(float time)
             Boff   = note_off[(ptn_sep[ptn]+_note)];
 
             if(trk_syn[trk] == drum_index)
-            {/*
-                float Bdrum = mod(note_pitch[ptn_sep[ptn]+_note], drum_synths);
-                float Bvel = 1.; //note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
+            {
+                int Bdrum = int(mod(note_pitch[ptn_sep[ptn]+_note], drum_synths));
+                float Bvel = note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
 
                 float anticlick = 1.-exp(-1000.*(B-Bon));
-                float _d = 0.;
+                float d = 0.;
 
-                if(Bdrum < .01) // Sidechain
+                if(Bdrum == 0) // Sidechain
                 {
                     r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
                 }
-                else if(Bdrum < 1.01) // Kick1
-                {
-                    r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
-                    r_sidechain *= 0.5;
-                    _d = facekick(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 2.01) // Kick2
-                {
-                    r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
-                    r_sidechain *= 0.5;
-                    _d = hardkick(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 3.01) // Snare1
-                {
-                    _d = snare(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 4.01) // HiHat
-                {
-                    _d = hut(B*SPB, Bon*SPB, Bvel);
-                }               
-                else if(Bdrum < 5.01) // Shake
-                {
-                    _d = shake(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 6.01) // ...
-                {
-                }         
-                d += track_norm[trk] * _d;*/
+                else d += track_norm[trk] * THESYNTH(time, B, Bon, Boff, Bvel, -Bdrum);
             }
             else
             {

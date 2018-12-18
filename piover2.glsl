@@ -141,49 +141,50 @@ float THESYNTH(float t, float B, float Bon, float Boff, float note, int Bsyn)
 
 	if(Bsyn == 0){}
     else if(Bsyn == 1){
-      s = ((s_atan(_sin(.5*f*(t-0.0))+_sin((1.-.01)*.5*f*(t-0.0)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-0.0),_sin(.5*f*(t-0.0)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-0.0)-0.0))
+      s = ((s_atan(_sin(.5*f*(t-0.0))+_sin((1.-.01)*.5*f*(t-0.0)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-0.0),_sin(.5*f*(t-0.0)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-0.0)-0.0))
       +_sin(2.5198*.5*f*((t-0.0)-1.0e-02))
       +_sin(2.5198*.5*f*((t-0.0)-2.0e-02))
       +_sin(2.5198*.5*f*((t-0.0)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-3.0e-01))+_sin((1.-.01)*.5*f*(t-3.0e-01)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-3.0e-01),_sin(.5*f*(t-3.0e-01)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-3.0e-01)-0.0))
+      +(s_atan(_sin(.5*f*(t-3.0e-01))+_sin((1.-.01)*.5*f*(t-3.0e-01)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-3.0e-01),_sin(.5*f*(t-3.0e-01)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-3.0e-01)-0.0))
       +_sin(2.5198*.5*f*((t-3.0e-01)-1.0e-02))
       +_sin(2.5198*.5*f*((t-3.0e-01)-2.0e-02))
       +_sin(2.5198*.5*f*((t-3.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-6.0e-01))+_sin((1.-.01)*.5*f*(t-6.0e-01)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-6.0e-01),_sin(.5*f*(t-6.0e-01)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-6.0e-01)-0.0))
+      +(s_atan(_sin(.5*f*(t-6.0e-01))+_sin((1.-.01)*.5*f*(t-6.0e-01)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-6.0e-01),_sin(.5*f*(t-6.0e-01)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-6.0e-01)-0.0))
       +_sin(2.5198*.5*f*((t-6.0e-01)-1.0e-02))
       +_sin(2.5198*.5*f*((t-6.0e-01)-2.0e-02))
       +_sin(2.5198*.5*f*((t-6.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-9.0e-01))+_sin((1.-.01)*.5*f*(t-9.0e-01)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-9.0e-01),_sin(.5*f*(t-9.0e-01)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-9.0e-01)-0.0))
+      +(s_atan(_sin(.5*f*(t-9.0e-01))+_sin((1.-.01)*.5*f*(t-9.0e-01)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-9.0e-01),_sin(.5*f*(t-9.0e-01)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-9.0e-01)-0.0))
       +_sin(2.5198*.5*f*((t-9.0e-01)-1.0e-02))
       +_sin(2.5198*.5*f*((t-9.0e-01)-2.0e-02))
       +_sin(2.5198*.5*f*((t-9.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.2))+_sin((1.-.01)*.5*f*(t-1.2)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-1.2),_sin(.5*f*(t-1.2)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-1.2)-0.0))
+      +(s_atan(_sin(.5*f*(t-1.2))+_sin((1.-.01)*.5*f*(t-1.2)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-1.2),_sin(.5*f*(t-1.2)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-1.2)-0.0))
       +_sin(2.5198*.5*f*((t-1.2)-1.0e-02))
       +_sin(2.5198*.5*f*((t-1.2)-2.0e-02))
       +_sin(2.5198*.5*f*((t-1.2)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.5))+_sin((1.-.01)*.5*f*(t-1.5)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-1.5),_sin(.5*f*(t-1.5)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-1.5)-0.0))
+      +(s_atan(_sin(.5*f*(t-1.5))+_sin((1.-.01)*.5*f*(t-1.5)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-1.5),_sin(.5*f*(t-1.5)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-1.5)-0.0))
       +_sin(2.5198*.5*f*((t-1.5)-1.0e-02))
       +_sin(2.5198*.5*f*((t-1.5)-2.0e-02))
       +_sin(2.5198*.5*f*((t-1.5)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.8))+_sin((1.-.01)*.5*f*(t-1.8)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-1.8),_sin(.5*f*(t-1.8)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-1.8)-0.0))
+      +(s_atan(_sin(.5*f*(t-1.8))+_sin((1.-.01)*.5*f*(t-1.8)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-1.8),_sin(.5*f*(t-1.8)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-1.8)-0.0))
       +_sin(2.5198*.5*f*((t-1.8)-1.0e-02))
       +_sin(2.5198*.5*f*((t-1.8)-2.0e-02))
       +_sin(2.5198*.5*f*((t-1.8)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.1))+_sin((1.-.01)*.5*f*(t-2.1)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-2.1),_sin(.5*f*(t-2.1)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-2.1)-0.0))
+      +(s_atan(_sin(.5*f*(t-2.1))+_sin((1.-.01)*.5*f*(t-2.1)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-2.1),_sin(.5*f*(t-2.1)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-2.1)-0.0))
       +_sin(2.5198*.5*f*((t-2.1)-1.0e-02))
       +_sin(2.5198*.5*f*((t-2.1)-2.0e-02))
       +_sin(2.5198*.5*f*((t-2.1)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.4))+_sin((1.-.01)*.5*f*(t-2.4)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-2.4),_sin(.5*f*(t-2.4)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-2.4)-0.0))
+      +(s_atan(_sin(.5*f*(t-2.4))+_sin((1.-.01)*.5*f*(t-2.4)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-2.4),_sin(.5*f*(t-2.4)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-2.4)-0.0))
       +_sin(2.5198*.5*f*((t-2.4)-1.0e-02))
       +_sin(2.5198*.5*f*((t-2.4)-2.0e-02))
       +_sin(2.5198*.5*f*((t-2.4)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.7))+_sin((1.-.01)*.5*f*(t-2.7)))+theta(_t)*exp(-.03*_t)*.15*_sin(.5*f*(t-2.7),_sin(.5*f*(t-2.7)))+theta(_t)*exp(-.03*_t)*.8*(_sin(2.5198*.5*f*((t-2.7)-0.0))
+      +(s_atan(_sin(.5*f*(t-2.7))+_sin((1.-.01)*.5*f*(t-2.7)))+theta(_t)*exp(-.03*B)*.15*_sin(.5*f*(t-2.7),_sin(.5*f*(t-2.7)))+theta(_t)*exp(-.03*B)*.8*(_sin(2.5198*.5*f*((t-2.7)-0.0))
       +_sin(2.5198*.5*f*((t-2.7)-1.0e-02))
       +_sin(2.5198*.5*f*((t-2.7)-2.0e-02))
       +_sin(2.5198*.5*f*((t-2.7)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.))));}
     else if(Bsyn == 2){
-      s = _sin(.5*f*t)
-      +.2*_sin(.5*f*floor(256.*t+.5)/256.);}
+      s = _sin(.5*f*t)*env_ADSR(_t,tL,.5,2.,.5,.1);}
+    else if(Bsyn == -1){
+      s = s_atan((smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((55.7+(152.5-55.7)*smoothstep(-.3, 0.,-_t))*t))+_sin(.5*(55.7+(152.5-55.7)*smoothstep(-.3, 0.,-_t))*t)))+ 1.2*step(_t,.05)*_sin(5000.*t*.8*_saw(1000.*t*.8)));}
     
 	return clamp(env,0.,1.) * s_atan(s);
 }
@@ -207,14 +208,15 @@ float mainSynth(float time)
     int mod_ptn[1] = int[1](0);
     float mod_transp[1] = float[1](0.);
     float max_mod_off = 2.;
-    int drum_index = 3;
-    float drum_synths = 11.;
+    int drum_index = 4;
+    float drum_synths = 1.;
     int NO_ptns = 1;
-    int ptn_sep[2] = int[2](0,15);
-    float note_on[15] = float[15](0.,.125,.25,.375,.5,.625,.75,.875,1.,1.125,1.25,1.375,1.5,1.625,1.75);
-    float note_off[15] = float[15](.25,.25,.5,.5,.75,.75,1.,1.,1.25,1.25,1.5,1.5,1.75,2.,2.);
-    float note_pitch[15] = float[15](24.,43.,26.,45.,27.,47.,29.,48.,31.,47.,33.,45.,35.,57.,36.);
-    float note_vel[15] = float[15](1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.);
+    int ptn_sep[2] = int[2](0,1);
+    float note_on[1] = float[1](0.);
+    float note_off[1] = float[1](.5);
+    float note_pitch[1] = float[1](24.);
+    float note_vel[1] = float[1](1.);
+    time += 0.;
     
     float max_release = 0.3;   
     float track_norm[1] = float[1](1.);
@@ -260,45 +262,18 @@ float mainSynth(float time)
             Boff   = note_off[(ptn_sep[ptn]+_note)];
 
             if(trk_syn[trk] == drum_index)
-            {/*
-                float Bdrum = mod(note_pitch[ptn_sep[ptn]+_note], drum_synths);
-                float Bvel = 1.; //note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
+            {
+                int Bdrum = int(mod(note_pitch[ptn_sep[ptn]+_note], drum_synths));
+                float Bvel = note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
 
                 float anticlick = 1.-exp(-1000.*(B-Bon));
-                float _d = 0.;
+                float d = 0.;
 
-                if(Bdrum < .01) // Sidechain
+                if(Bdrum == 0) // Sidechain
                 {
                     r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
                 }
-                else if(Bdrum < 1.01) // Kick1
-                {
-                    r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
-                    r_sidechain *= 0.5;
-                    _d = facekick(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 2.01) // Kick2
-                {
-                    r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
-                    r_sidechain *= 0.5;
-                    _d = hardkick(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 3.01) // Snare1
-                {
-                    _d = snare(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 4.01) // HiHat
-                {
-                    _d = hut(B*SPB, Bon*SPB, Bvel);
-                }               
-                else if(Bdrum < 5.01) // Shake
-                {
-                    _d = shake(B*SPB, Bon*SPB, Bvel);
-                }
-                else if(Bdrum < 6.01) // ...
-                {
-                }         
-                d += track_norm[trk] * _d;*/
+                else d += track_norm[trk] * THESYNTH(time, B, Bon, Boff, Bvel, -Bdrum);
             }
             else
             {

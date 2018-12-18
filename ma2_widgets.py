@@ -13,7 +13,6 @@ from kivy.core.text import Label as CoreLabel
 
 from ma2_track import *
 from ma2_pattern import *
-from ma2_globals import drumkit
 
 class TrackWidget(Widget):
     active = BooleanProperty(True)
@@ -25,7 +24,6 @@ class TrackWidget(Widget):
 
         pad_l = 10
         pad_r = 20
-        #pad_b = 10
         pad_t = 15
         row_h = 22
         gap_h = 4
@@ -112,9 +110,14 @@ class TrackWidget(Widget):
     
 class PatternWidget(Widget):
     active = BooleanProperty(False)
+
+    drumkit = []
     
     def __init__(self, **kwargs):
         super(PatternWidget, self).__init__(**kwargs)
+
+    def updateDrumkit(self, drumkit):
+        self.drumkit = drumkit
 
     claviature = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     def isKeyBlack(self, key): return '#' in self.claviature[key % 12]
@@ -167,14 +170,14 @@ class PatternWidget(Widget):
                     Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-2.5), texture = label.texture)                
                     Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-3), texture = label.texture)                
                 else:
-                    label_len = len(drumkit[key])
-                    label1 = CoreLabel(text = drumkit[key][0:4], font_size = font_size, font_name = self.font_name)
+                    label_len = len(self.drumkit[key])
+                    label1 = CoreLabel(text = self.drumkit[key][0:4], font_size = font_size, font_name = self.font_name)
                     label1.refresh()
                     if label_len < 5:
                         Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-1.5 + .5*label1.height), texture = label1.texture)                
                         Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-2 + .5*label1.height), texture = label1.texture)
                     else:
-                        label2 = CoreLabel(text = drumkit[key][4:8], font_size = font_size, font_name = self.font_name)
+                        label2 = CoreLabel(text = self.drumkit[key][4:8], font_size = font_size, font_name = self.font_name)
                         label2.refresh()
                         Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-3.5 + label1.height), texture = label1.texture)                
                         Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-4 + label1.height), texture = label1.texture)
@@ -188,7 +191,7 @@ class PatternWidget(Widget):
                 draw_y += key_h+1
                 key += 1
                 
-                if isDrum and key > len(drumkit) - 1: break
+                if isDrum and key > len(self.drumkit) - 1: break
 
             draw_x = self.x + pad_l + key_w + 2
             draw_y = self.y + pad_b
@@ -224,7 +227,7 @@ class PatternWidget(Widget):
                 for n in pattern.notes:
                     Color(*pattern.color,.55) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER (TODO)
                     draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * n.note_on
-                    draw_y = self.y + pad_b + (key_h + 1) * ((n.note_pitch + transpose - offset_v) if not isDrum else (n.note_pitch % len(drumkit)))
+                    draw_y = self.y + pad_b + (key_h + 1) * ((n.note_pitch + transpose - offset_v) if not isDrum else (n.note_pitch % len(self.drumkit)))
                     Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.note_len - 2, key_h))
 
                     if n == pattern.getNote():

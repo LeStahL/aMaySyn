@@ -27,7 +27,6 @@ import pyperclip
 from ma2_track import *
 from ma2_pattern import *
 from ma2_widgets import *
-from ma2_globals import *
 from ma2_synatize import synatize, synatize_build
 
 Config.set('graphics', 'width', '1600')
@@ -36,8 +35,10 @@ Config.set('graphics', 'height', '1000')
 
 GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f >= 1 else 1:]
 
-synths = ['I_Bass', 'I_Synth2', 'I_synthIII', 'I_synthie', 'I_sympf', 'D_Drums', '__GFX', '__None']
+synths = ['D_Drums', '__GFX', '__None']
+drumkit = ['SideChn']
 BPM = 80.;
+time_offset = 0.;
 
 class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
@@ -311,12 +312,16 @@ class Ma2Widget(Widget):
         
         if not os.path.exists(filename): filename = 'test.syn'
         
-        self.synatize_form_list, self.synatize_main_list = synatize(filename)
+        self.synatize_form_list, self.synatize_main_list, drumkit = synatize(filename)
         
         synths = ['I_' + m['ID'] for m in self.synatize_main_list]
         synths.extend(['D_Drums', '__GFX', '__None'])
         
         print(synths)
+        
+        drumkit.insert(0,'SideChn')
+        #drumkit = ['SideChn', 'Kick', 'Kick2', 'Snar', 'HiHt', 'Shak', 'Odd Nois', 'Emty1', 'Emty2', 'Emty3', 'Emty4']
+        self.thePtnWidget.updateDrumkit(drumkit)
         
         if update:
             for t in self.tracks: t.updateSynths(synths)
@@ -345,7 +350,7 @@ class Ma2Widget(Widget):
                 c = 2
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[1])):
-                    track = Track(name = r[c], synth = int(r[c+1]))
+                    track = Track(synths, name = r[c], synth = int(r[c+1]))
 
                     c += 2
                     for _ in range(int(r[c])):
@@ -452,8 +457,7 @@ class Ma2Widget(Widget):
         seqcode += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_off) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         seqcode += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
-
-        # TODO: format for the notes, but develop that in parallel with the pattern sequencer itself! (NITODO ~ NEXT IMPORTANT TASK)
+        seqcode += 'time += '+GLfloat(time_offset)+';\n' + 4*' '
 
         glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(BPM)+";")
         
@@ -690,6 +694,5 @@ if __name__ == '__main__':
 # song view window, just for visualization of EVERYTHING
 # pattern automation
 # drums... kP
-# TAB oder so: switch between track and pattern editor; rahmen um welches aktiv ist.
 
 # TODO custom button, more nerd-stylish..

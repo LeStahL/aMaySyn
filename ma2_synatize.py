@@ -26,8 +26,6 @@ _BPS = {'ID':'BPS', 'type':'uniform'}
 _BPM = {'ID':'BPM', 'type':'uniform'}
 _note = {'ID':'note', 'type':'uniform'}
 _Fsample = {'ID':'Fsample', 'type':'uniform'}
-form_list = []
-main_list = []
 
 newlineplus = '\n'+6*' '+'+'
 
@@ -51,11 +49,11 @@ def synatize(syn_file = 'test.syn'):
         cid = line[1]
         arg = line[2:]
        
-        if cmd != 'main' and cid in [f['ID'] for f in form_list]:
+        if cid in [f['ID'] for f in form_list]:
             print(' -> ERROR! ID \"' + cid + '\" already taken. Ignoring line.')
             continue
 
-        if cmd == 'main':
+        if cmd == 'main' or cmd == 'maindrum':
             main_list.append({'ID':cid, 'type':cmd, 'amount':len(line)-2, 'terms':arg})
 
         elif cmd == 'const':
@@ -70,7 +68,7 @@ def synatize(syn_file = 'test.syn'):
         elif cmd == 'osc' or cmd == 'lfo':
             form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0], 'freq':arg[1], 'phase':arg[2] if len(arg)>2 else '0', 'par':arg[3] if len(arg)>3 else '0'})
 
-        elif cmd == 'perc':
+        elif cmd == 'drum':
             form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0], 'par':arg[1:]})
 
         elif cmd == 'env':
@@ -85,7 +83,7 @@ def synatize(syn_file = 'test.syn'):
                 form.update({'attack':arg[1], 'par':arg[2] if len(arg)>2 else ''})
             elif shape == 'ssdrop':
                 form.update({'decay':arg[1], 'par':arg[2] if len(arg)>2 else ''})
-            elif shape == 'expdecay':
+            elif shape == 'expdecay' or shape == 'expdecayrepeat':
                 form.update({'decay':arg[1], 'par':arg[2] if len(arg)>2 else ''})
             else:
                 pass
@@ -124,7 +122,9 @@ def synatize(syn_file = 'test.syn'):
                 
             form_list.append(form)
             
-    return form_list, main_list
+    drum_list = [d['ID'] for d in form_list if d['type']=='maindrum']
+    
+    return form_list, main_list, drum_list
 
 def synatize_build(form_list, main_list):
 
@@ -217,7 +217,7 @@ def synatize_build(form_list, main_list):
                 else:
                     return '0.'
 
-        elif form['type'] == 'perc':
+        elif form['type'] == 'drum':
             
                 if form['shape'] == 'kick': # <start freq> <end freq> <freq decay time> <env attack time> <env decay time> <distortion>
                     freq_start = instance(form['par'][0])
@@ -252,7 +252,9 @@ def synatize_build(form_list, main_list):
             elif form['shape'] == 'ssdrop':
                 return 'theta('+'_RESETTIME'+')*smoothstep('+instance(form['decay'])+',0.,_RESETTIME)'
             elif form['shape'] == 'expdecay':
-                return 'theta('+'_RESETTIME'+')*exp(-'+instance(form['decay'])+'*_RESETTIME)'
+                return 'theta('+'_RESETTIME'+')*exp(-'+instance(form['decay'])+'*_BEAT)'
+            elif form['shape'] == 'expdecayrepeat':
+                return 'theta('+'_RESETTIME'+')*exp(-'+instance(form['decay'])+'*mod(_BEAT,'+instance(form['par'])+'))'                
             else:
                 return '1.'
 
@@ -285,15 +287,28 @@ def synatize_build(form_list, main_list):
            
         else:
             syncount = 1
+            drumcount = 1
             syncode = 'if(Bsyn == 0){}\n' + 4*' '
             for form_main in main_list:
+                if form_main['type']!='main': continue
                 syncode += 'else if(Bsyn == ' + str(syncount) + '){\n' + 6*' ' + 's = '
                 for term in form_main['terms']:
                     syncode += instance(term) + (newlineplus if term != form_main['terms'][-1] else ';')
                 syncode += '}\n' + 4*' '
                 syncount += 1
+            
+            syncode = syncode.replace('vel*','') # for now, disable this for the synths above (but not for the drums below)
+            
+            drumcount = 1
+            for form_main in main_list:
+                if form_main['type']!='maindrum': continue
+                syncode += 'else if(Bsyn == -' + str(drumcount) + '){\n' + 6*' ' + 's = '
+                for term in form_main['terms']:
+                    syncode += instance(term) + (newlineplus if term != form_main['terms'][-1] else ';')
+                syncode += '}\n' + 4*' '
+                drumcount += 1
 
-        syncode = syncode.replace('_TIME','t').replace('_RESETTIME','_t').replace('vel*','').replace('e+00','')
+        syncode = syncode.replace('_TIME','t').replace('_RESETTIME','_t').replace('_BEAT','B').replace('e+00','')
 
     for r in (f for f in form_list if f['type']=='random'):
         print('RANDOM', r['ID'], '=', r['value'])

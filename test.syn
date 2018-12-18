@@ -14,4 +14,10 @@ form maini mix baseD dec*0.15*FMsyn dec*.8*subc*l1
 form mainc chorus maini 10 .3
 main Someshit mainc
 
-main Bass base r0*baseQ
+form b2 mix base r0*baseQ
+main Basss base*slowenv
+
+random f0 50 100 1
+random f1 150 250 1
+drum BDbody kick f0 f1 0.3 0.1 0.3 10 1.2 .05 .8
+maindrum BD BDbody 
