@@ -109,8 +109,8 @@ class Ma2Widget(Widget):
 
         if 'ctrl' in modifiers:
             if k == 'n':                        self.clearSong()
-            elif k == 'l':                      self.loadCSV(self.title + '.ma2')
-            elif k == 's':                      self.saveCSV(self.title + '.ma2')
+            elif k == 'l':                      self.loadCSV(self.title + '.may')
+            elif k == 's':                      self.saveCSV(self.title + '.may')
             elif k == 'b':                      self.buildGLSL(self.title + '.glsl')
 
         # for precision work, press 'alt'
@@ -331,10 +331,10 @@ class Ma2Widget(Widget):
 
     def loadCSV(self, filename):
         if not os.path.isfile(filename):
-            print(filename,'not around, trying to load test.ma2')
-            filename = 'test.ma2'
+            print(filename,'not around, trying to load test.may')
+            filename = 'test.may'
             if not os.path.isfile(filename):
-                print('test.ma2 not around, doing nothing.')
+                print('test.may not around, doing nothing.')
                 return
         
         with open(filename) as in_csv:
@@ -494,7 +494,7 @@ class Ma2Widget(Widget):
     def pressNoteLen(self):   pass
     def pressNoteVel(self):   pass
     def pressLoadCSV(self):   pass
-    def pressSaveCSV(self):   self.saveCSV(self.title + ".ma2")
+    def pressSaveCSV(self):   self.saveCSV(self.title + ".may")
     def pressBuildCode(self): pass
 
 ###################### DEBUG FUNCTIONS ######################
