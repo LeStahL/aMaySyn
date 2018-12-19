@@ -444,6 +444,8 @@ class Ma2Widget(Widget):
         seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
         seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
         seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
+        seqcode += 'int trk_norm[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getNorm()) for t in tracks) + ');\n' + 4*' '
+        seqcode += 'int trk_rel[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getMaxRelease()) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '

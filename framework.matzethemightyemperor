@@ -155,8 +155,6 @@ float BA8(float x, int pattern)
 float mainSynth(float time)
 {
     //SEQCODE
-    float max_release = 0.3;   
-    float track_norm[1] = float[1](1.);
    
     float r = 0.;
     float d = 0.;
@@ -191,7 +189,7 @@ float mainSynth(float time)
         for(int i=0; i<PLEN-1; i++) if(B < note_on[(ptn_sep[ptn]+i+1)]) {_noteU = i; break;}
 
         int _noteL = PLEN-1;
-        for(int i=0; i<PLEN-1; i++) if(B <= note_off[(ptn_sep[ptn]+i)] + max_release) {_noteL = i; break;}
+        for(int i=0; i<PLEN-1; i++) if(B <= note_off[(ptn_sep[ptn]+i)] + trk_rel[trk]) {_noteL = i; break;}
        
         for(int _note = _noteL; _note <= _noteU; _note++)
         {
@@ -210,11 +208,11 @@ float mainSynth(float time)
                 {
                     r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
                 }
-                else d += track_norm[trk] * THESYNTH(time, B, Bon, Boff, Bvel, -Bdrum);
+                else d += trk_norm[trk] * THESYNTH(time, B, Bon, Boff, Bvel, -Bdrum);
             }
             else
             {
-                r += track_norm[trk] * THESYNTH(time, B, Bon, Boff,
+                r += trk_norm[trk] * THESYNTH(time, B, Bon, Boff,
                                                note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[_mod], trk_syn[trk]);
             }
 
