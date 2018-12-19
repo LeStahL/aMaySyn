@@ -103,15 +103,15 @@ class Ma2Widget(Widget):
 
         elif k == 'f2':                         self.renameSong()
 
-        elif k == 'f5':                         self.loadSynths(self.title + '.syn', update = True)
+        elif k == 'f5':                         self.loadSynths(update = True)
 
         elif k == 'f11':                        self.editCurve()
 
         if 'ctrl' in modifiers:
             if k == 'n':                        self.clearSong()
-            elif k == 'l':                      self.loadCSV(self.title + '.may')
-            elif k == 's':                      self.saveCSV(self.title + '.may')
-            elif k == 'b':                      self.buildGLSL(self.title + '.glsl')
+            elif k == 'l':                      self.loadCSV()
+            elif k == 's':                      self.saveCSV()
+            elif k == 'b':                      self.buildGLSL()
 
         # for precision work, press 'alt'
         inc_step = 1 if 'alt' not in modifiers else .25
@@ -306,15 +306,16 @@ class Ma2Widget(Widget):
 
 ################## AND THE OTHER ONE... #####################
 
-    def loadSynths(self, filename, update = False):
+    def loadSynths(self, update = False):
         
         global synths
         
+        filename = self.title + '.syn'
         if not os.path.exists(filename): filename = 'test.syn'
         
         self.synatize_form_list, self.synatize_main_list, drumkit = synatize(filename)
         
-        synths = ['I_' + m['ID'] for m in self.synatize_main_list]
+        synths = ['I_' + m['ID'] for m in self.synatize_main_list if m['type']=='main']
         synths.extend(['D_Drums', '__GFX', '__None'])
         
         print(synths)
@@ -329,7 +330,9 @@ class Ma2Widget(Widget):
 
 ###################### EXPORT FUNCTIONS #####################
 
-    def loadCSV(self, filename):
+    def loadCSV(self):
+        filename = self.title + '.may'
+        
         if not os.path.isfile(filename):
             print(filename,'not around, trying to load test.may')
             filename = 'test.may'
@@ -390,7 +393,9 @@ class Ma2Widget(Widget):
                     drumkit.append(r[c])
                 print(drumkit[-1])
 
-    def saveCSV(self, filename):
+    def saveCSV(self):
+        filename = self.title + '.may'
+        
         out_str = self.title + '|' + str(len(self.tracks)) + '|'
         
         for t in self.tracks:
@@ -416,9 +421,8 @@ class Ma2Widget(Widget):
         out_csv.write(out_str)
         out_csv.close()
         
-    def buildGLSL(self, filename):
-        # brilliant idea: first, treat modules like notes from the old sequencer --> e.g. play only note 24 + module.transpose (then put together -- which note in module?)
-        # spätere anm. des matze: was hab ich damit gemeint?
+    def buildGLSL(self):
+        filename = self.title + '.glsl'
 
         # ignore empty tracks
         tracks = [t for t in self.tracks if t.modules]
@@ -439,13 +443,14 @@ class Ma2Widget(Widget):
         glslcode = gf.read()
         gf.close()
 
+        self.loadSynths()
         syncode = synatize_build(self.synatize_form_list, self.synatize_main_list)
 
         seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
         seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
         seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
-        seqcode += 'int trk_norm[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getNorm()) for t in tracks) + ');\n' + 4*' '
-        seqcode += 'int trk_rel[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getMaxRelease()) for t in tracks) + ');\n' + 4*' '
+        seqcode += 'float trk_norm[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
+        seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getMaxRelease()) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '
@@ -501,7 +506,7 @@ class Ma2Widget(Widget):
 
     def setupInit(self):
         
-        self.loadSynths(self.title + '.syn')
+        self.loadSynths()
 
         self.addTrack("Bassline", synth = 0)
 

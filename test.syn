@@ -9,7 +9,7 @@ form l1 mix 0.7 0.5*lfo1
 env slowenv adsr 0.5 2. .5 .1
 osc FMsyn sin 0.5*f base .2
 form subc chorus subb 4 1e-2
-env dec expdecay .03 time
+env dec expdecay .03
 form maini mix baseD dec*0.15*FMsyn dec*.8*subc*l1
 form mainc chorus maini 10 .3
 main Someshit mainc
@@ -21,3 +21,12 @@ random f0 50 100 1
 random f1 150 250 1
 drum BDbody kick f0 f1 0.3 0.1 0.3 10 1.2 .05 .8
 maindrum BD BDbody 
+
+osc somesaw1 saw f 0
+form somesawD1 detune somesaw1 0.01 0.033 0.04
+osc somesaw2 saw .5*f 0.01
+form somesawD2 detune somesaw2 0.05 -0.03 -0.02
+form somesaw mix somesawD1 .6*somesawD2
+env stutter expdecayrepeat 16. .125
+env slowdec expdecay 1.5
+main Supersaw stutter*slowdec*somesaw

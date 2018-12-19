@@ -102,7 +102,7 @@ def synatize(syn_file = 'test.syn'):
             if op == 'mix':
                 form.update({'amount':len(arg), 'terms':arg[1:]})
             elif op == 'detune':
-                form.update({'source':arg[1], 'amount':arg[2]})
+                form.update({'source':arg[1], 'amount':arg[2:]})
             elif op == 'pitchshift':
                 form.update({'source':arg[1], 'steps':arg[2]})
             elif op == 'quantize':
@@ -156,7 +156,8 @@ def synatize_build(form_list, main_list):
             if form['OP'] == 'mix':
                 return '(' + '+'.join([instance(f) for f in form['terms']]) + ')' 
             elif form['OP'] == 'detune':
-                return 's_atan(' + instance(form['source']) + '+' + instance(form['source'],{'freq':'(1.-' + instance(form['amount']) + ')*'+param(form['source'],'freq')}) + ')'
+                detuned_instances = '+'.join(instance(form['source'],{'freq':'(1.-' + instance(amt) + ')*'+param(form['source'],'freq')}) for amt in form['amount']) 
+                return 's_atan(' + instance(form['source']) + '+' + detuned_instances + ')'
             elif form['OP'] == 'pitchshift':
                 return instance(form['source'],{'freq':'{:.4f}'.format(pow(2,float(form['steps'])/12)) + '*' + param(form['source'],'freq')})
             elif form['OP'] == 'quantize':
@@ -167,7 +168,7 @@ def synatize_build(form_list, main_list):
                 return '(' + newlineplus.join([instance(form['source']).replace('_TIME','(_TIME-'+'{:.1e}'.format(t*float(form['delay']))+')') for t in range(int(form['number']))]) + ')'
             elif form['OP'] == 'delay': #not finished, needs study
                 return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['decay']),t)) + '*' + \
-                                               instance(form['source']).replace('_RESETTIME','(_RESETTIME-'+'{:.1e}'.format(t*float(form['delay']))+')') for t in range(int(form['number']))]) + ')'
+                                               instance(form['source']).replace('_PROG','(_PROG-'+'{:.1e}'.format(t*float(form['delay']))+')') for t in range(int(form['number']))]) + ')'
             elif form['OP'] == 'waveshape':
                 return 'supershape(' + instance(form['source']) + ',' + ','.join(instance(form['par'][p]) for p in range(6)) + ')'
             elif form['OP'] == 'saturate':
@@ -230,9 +231,9 @@ def synatize_build(form_list, main_list):
                     click_delay = instance(form['par'][7])
                     click_timbre = instance(form['par'][8])
 
-                    freq_env = '('+freq_start+'+('+freq_end+'-'+freq_start+')*smoothstep(-'+freq_decay+', 0.,-_RESETTIME))'
-                    amp_env = '(smoothstep(0.,'+env_attack+',_RESETTIME)*smoothstep(-('+env_attack+'+'+env_decay+'),-'+env_attack+',-_RESETTIME)'
-                    return 's_atan('+amp_env+'*(clip('+distortion+'*_tri('+freq_env+'*_TIME))+_sin(.5*'+freq_env+'*_TIME)))+ '+click_amp+'*step(_RESETTIME,'+click_delay+')*_sin(5000.*_TIME*'+click_timbre+'*_saw(1000.*_TIME*'+click_timbre+')))'
+                    freq_env = '('+freq_start+'+('+freq_end+'-'+freq_start+')*smoothstep(-'+freq_decay+', 0.,-_PROG))'
+                    amp_env = '(smoothstep(0.,'+env_attack+',_PROG)*smoothstep(-('+env_attack+'+'+env_decay+'),-'+env_attack+',-_PROG)'
+                    return 's_atan('+amp_env+'*(clip('+distortion+'*_tri('+freq_env+'*_TIME))+_sin(.5*'+freq_env+'*_TIME)))+ '+click_amp+'*step(_PROG,'+click_delay+')*_sin(5000.*_TIME*'+click_timbre+'*_saw(1000.*_TIME*'+click_timbre+')))'
                 
                 elif form['shape'] == 'snare':
                     return 0.
@@ -242,19 +243,19 @@ def synatize_build(form_list, main_list):
 
         elif form['type']=='env':
             if form['shape'] == 'adsr':
-                return 'env_ADSR(_RESETTIME,tL,'+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
+                return 'env_ADSR(_PROG,tL,'+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
             elif form['shape'] == 'adsrexp':
-                return 'env_ADSRexp(_RESETTIME,tL,'+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
+                return 'env_ADSRexp(_PROG,tL,'+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
             elif form['shape'] == 'doubleslope':
-                return 'doubleslope(_RESETTIME, '+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+')'
+                return 'doubleslope(_PROG, '+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+')'
             elif form['shape'] == 'ss':
-                return 'smoothstep(0.,'+instance(form['attack'])+',_RESETTIME)'
+                return 'smoothstep(0.,'+instance(form['attack'])+',_PROG)'
             elif form['shape'] == 'ssdrop':
-                return 'theta('+'_RESETTIME'+')*smoothstep('+instance(form['decay'])+',0.,_RESETTIME)'
+                return 'theta('+'_PROG'+')*smoothstep('+instance(form['decay'])+',0.,_PROG)'
             elif form['shape'] == 'expdecay':
-                return 'theta('+'_RESETTIME'+')*exp(-'+instance(form['decay'])+'*_BEAT)'
+                return 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*_BPROG)'
             elif form['shape'] == 'expdecayrepeat':
-                return 'theta('+'_RESETTIME'+')*exp(-'+instance(form['decay'])+'*mod(_BEAT,'+instance(form['par'])+'))'                
+                return 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*mod(_BPROG,'+instance(form['par'])+'))'                
             else:
                 return '1.'
 
@@ -308,7 +309,7 @@ def synatize_build(form_list, main_list):
                 syncode += '}\n' + 4*' '
                 drumcount += 1
 
-        syncode = syncode.replace('_TIME','t').replace('_RESETTIME','_t').replace('_BEAT','B').replace('e+00','')
+        syncode = syncode.replace('_TIME','t').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
 
     for r in (f for f in form_list if f['type']=='random'):
         print('RANDOM', r['ID'], '=', r['value'])

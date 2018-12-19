@@ -57,29 +57,36 @@ float GAC(float t, float offset, float a, float b, float c, float d, float e, fl
     return t<0. ? 0. : a + b*t + c*t*t + d*sin(e*t) + f*exp(-g*t);
 }
 
-float TRISQ(float t, float f, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q)
+float MACESQ(float t, float f, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
     float ret = 0.;
     
     int Ninc = 8; // try this: leaving out harmonics...
     
+    float p = f*t;
     for(int N=0; N<=MAXN; N+=Ninc)
     {
         float mode     = 2.*float(N) + 1.;
         float inv_mode = 1./mode; 		// avoid division? save table of Nmax <= 20 in some array or whatever
         float comp_TRI = (N % 2 == 1 ? -1. : 1.) * inv_mode*inv_mode;
-        float comp_SQU = inv_mode;
+        float comp_SQU = inv_mode * (1. + (2.*float(N%2)-1.)*_sin(PW)); 
+        float comp_mix = (MIX * comp_TRI + (1.-MIX) * comp_SQU);
+        
+        //one special mode from legacy code 'matzeskuh' - I computed some shitty-but-fun Fourier coefficients for PWM
+        if(MIX < -.01) comp_mix = 1./(2.*PI*float(N)) * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);
+
         float filter_N = pow(1. + pow(float(N) * INR,2.*NDECAY),-.5) + RES * exp(-pow(float(N)*INR*RES_Q,2.));
 
-        ret += (MIX * comp_TRI + (1.-MIX) * comp_SQU) * filter_N * _sin(mode * f * t);
+        if(abs(filter_N*comp_mix) < 1e-6) break;
+        
+        ret += comp_mix * filter_N * (_sin(mode * p) + _sin(mode * p * (1.+DET)));
     }
-    
-    return ret;
+    return s_atan(ret);
 }
 
-float QTRISQ(float t, float f, float QUANT, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q)
+float QMACESQ(float t, float f, float QUANT, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
-    return TRISQ(quant(t,QUANT,1./QUANT), f, MAXN, MIX, INR, NDECAY, RES, RES_Q);
+    return MACESQ(quant(t,QUANT,1./QUANT), f, MAXN, MIX, INR, NDECAY, RES, RES_Q, DET, PW);
 }
 
 float env_ADSR(float x, float L, float A, float D, float S, float R)
@@ -98,35 +105,7 @@ float env_ADSRexp(float x, float L, float A, float D, float S, float R)
     return (x < A ? att : dec) * rel;    
 }
 
-
-float macesaw(float t, float f, float CO, float Q, float det1, float det2, float res, float resQ)
-{
-    float s = 0.;
-    float inv_CO = 1./CO;
-    float inv_resQ = 1./resQ;
-    float p = f*t;
-        for(int N=1; N<=200; N++)
-        {
-            // saw
-            float sawcomp = 2./PI * (1. - 2.*float(N % 2)) * 1./float(N);
-            float filterN  = pow(1. + pow(float(N)*f*inv_CO,Q),-.5)
-                     + res * exp(-pow((float(N)*f-CO)*inv_resQ,2.));
-            
-            if(abs(filterN*sawcomp) < 1e-6) break;
-        		
-            if(det1 > 0. || det2 > 0.)
-            {
-                s += 0.33 * (_sin(float(N)*p) + _sin(float(N)*p*(1.+det1)) + _sin(float(N)*p*(1.+det2)));
-            }
-            else
-            {
-                s += filterN * sawcomp * _sin(float(N)*p);
-            }
-        }
-    return s;
-}
-
-float THESYNTH(float t, float B, float Bon, float Boff, float note, int Bsyn)
+float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
 {
     float Bprog = B-Bon;
     float Bproc = Bprog/(Boff-Bon);
@@ -163,11 +142,7 @@ float mainSynth(float time)
     float BT = mod(BPS * time, max_mod_off); // mod for looping
     if(BT > max_mod_off) return r;
 
-    // drum / sidechaining parameters
-    float amt_drum = 0.3;
     float r_sidechain = 1.;
-    float amt_sidechain = 0.99;
-    float dec_sidechain = 0.6;
 
     float Bon = 0.;
     float Boff = 0.;
@@ -181,7 +156,7 @@ float mainSynth(float time)
         if(_mod == TLEN) continue;
        
         float B = BT - mod_on[trk_sep[trk]+_mod];
-       
+
         int ptn = mod_ptn[trk_sep[trk]+_mod];
         int PLEN = ptn_sep[ptn+1] - ptn_sep[ptn];
        
@@ -196,33 +171,31 @@ float mainSynth(float time)
             Bon    = note_on[(ptn_sep[ptn]+_note)];
             Boff   = note_off[(ptn_sep[ptn]+_note)];
 
+            float anticlick = 1.-exp(-1000.*(B-Bon)); //multiply this elsewhere?
+
             if(trk_syn[trk] == drum_index)
             {
                 int Bdrum = int(mod(note_pitch[ptn_sep[ptn]+_note], drum_synths));
                 float Bvel = note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
 
-                float anticlick = 1.-exp(-1000.*(B-Bon));
                 float d = 0.;
 
-                if(Bdrum == 0) // Sidechain
+                if(Bdrum == 0) // Sidechain - have to multiply, actually?
                 {
-                    r_sidechain = anticlick - amt_sidechain * theta(B-Bon) * smoothstep(-dec_sidechain,0.,Bon-B);
+                    r_sidechain = anticlick - .999 * theta(B-Bon) * smoothstep(Boff,Bon,B);
                 }
-                else d += trk_norm[trk] * THESYNTH(time, B, Bon, Boff, Bvel, -Bdrum);
+                else d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
             }
             else
             {
-                r += trk_norm[trk] * THESYNTH(time, B, Bon, Boff,
+                r += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff,
                                                note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[_mod], trk_syn[trk]);
             }
 
         }
     }
 
-    r_sidechain = 1.;
-    amt_drum = .5;
-
-    return s_atan(s_atan((1.-amt_drum) * r_sidechain * r + amt_drum * d));
+    return s_atan(s_atan(r_sidechain * r + d));
 //    return sign(snd) * sqrt(abs(snd)); // eine von Matzes "besseren" Ideen
 }
 

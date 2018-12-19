@@ -33,7 +33,7 @@ class Track():
     def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else 0
 
     def getSynthName(self):               return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else ''
-    def getSynthIndex(self):              return (self.current_synth - len(synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
+    def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
 
     def getMaxRelease(self):              return self.track_maxrelease
     def getNorm(self):                    return self.track_norm
@@ -124,9 +124,12 @@ class Track():
             self.current_synth = (self.current_synth + inc) % len(self.synths)
 
     def updateSynths(self, synths):
-        oldname = self.getSynthName()
+        old_synth = self.getSynthName()
         self.synths = synths
-        if oldname not in synths: self.current_synth = -1
+        if old_synth in synths:
+            self.current_synth = synths.index(old_synth)
+        else:
+            self.current_synth = -1
 
 class Module():
 
