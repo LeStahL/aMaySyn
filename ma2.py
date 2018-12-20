@@ -21,7 +21,7 @@ from numpy import clip
 from math import sin, exp, pi
 import csv
 import operator
-import os
+import os, sys
 import pyperclip
 
 from ma2_track import *
@@ -54,7 +54,7 @@ class Ma2Widget(Widget):
     synatize_form_list = []
     synatize_main_list = []
     
-    title = "piover2"
+    title = 'piover2'
     
     btnTitle = ObjectProperty()
     
@@ -154,6 +154,7 @@ class Ma2Widget(Widget):
                 elif k == 's':                  self.getTrack().switchSynth(+1)
                 
                 elif k == 'f3':                 self.renameTrack()
+                elif k == 'f4':                 self.changeTrackParameters()
                 elif k == 'f12':                self.printPatterns()
 
         if(self.thePtnWidget.active) and self.getPattern():
@@ -252,6 +253,17 @@ class Ma2Widget(Widget):
         self.getTrack().name = args[0].text
         self.update()
 
+    def changeTrackParameters(self):
+        par_string = str(self.getTrack().getNorm()) + ' ' + str(self.getTrack().getMaxRelease())
+        popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR, <SPACE>, MAXIMUM RELEASE [BEATS]"', title_font = self.font_name, default_text = par_string)
+        popup.bind(on_dismiss = self.handleChangeTrackParameters)
+        popup.open()
+    def handleChangeTrackParameters(self, *args):
+        self._keyboard_request()
+        pars = args[0].text.split()
+        self.getTrack().setParameters(norm = pars[0], maxrelease = pars[1])
+        self.update()
+
     def addTrack(self, name, synth = None):
         self.tracks.append(Track(synths, name = name, synth = synth))
         if len(self.tracks) == 1: self.current_track = 0
@@ -297,6 +309,26 @@ class Ma2Widget(Widget):
         self.title = 'new Song'
 
         self.update()
+        
+    def setupInit(self):
+        self.loadSynths()
+        self.setupSomething()
+        
+        
+        if len(sys.argv) > 1:
+            self.title = sys.argv[1]
+        elif os.path.exists('.last'):
+            with open('.last') as in_tmp:
+                self.title = in_tmp.read()
+        else:
+            pass
+
+        self.loadSynths()
+        Clock.schedule_once(self.loadCSV, 0)
+
+        self.current_pattern = 0
+        self.current_module = 0
+        self.update()
 
 ############## ONLY THE MOST IMPORTANT FUNCTION! ############
 
@@ -330,7 +362,7 @@ class Ma2Widget(Widget):
 
 ###################### EXPORT FUNCTIONS #####################
 
-    def loadCSV(self):
+    def loadCSV(self, dt=0):
         filename = self.title + '.may'
         
         if not os.path.isfile(filename):
@@ -340,6 +372,9 @@ class Ma2Widget(Widget):
                 print('test.may not around, doing nothing.')
                 return
         
+        self.loadSynths()
+        print("... synths were reloaded. now read", filename)
+
         with open(filename) as in_csv:
             in_read = csv.reader(in_csv, delimiter='|')
             
@@ -347,15 +382,14 @@ class Ma2Widget(Widget):
                 self.title = r[0]
                 self.tracks = []
                 self.patterns = []
-                synths = []
-                drumkit = []
                 
                 c = 2
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[1])):
                     track = Track(synths, name = r[c], synth = int(r[c+1]))
+                    track.setParameters(norm = float(r[c+2]), maxrelease = float(r[c+3]))
 
-                    c += 2
+                    c += 4
                     for _ in range(int(r[c])):
                         track.modules.append(Module(float(r[c+2]), Pattern(name=r[c+1]), int(r[c+3])))
                         c += 3
@@ -381,25 +415,13 @@ class Ma2Widget(Widget):
                         for p in self.patterns:
                             if m.pattern.name == p.name: m.setPattern(p)
 
-                c += 1
-                print(int(r[c]))
-                for _ in range(int(r[c])):
-                    c += 1
-                    synths.append(r[c])
-
-                c += 1
-                for _ in range(int(r[c])):
-                    c += 1
-                    drumkit.append(r[c])
-                print(drumkit[-1])
-
     def saveCSV(self):
         filename = self.title + '.may'
         
         out_str = self.title + '|' + str(len(self.tracks)) + '|'
         
         for t in self.tracks:
-            out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(len(t.modules)) + '|'
+            out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(t.getNorm()) + '|' + str(t.getMaxRelease()) + '|' + str(len(t.modules)) + '|'
             
             for m in t.modules:
                 out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
@@ -413,13 +435,14 @@ class Ma2Widget(Widget):
             for n in p.notes:
                 out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) + '|' + str(n.note_vel)
 
-        out_str += '|' + str(len(synths)) + '|' + '|'.join(synths)
-        out_str += '|' + str(len(drumkit)) + '|' + '|'.join(drumkit)
-
         # write to file
         out_csv = open(filename, "w")
         out_csv.write(out_str)
         out_csv.close()
+        
+        out_tmp = open('.last', "w")
+        out_tmp.write(self.title)
+        out_tmp.close()
         
     def buildGLSL(self):
         filename = self.title + '.glsl'
@@ -478,6 +501,8 @@ class Ma2Widget(Widget):
     
 ###################### HANDLE BUTTONS #######################
 
+# HAHA. no. we don't handle buttons.
+
 #############################################################
 
     def pressTitle(self):     pass
@@ -498,30 +523,19 @@ class Ma2Widget(Widget):
     def pressNoteOn(self):    pass
     def pressNoteLen(self):   pass
     def pressNoteVel(self):   pass
-    def pressLoadCSV(self):   pass
-    def pressSaveCSV(self):   self.saveCSV(self.title + ".may")
-    def pressBuildCode(self): pass
+    def pressLoadCSV(self):   self.loadCSV()
+    def pressSaveCSV(self):   self.saveCSV()
+    def pressBuildCode(self): self.buildGLSL()
 
 ###################### DEBUG FUNCTIONS ######################
 
-    def setupInit(self):
-        
-        self.loadSynths()
-
+    def setupSomething(self):
         self.addTrack("Bassline", synth = 0)
-
         self.addPattern("Sündig",2)
-
         self.tracks[0].addModule(0, self.patterns[0], 0, select = False)
-                
         self.getPattern().addNote(Note(0.00,0.50,24), select = False)
-
         for i in range(8):
             self.addTrack(name = 'Track ' + str(i+2))
-
-        self.current_pattern = 0
-        self.current_module = 0
-        self.update()
         
     def printDebug(self):
         for t in self.tracks:

@@ -10,9 +10,8 @@ class Track():
     name = ''
     current_synth = -1
     
-    # these features will come...
-    track_norm = 1.
-    track_maxrelease = 0.5
+    par_norm = 1.
+    par_maxrelease = 0.5
     
     def __init__(self, synths, name = '', synth = -1):
         self.synths = synths
@@ -35,9 +34,8 @@ class Track():
     def getSynthName(self):               return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else ''
     def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
 
-    def getMaxRelease(self):              return self.track_maxrelease
-    def getNorm(self):                    return self.track_norm
-    def setPar(self, norm, maxrelease):   self.norm = norm; self.maxrelease = maxrelease
+    def getNorm(self):                    return self.par_norm
+    def getMaxRelease(self):              return self.par_maxrelease
 
     def addModule(self, mod_on, pattern, transpose = 0, select = True):
         self.modules.append(Module(mod_on, pattern, transpose))
@@ -130,6 +128,10 @@ class Track():
             self.current_synth = synths.index(old_synth)
         else:
             self.current_synth = -1
+
+    def setParameters(self, norm, maxrelease):
+        self.par_norm = float(norm)
+        self.par_maxrelease = float(maxrelease)
 
 class Module():
 

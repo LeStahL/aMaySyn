@@ -120,52 +120,11 @@ float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
 
 	if(Bsyn == 0){}
     else if(Bsyn == 1){
-      s = ((s_atan(_sin(.5*f*(t-0.0))+_sin((1.-.01)*.5*f*(t-0.0)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-0.0),_sin(.5*f*(t-0.0)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-0.0)-0.0))
-      +_sin(2.5198*.5*f*((t-0.0)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-0.0)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-0.0)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-3.0e-01))+_sin((1.-.01)*.5*f*(t-3.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-3.0e-01),_sin(.5*f*(t-3.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-3.0e-01)-0.0))
-      +_sin(2.5198*.5*f*((t-3.0e-01)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-3.0e-01)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-3.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-6.0e-01))+_sin((1.-.01)*.5*f*(t-6.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-6.0e-01),_sin(.5*f*(t-6.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-6.0e-01)-0.0))
-      +_sin(2.5198*.5*f*((t-6.0e-01)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-6.0e-01)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-6.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-9.0e-01))+_sin((1.-.01)*.5*f*(t-9.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-9.0e-01),_sin(.5*f*(t-9.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-9.0e-01)-0.0))
-      +_sin(2.5198*.5*f*((t-9.0e-01)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-9.0e-01)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-9.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.2))+_sin((1.-.01)*.5*f*(t-1.2)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-1.2),_sin(.5*f*(t-1.2)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-1.2)-0.0))
-      +_sin(2.5198*.5*f*((t-1.2)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-1.2)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-1.2)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.5))+_sin((1.-.01)*.5*f*(t-1.5)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-1.5),_sin(.5*f*(t-1.5)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-1.5)-0.0))
-      +_sin(2.5198*.5*f*((t-1.5)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-1.5)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-1.5)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.8))+_sin((1.-.01)*.5*f*(t-1.8)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-1.8),_sin(.5*f*(t-1.8)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-1.8)-0.0))
-      +_sin(2.5198*.5*f*((t-1.8)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-1.8)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-1.8)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.1))+_sin((1.-.01)*.5*f*(t-2.1)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-2.1),_sin(.5*f*(t-2.1)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-2.1)-0.0))
-      +_sin(2.5198*.5*f*((t-2.1)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-2.1)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-2.1)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.4))+_sin((1.-.01)*.5*f*(t-2.4)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-2.4),_sin(.5*f*(t-2.4)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-2.4)-0.0))
-      +_sin(2.5198*.5*f*((t-2.4)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-2.4)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-2.4)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.7))+_sin((1.-.01)*.5*f*(t-2.7)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-2.7),_sin(.5*f*(t-2.7)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-2.7)-0.0))
-      +_sin(2.5198*.5*f*((t-2.7)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-2.7)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-2.7)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.))));}
-    else if(Bsyn == 2){
       s = _sin(.5*f*t)*env_ADSR(_t,tL,.5,2.,.5,.1);}
-    else if(Bsyn == 3){
+    else if(Bsyn == 2){
       s = theta(Bprog)*exp(-16.*mod(Bprog,.125))*theta(Bprog)*exp(-1.5*Bprog)*(s_atan((2.*fract(f*t+0.)-1.)+(2.*fract((1.-.01)*f*t+0.)-1.)+(2.*fract((1.-.033)*f*t+0.)-1.)+(2.*fract((1.-.04)*f*t+0.)-1.))+.6*s_atan((2.*fract(.5*f*t+.01)-1.)+(2.*fract((1.-.05)*.5*f*t+.01)-1.)+(2.*fract((1.-0.03)*.5*f*t+.01)-1.)+(2.*fract((1.-0.02)*.5*f*t+.01)-1.)));}
     else if(Bsyn == -1){
-      s = s_atan((smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((53.7+(176.8-53.7)*smoothstep(-.3, 0.,-_t))*t))+_sin(.5*(53.7+(176.8-53.7)*smoothstep(-.3, 0.,-_t))*t)))+ 1.2*step(_t,.05)*_sin(5000.*t*.8*_saw(1000.*t*.8)));}
+      s = s_atan((smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((62.7+(206.4-62.7)*smoothstep(-.3, 0.,-_t))*t))+_sin(.5*(62.7+(206.4-62.7)*smoothstep(-.3, 0.,-_t))*t)))+ 1.2*step(_t,.05)*_sin(5000.*t*.8*_saw(1000.*t*.8)));}
     
 	return clamp(env,0.,1.) * s_atan(s);
 }
@@ -183,15 +142,15 @@ float mainSynth(float time)
 {
     int NO_trks = 1;
     int trk_sep[2] = int[2](0,1);
-    int trk_syn[1] = int[1](3);
-    float trk_norm[1] = float[1](1.);
-    float trk_rel[1] = float[1](.5);
+    int trk_syn[1] = int[1](2);
+    float trk_norm[1] = float[1](.9);
+    float trk_rel[1] = float[1](.7);
     float mod_on[1] = float[1](0.);
     float mod_off[1] = float[1](8.);
     int mod_ptn[1] = int[1](0);
     float mod_transp[1] = float[1](0.);
     float max_mod_off = 8.;
-    int drum_index = 4;
+    int drum_index = 3;
     float drum_synths = 1.;
     int NO_ptns = 1;
     int ptn_sep[2] = int[2](0,17);

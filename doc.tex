@@ -1,0 +1,59 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage[utf8]{inputenc}
+\usepackage[top=1cm,left=2cm,right=1.5cm,bottom=1cm]{geometry}
+
+\title{aMaySyn documentation}
+\author{Team210/QM}
+\date{20/21/2018}
+
+\begin{document}
+\maketitle
+
+for self-reference mostly, here are the current key events:
+
+\section{GLOBAL}
+  these are global functions, regardless of which of the widgets is currently active.
+    \begin{itemize}
+      \item[\textbf{[ESC]}] quit the amazing aMaySyn.
+      \item[\textbf{[TAB]}] toggle which of the TRACK/PATTERN WIDGET is active (notice the purple frame)
+      \item[\textbf{[F1]}] randomize the aMaySyn Colors! (optics only)
+      \item[\textbf{[F2]}] rename the whole song - title.may will be the filename, and title.syn will be the synth definition file which is read (if not present, test.syn will be taken). \textcolor{red}{I have to fix something here, it can lead to stupid inconsistencies at this point.}
+      \item[\textbf{[F5]}] as in the point before: will reload the synth definition file from title.syn / test.syn
+      \item[\textbf{[F8]}] print some debug stuff (did I really implement this? idk)
+      \item[\textbf{[F11]}] \textcolor{red}{UPCOMING:} that nice curve editor I'm planning, for "global automation curves"
+      \item[\textbf{[CTRL]+[N]}] clear the whole song
+      \item[\textbf{[CTRL]+[L]}] load title.may \textcolor{red}{TODO: input prompt for filename}
+      \item[\textbf{[CTRL]+[S]}] save title.may \textcolor{red}{TODO: input prompt for filename}
+      \item[\textbf{[CTRL]+[B]}] export the GLSL code to title.glsl and copy it directly into the clipboard\\$\rightarrow$ just paste into shadertoy and execute! :)
+    \end{itemize}
+\section{TRACK WIDGET}
+    here, you set MODULEs into TRACKs. Each MODULE is assigned a PATTERN as well as more parameters, as \emph{time of start} and \emph{transpose} (for now).
+    \begin{itemize}
+            \item[\textbf{[SHIFT]+[$\uparrow\!/\!\downarrow$]}] transpose module up/down (does not affect pattern!)
+            \item[\textbf{[SHIFT]+[$\leftarrow\!/\!\rightarrow$]}] move module through time
+            \item[\textbf{[SHIFT]+[HOME/END]}] move module to beginning/end of track
+            \item[\textbf{[$\uparrow\!/\!\downarrow$]}] switch to the track above / below
+            \item[\textbf{[$\leftarrow\!/\!\rightarrow$]}] switch to the neighboring module to the left/right
+            \item[\textbf{[HOME/END]}] switch to the first / last module in this track
+            \item[\textbf{[$+$]}] add empty module to the track
+            \item[\textbf{[C]}] add module to the track and assign the current pattern
+            \item[\textbf{[$-$]}] delete current module \textcolor{red}{[TODO: undo function! not in there yet.]}
+            \item[\textbf{[SHIFT]+[CTRL]+[$\leftarrow\!/\!\rightarrow$}]: move all modules in this track through time
+            \item[\textbf{[C]}] 
+            \item[\textbf{[Pg$\uparrow$/Pg$\downarrow$]}] assign another pattern 
+            \item[\textbf{[C]}] 
+            \item[\textbf{[C]}] 
+            \item[\textbf{[C]}] 
+            
+            \item[\textbf{[ALT]+$\ldots$}]     Usually it's like that: during editing, you will get more precision
+    \end{itemize}
+\section{PATTERN WIDGET}
+    here, you set NOTEs into TRACKs.
+    \begin{itemize}
+    \end{itemize}
+
+\end{document}

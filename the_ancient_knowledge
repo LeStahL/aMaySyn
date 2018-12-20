@@ -1,0 +1,898 @@
+# THIS FILE IS A REMINDER, WHICH OF THE OLD FUNCTIONALY I HAVE NOT PORTED TO AMAZYN YET (but might want to)
+
+float shake(float t, float t_on, int vel, int Bsyn) // shaker is just some mod of hihat (hut)
+{
+    t = t - min(t, t_on);
+    return float(vel)/100. * 0.5 * fract(sin(t * 90.) * 45000.) * doubleslope(t,0.03,0.15,0.15);
+}
+
+float hut(float t, float t_on, int vel, int Bsyn)
+{
+    t = t - min(t, t_on);
+    float noise = fract(sin(t * 90.) * 45000.);
+    noise = 1./(1.+noise);
+    return float(vel)/100. * noise * doubleslope(t,0.,0.12,0.0);
+    
+    // might think of this one! - maybe tune length / pitch
+    //float kick_blubb = (1.-exp(-1000.*t))*exp(-30.*t) * _sin((400.-200.*t)*t * _saw(4.*f*t));
+}
+
+
+float snare(float t, float t_on, int vel, int Bsyn)
+{
+    // #define _tri(a) (4.*abs(fract(a)-.5) - 1.)
+    t = t - min(t, t_on);
+    float f1 = 6000.;
+    float f2 = 800.;
+    float f3 = 350.;
+    float dec12 = 0.01;
+    float dec23 = 0.01;
+    float rel = 0.1;
+    float snr = _tri(t * (f3 + (f1-f2)*smoothstep(-dec12,0.,-t)
+                             + (f2-f3)*smoothstep(-dec12-dec23,-dec12,-t))) * smoothstep(-rel,-dec12-dec23,-t);
+        
+    //noise part
+    float noise = fract(sin(t * 90.) * 45000.) * doubleslope(t,0.05,0.3,0.3);
+    
+    float overdrv = 2.;
+    
+    return float(vel)/100. * clamp(overdrv * snr + noise, -1., 1.) * doubleslope(t,0.0,0.25,0.3);
+}
+
+
+float facekick(float t, float t_on, int vel, int Bsyn)
+{
+    t = t - min(t, t_on); // reset time to Bon event
+    
+    float f   = 50. + 150. * smoothstep(-0.12, 0., -t);
+    float env = smoothstep(0.,0.015,t) * smoothstep(-0.08, 0., 0.16 - t);
+    
+    float kick_body = env * TRISQ(t, f, 3, 1., 0.8, 8., 4., 1.); // more heavy bass drum: increase reso parameters?
+    
+    float kick_click = 0.4 * step(t,0.03) * _sin(t*1100. * _saw(t*800.));
+    
+    float kick_blobb = (1.-exp(-1000.*t))*exp(-40.*t) * _sin((400.-200.*t)*t * _sin(1.*f*t));
+    
+	return float(vel)/100. * (kick_body + kick_blobb + kick_click);
+}
+
+    if(Bsyn == 14) // test of mace-sq (matzeskuh)
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,2.,0.,0.2,2.);
+        
+        env *= 0.5;
+        
+        float filterCO = 600. * env_ADSR(Bprog,Boff-Bon,2.,0.,1.,2.) + 40. * sqrt(f);
+
+        sound += 0.3*macesanderekuh(t, f, filterCO, 30., 0.002, -0.01, 0.0, 0.0, 0.1);
+        
+        sound = clip(0.8*sound);
+    }
+
+    if(Bsyn == 15) // can I manage some horns, some day?
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,3.,0.,0.2,2.);
+        
+        env *= 0.5;
+        
+        float filterCO = 100. * env_ADSR(Bprog,Boff-Bon,2.,0.,1.,2.) + 20. * sqrt(f);
+
+        sound = 0.2*macesaw(t, f, filterCO, 50., -0.01-0.005*_sin(0.5*Bproc), 0.01-0.008*_sin(0.25*Bproc+.25), 0.0, 0.);
+
+        sound += 0.3*maceskuh(t, f, filterCO, 30., 0.002, -0.01, 0.0, 0.0, 0.1+0.06*_sin(0.25*_t));
+
+//        sound += 0.1*maceskuh(t, 2.*f, filterCO, 10., 0.004, -0.002, 0.0, 0.0, -0.1+0.03*_sin(2.*t));
+        
+        sound = clip(0.8*sound);
+    }
+    
+    if(Bsyn == 16) // super saw pad
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,1.5,2.,0.2,0.8);
+        
+        env *= 0.5;
+        
+        float filterQ = 100.;
+        float filterCO = 200. + 100. * env_ADSR(Bprog,Boff-Bon,1.5,2.5,0.2,10.);
+
+        sound = 0.9*macesaw(t, f, filterCO, filterQ, 0.010, 0.016, 0.0, 0.);
+       	// t --> quanti(t, 4096); // some nice wicked lo-bit shit
+        
+     
+        sound = 0.4 * (0.5*_saw(t*f+.1+0.1*_sin(2.*t)) + _saw(t*f+.25) + _saw(t*f+0.2*_sin(0.5*t)));
+        // lo-fi noise
+        //sound = quanti(sound, 128.);
+    }
+    
+    if(Bsyn == 17) // deftiges pad
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,1.5,2.,0.2,0.8);
+        
+        env *= 0.5;
+        
+        float filterQ = 20.;
+        float filterCO = 200. + 100. * env_ADSR(Bprog,Boff-Bon,1.5,2.5,0.2,10.);
+
+        sound = 0.9*macesaw(t, f, filterCO, filterQ, 0.010, 0.020, 0.3, 3.);
+       	// t --> quanti(t, 4096); // some nice wicked lo-bit shit
+        
+        // lo-fi noise
+        //sound = quanti(sound, 128.);
+    }
+
+    
+    if(Bsyn == 10) // Alright, this is not mellow, but wayne.
+    {
+        sound = _tri(2.*f*t) + _tri(0.999*2.*f*_t*(1.+0.0001*_sin(4.*_t)));
+        
+        sound += 0.2 * _saw(5.01*f*t)
+               + 0.2 * _saw(14.01*f*t);
+        
+        sound += _saw(t * (f + 1000. * smoothstep(-0.1,0.,-Bprog))) * smoothstep(-0.1,0.,-Bprog);
+        
+        sound *= 0.2;
+    }
+    
+    // replace sound of Bsyn 0 by something squarey (with some automated PWM)
+    if(Bsyn == 0)
+    {
+        sound = QTRISQ(t, freqC1(note), 1024., 16, 0.2, 8. + 20.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1)
+              + QTRISQ(t, 2.*freqC1(note), 1024., 16, 0.4, 8. + 20.*smoothstep(0.,0.1,Bproc), 1.2, 0.2, 0.1);
+        
+        sound = 0.8 * sound * exp(-4.0*Bprog);
+
+        sound += 0.4*_sin(_t*f) * exp(-2.0*Bprog);
+        sound += 0.4*_tri(_t*4.*f) * exp(-8.0*Bprog);
+        
+        sound += 0.6 * smoothstep(0.,1.2,Bproc) * (0.5 * _squ(_t*f,0.) + 0.5 * _squ(_t*f*.99,0.01));
+        
+        sound = clip(1.3*sound);
+    }
+
+    else if(Bsyn == 12)
+    {
+        float kappa = 1.4;
+    	float dist = 1.3;
+
+        env *= exp(-kappa*(B-Bon));
+        
+        float freq_mod = 1. + 0.02 * exp(-10.*(B-Bon)); // edgy sound
+        freq_mod = 1.;
+            
+        //sound = 0.7*sound + 0.3*clamp(2.*dist * _sin(freqC1(note+12)*(t-1e-3)), -0.999,0.999);
+        
+    	sound  = 0.7 * _squ(freq_mod * freqC1(note)*t, -0.4 - 0.15*_sin(0.3*(B-Bon)));
+        
+        // add subbass
+        sound += 0.5 * _unisin(freqC1(note)*t,0.05 * _sin(0.25*t));
+
+        //reduce bit depth to 4
+        //sound = quant(sound, 4., 0.25);
+        
+        // try something else, QTRISQ is my additive low-samplerate osci with improvized filter
+        // QTRISQ(float t, float f, float QUANT, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q)
+        sound = QTRISQ(t, freqC1(note), 1024., 16, 0.2, 8. + 20.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1)
+              + QTRISQ(t, 2.*freqC1(note), 1024., 16, 0.4, 8. + 20.*smoothstep(0.,0.1,Bproc), 1.2, 0.2, 0.1);
+        
+	    float im = 2. + .5*_sin(0.21*_t);
+        float y = _sin(4.*f*_t + im*_sin(0.25*f*Bproc) );
+        
+    }
+
+    else if(Bsyn == 11)
+    {
+        float kappa = 1.4;
+    	float dist = 1.3;
+
+        env *= exp(-kappa*(B-Bon));
+        
+        float freq_mod = 1. + 0.02 * exp(-10.*(B-Bon)); // edgy sound
+        freq_mod = 1.;
+            
+        //sound = 0.7*sound + 0.3*clamp(2.*dist * _sin(freqC1(note+12)*(t-1e-3)), -0.999,0.999);
+        
+    	sound  = 0.7 * _squ(freq_mod * freqC1(note)*t, -0.4 - 0.15*_sin(0.3*(B-Bon)));
+        
+        // add subbass
+        sound += 0.5 * _unisin(freqC1(note)*t,0.05 * _sin(0.25*t));
+
+        //reduce bit depth to 4
+        //sound = quant(sound, 4., 0.25);
+
+    }
+
+    else if(Bsyn == 13) // inspired by some other shader. forgot which one. sorry.
+    {
+	    float im = 2. + .5*_sin(0.21*_t);
+        float y = _sin(4.*f*_t + im*_sin(0.25*f*Bproc) );
+        
+        sound = y;
+    }
+
+    
+    else if(Bsyn == 4)
+    {
+    	sound = QTRISQ(t, freqC1(note), 2048., 20, 0.2, 3. + 5.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1)
+              + QTRISQ(t, 2.*freqC1(note), 1024., 10, 0.4, 1. + 3.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1);
+        
+        sound *= 0.3;
+    }
+    
+    else if(Bsyn == 1)
+    {
+    	float dist = 1.3;
+
+        env = smoothstep(0., 0.25, B-Bon) * (1.+0.01*sin(2.*PI*20.*t)) * theta(Boff-B);
+        
+		sound = 0.3*(clamp(dist * _sin(freqC1(note)*t)           , -0.999,0.999)
+                   + clamp(dist * _sin(0.999*freqC1(note)*t+0.05), -0.999,0.999));
+
+        sound += 0.7 * _unisin(freqC1(note)*t,0.05);    
+    }
+    
+    else if(Bsyn == 2)
+    {   
+    	float fFM = 0.33*f;
+    	float aFM = 0.3 * doubleslope(_t,1.,5.,0.01);
+		float aFB = 0.02 * doubleslope(_t,2.,8.,0.00);
+    
+        env = doubleslope(B-Bon, 0.002, 2., 0.);
+    	sound = _sin(_t * f * (1. + aFM * _sin(_t * fFM * (1. + aFB * _sin(_t * fFM)))));
+        
+        //reduce bit depth to 16
+        sound = quant(sound, 16., 0.0625);
+        
+        // rectify
+        //sound = sign(sound);
+
+        // try downsampling
+        env = doubleslope(B-Bon, 0.01, 8., 0.);
+        sound = 0.3 * _unisin(quant(_t,256.,0.004) * f * .25, 0.05);
+    
+        // check tuning
+        sound += _sin(_t * f * 0.25);
+    }    
+    
+    else if(Bsyn == 3)
+    {
+        float kappa = 1.4;
+        env *= exp(-kappa*(B-Bon));
+        sound = _unisin(t*freqC1(note),0.001)
+              + _tri(t*2.*freqC1(note)*(1.+0.0001*_sin(0.5*Bproc))) * smoothstep(0.0,0.3, Bprog);
+
+    	//try some trumpet sound
+        float freq_LFO = 0.005 * smoothstep(0.,1.,_t) * _tri(_t);
+        sound = _saw(_t*freqC1(note)*(1.+freq_LFO) + 0.3 * smoothstep(0.,0.7,_t) * _saw(_t*3.01*freqC1(note)));
+        
+        // now model after DX reface
+        // frequency ratio
+        float FR2 = 0.998;
+        float FR1 = 0.5;
+       	// level
+        float LV2 = 0.5;
+        float LV1 = 1.;
+        // feedback
+        float FB2 = 0.1;
+        float FB1 = 0.6;
+		// actual algorithm (5?)
+        float OP2 = _saw(_t * FR2 * (freqC1(note) + FB2 * _saw(_t * FR2 * freqC1(note))));
+        float OP1 = LV1 * _saw(_t * FR1 * freqC1(note) + LV2 * OP2 + FB1 * _sin(_t * FR1 * freqC1(note)));
+        
+        sound = OP1;
+        
+    }    
+
+
+float pseudorandom(float x)
+{
+    return fract(sin(dot(vec2(x),vec2(12.9898,78.233))) * 43758.5453);
+}
+
+// Beat
+float basickick (float t, float s, float f)
+{
+    t = min(t, s);
+    return _sin(t * f * smoothstep(2.0*s, 0.0, t));
+}
+
+float asskick(float t)
+{
+    float ass = 0.;
+
+    float BodFrqA   = 1000.;
+    float BodFrqS   = 60.;
+    float BodFrqE   = 40.;
+    float BodFrqDec = 0.0002;
+    float BodFrqRel = 0.01;
+    float BodFrqAlf = 1.0;   // alpha: linear-exponential mixing (alpha=1: linear)
+
+    float BodSquMix = 0.1;
+    float BodOvrdrv = 1.8; 
+
+    float BodAmpAtt = 0.001;
+    float BodAmpHld = 0.255;
+    float BodAmpRel = 0.5;
+    float BodAmpAlf = 0.5;
+    float BodAmpGat = 0.01;
+
+    // Body
+
+    float Amp = 0.;
+    //attack and hold phases
+    if(t < BodAmpHld)
+        Amp = (t < BodAmpAtt) ? t/BodAmpAtt : 1.;
+    //release phase (two kinds of decay)
+    else
+    {
+        float t0 = t - BodAmpHld;
+
+        float LinDec = 1. - t0/BodAmpRel;
+        float ExpDec = pow(BodAmpGat, t0/BodAmpRel);
+
+        Amp = BodAmpAlf * LinDec + (1.-BodAmpAlf) * ExpDec;
+    }
+    //simple gate
+    if(Amp < BodAmpGat) Amp = 0.;
+
+    float Freq = 0.;
+    // first, steep decay
+    if(t < BodFrqDec)
+        Freq = BodFrqA + (BodFrqS - BodFrqA) * t/BodFrqDec;
+    else
+    {
+        float t0 = t - BodFrqDec;
+
+        float FrqLinDec = BodFrqS + (BodFrqE - BodFrqS) * t0/BodFrqRel;
+        float FrqExpDec = BodFrqS * pow(BodFrqE/BodFrqS, t0/BodFrqRel);
+
+        Freq = BodFrqAlf * FrqLinDec + (1. - BodFrqAlf) * FrqExpDec;
+
+        if(Freq < BodFrqE) Freq = BodFrqE; // shouldn't be possible by construction, but as a kind of safety net
+    }  
+
+    float phase = 2.*PI*Freq*t;
+    ass = Amp * ( (1.-BodSquMix) * sin(phase) + BodSquMix/sqrt(2.) * sign(sin(phase))); //factor 1/sqrt(2) evens out the powers
+
+    ass *= BodOvrdrv;
+    
+    ass = clamp(ass, -1., 1.);
+    
+    // + Pop (relative volume, sine, short decay, sweep over pitch midrange)
+
+    float PopFrqS = 900.;
+    float PopFrqE = 100.;
+    float PopFrqDec = 0.1;
+    float PopFrqAlf = 0.5;
+    float PopAmpHld = 0.1; // = PopFrqDec?
+    float PopAmpMix = 0.3;   // > 1 for more overdrive =)
+
+    float FrqLinDec = PopFrqS + (PopFrqE - PopFrqS) * t/PopFrqDec;
+    float FrqExpDec = PopFrqS * pow(PopFrqE/PopFrqS, t/PopFrqDec);
+
+    Freq = PopFrqAlf * FrqLinDec + (1. - PopFrqAlf) * FrqExpDec;
+
+    if(Freq < PopFrqE) Freq = PopFrqE;
+
+    if(t < PopAmpHld) ass += PopAmpMix * sin(2.*PI*Freq*t); 
+
+    
+    // + Click (relative volume, frequency modulated) 
+
+    float ClkCarFrq = 2000.;
+    float ClkModFrq = 100.;
+    float ClkModAmt = 0.2;
+    float ClkAmpHld = 0.025;
+    float ClkAmpMix = 0.3;   // > 1 for more overdrive =)
+
+    if(t < ClkAmpHld) ass += _sin(ClkCarFrq*t * (1. + ClkModAmt*_sin(ClkModFrq*t)) );
+
+    // + Noise?? 
+    // ...
+
+    // <-- high pass? can we filter somehow?
+    
+    ass = clamp(ass, -1., +1.);
+
+    return ass;
+}
+
+## SOFT SYNTHWAVEY ## - but same as above?
+
+float snare(float t, float t_on, int vel, int Bsyn)
+{
+    // #define _tri(a) (4.*abs(fract(a)-.5) - 1.)
+    t = t - min(t, t_on);
+    float f1 = 6000.;
+    float f2 = 800.;
+    float f3 = 350.;
+    float dec12 = 0.01;
+    float dec23 = 0.01;
+    float rel = 0.1;
+    float snr = _tri(t * (f3 + (f1-f2)*smoothstep(-dec12,0.,-t)
+                             + (f2-f3)*smoothstep(-dec12-dec23,-dec12,-t))) * smoothstep(-rel,-dec12-dec23,-t);
+        
+    //noise part
+    float noise = fract(sin(t * 90.) * 45000.) * doubleslope(t,0.05,0.3,0.3);
+    
+    float overdrv = 0.;
+    
+    return float(vel)/100. * clamp(overdrv * snr + noise, -1., 1.) * doubleslope(t,0.0,0.25,0.3);
+}
+
+
+float hut(float t, float t_on, int vel, int Bsyn)
+{
+    t = t - min(t, t_on);
+    return float(vel)/100. * fract(sin(t * 90.) * 45000.) * doubleslope(t,0.,0.12,0.0);
+}
+
+    if(Bsyn == 0)
+    {
+        float kappa = 1.4;
+    	float dist = 1.3;
+
+        env *= exp(-kappa*(B-Bon));
+        
+        float freq_mod = 1. + 0.02 * exp(-10.*(B-Bon)); // edgy sound
+        freq_mod = 1.;
+            
+        //sound = 0.7*sound + 0.3*clamp(2.*dist * _sin(freqC1(note+12)*(t-1e-3)), -0.999,0.999);
+        
+    	sound  = 0.7 * _squ(freq_mod * freqC1(note)*t, -0.4 - 0.15*_sin(0.3*(B-Bon)));
+        
+        // add subbass
+        sound += 0.5 * _unisin(freqC1(note)*t,0.05 * _sin(0.25*t));
+
+        //reduce bit depth to 4
+        //sound = quant(sound, 4., 0.25);
+    }
+	
+    else if(Bsyn == 1)
+    {
+    	float dist = 1.3;
+
+        env = smoothstep(0., 0.25, B-Bon) * (1.+0.01*sin(2.*PI*20.*t)) * theta(Boff-B);
+        
+		sound = 0.3*(clamp(dist * _sin(freqC1(note)*t)           , -0.999,0.999)
+                   + clamp(dist * _sin(0.999*freqC1(note)*t+0.05), -0.999,0.999));
+
+        sound += 0.7 * _unisin(freqC1(note)*t,0.05);    
+    }
+    
+    else if(Bsyn == 2)
+    {
+        float _t = SPB*(B - Bon); // reset time to Bon event
+    	float f = freqC1(note);
+    
+    	float fFM = 0.33*f;
+    	float aFM = 0.3 * doubleslope(_t,1.,5.,0.01);
+		float aFB = 0.02 * doubleslope(_t,2.,8.,0.00);
+    
+        env = doubleslope(B-Bon, 0.002, 2., 0.);
+    	sound = _sin(_t * f * (1. + aFM * _sin(_t * fFM * (1. + aFB * _sin(_t * fFM)))));
+        
+        //reduce bit depth to 16
+        sound = quant(sound, 16., 0.0625);
+        
+        // rectify
+        //sound = sign(sound);
+
+        // try downsampling
+        env = doubleslope(B-Bon, 0.01, 8., 0.);
+        sound = 0.3 * _unisin(quant(_t,256.,0.004) * f * .25, 0.05);
+    
+        // check tuning
+        sound += _sin(_t * f * 0.25);
+    }
+
+    else if(Bsyn == 3)
+    {
+        float kappa = 1.4;
+        env *= exp(-kappa*(B-Bon));
+        sound = _unisin(t*freqC1(note),0.001)
+              + _tri(t*2.*freqC1(note)*(1.+0.0001*_sin(0.5*Bproc))) * smoothstep(0.0,0.3, Bprog);
+    }    
+
+    
+### THIS IS THE STATE AT REVISION (or the last backup I had) ###
+float distsin(float t, float B, float Bon, float Boff, int note, int Bsyn) //Bsyn: select synth. ignore for now.
+{
+    if(note > 100) note = note % 100; // this is for duophony, but my editor doesn't support it
+
+    float Bprog = B-Bon;			// progress within Bar
+    float Bproc = Bprog/(Boff-Bon); // relative progress
+    float _t = SPB*(B - Bon); // reset time to Bon event
+    float f = freqC1(note);
+
+    float env = theta(B-Bon) * theta(Boff-B);
+	float sound = clamp(1.1 * _sin(freqC1(note)*t), -0.999,0.999);
+
+    //return env * sound; // test reasons: just give out something simple
+
+    // TEST MELLOW PELLOW
+    if(Bsyn == 3) Bsyn = 10;
+
+    if(Bsyn == 10) // Alright, this is not mellow, but wayne.
+    {
+        sound = _tri(2.*f*t) + _tri(0.999*2.*f*_t*(1.+0.0001*_sin(4.*_t)));
+        
+        sound += 0.2 * _saw(5.01*f*t)
+               + 0.2 * _saw(14.01*f*t);
+        
+        sound += _saw(t * (f + 1000. * smoothstep(-0.1,0.,-Bprog))) * smoothstep(-0.1,0.,-Bprog);
+        
+        sound *= 0.2;
+    }
+    
+    // replace sound of Bsyn 0 by something squarey (with some automated PWM)
+    if(Bsyn == 0)
+    {
+        sound = QTRISQ(t, freqC1(note), 1024., 16, 0.2, 8. + 20.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1)
+              + QTRISQ(t, 2.*freqC1(note), 1024., 16, 0.4, 8. + 20.*smoothstep(0.,0.1,Bproc), 1.2, 0.2, 0.1);
+        
+        sound = 0.8 * sound * exp(-4.0*Bprog);
+
+        sound += 0.4*_sin(_t*f) * exp(-2.0*Bprog);
+        sound += 0.4*_tri(_t*4.*f) * exp(-8.0*Bprog);
+        
+        sound += 0.6 * smoothstep(0.,1.2,Bproc) * (0.5 * _squ(_t*f,0.) + 0.5 * _squ(_t*f*.99,0.01));
+        
+        sound = clip(1.3*sound);
+    }
+
+    else if(Bsyn == 12)
+    {
+        float kappa = 1.4;
+    	float dist = 1.3;
+
+        env *= exp(-kappa*(B-Bon));
+        
+        float freq_mod = 1. + 0.02 * exp(-10.*(B-Bon)); // edgy sound
+        freq_mod = 1.;
+            
+        //sound = 0.7*sound + 0.3*clamp(2.*dist * _sin(freqC1(note+12)*(t-1e-3)), -0.999,0.999);
+        
+    	sound  = 0.7 * _squ(freq_mod * freqC1(note)*t, -0.4 - 0.15*_sin(0.3*(B-Bon)));
+        
+        // add subbass
+        sound += 0.5 * _unisin(freqC1(note)*t,0.05 * _sin(0.25*t));
+
+        //reduce bit depth to 4
+        //sound = quant(sound, 4., 0.25);
+        
+        // try something else, QTRISQ is my additive low-samplerate osci with improvized filter
+        // QTRISQ(float t, float f, float QUANT, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q)
+        sound = QTRISQ(t, freqC1(note), 1024., 16, 0.2, 8. + 20.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1)
+              + QTRISQ(t, 2.*freqC1(note), 1024., 16, 0.4, 8. + 20.*smoothstep(0.,0.1,Bproc), 1.2, 0.2, 0.1);
+        
+	    float im = 2. + .5*_sin(0.21*_t);
+        float y = _sin(4.*f*_t + im*_sin(0.25*f*Bproc) );
+        
+    }
+
+    else if(Bsyn == 11)
+    {
+        float kappa = 1.4;
+    	float dist = 1.3;
+
+        env *= exp(-kappa*(B-Bon));
+        
+        float freq_mod = 1. + 0.02 * exp(-10.*(B-Bon)); // edgy sound
+        freq_mod = 1.;
+            
+        //sound = 0.7*sound + 0.3*clamp(2.*dist * _sin(freqC1(note+12)*(t-1e-3)), -0.999,0.999);
+        
+    	sound  = 0.7 * _squ(freq_mod * freqC1(note)*t, -0.4 - 0.15*_sin(0.3*(B-Bon)));
+        
+        // add subbass
+        sound += 0.5 * _unisin(freqC1(note)*t,0.05 * _sin(0.25*t));
+
+        //reduce bit depth to 4
+        //sound = quant(sound, 4., 0.25);
+
+    }
+
+    else if(Bsyn == 13) // inspired by some other shader. forgot which one. sorry.
+    {
+	    float im = 2. + .5*_sin(0.21*_t);
+        float y = _sin(4.*f*_t + im*_sin(0.25*f*Bproc) );
+        
+        sound = y;
+    }
+
+    
+    else if(Bsyn == 4)
+    {
+    	sound = QTRISQ(t, freqC1(note), 2048., 20, 0.2, 3. + 5.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1)
+              + QTRISQ(t, 2.*freqC1(note), 1024., 10, 0.4, 1. + 3.*smoothstep(0.,0.3,Bproc), 1.2, 0.2, 0.1);
+        
+        sound *= 0.3;
+    }
+    
+    else if(Bsyn == 1)
+    {
+    	float dist = 1.3;
+
+        env = smoothstep(0., 0.25, B-Bon) * (1.+0.01*sin(2.*PI*20.*t)) * theta(Boff-B);
+        
+		sound = 0.3*(clamp(dist * _sin(freqC1(note)*t)           , -0.999,0.999)
+                   + clamp(dist * _sin(0.999*freqC1(note)*t+0.05), -0.999,0.999));
+
+        sound += 0.7 * _unisin(freqC1(note)*t,0.05);    
+    }
+    
+    else if(Bsyn == 2)
+    {   
+    	float fFM = 0.33*f;
+    	float aFM = 0.3 * doubleslope(_t,1.,5.,0.01);
+		float aFB = 0.02 * doubleslope(_t,2.,8.,0.00);
+    
+        env = doubleslope(B-Bon, 0.002, 2., 0.);
+    	sound = _sin(_t * f * (1. + aFM * _sin(_t * fFM * (1. + aFB * _sin(_t * fFM)))));
+        
+        //reduce bit depth to 16
+        sound = quant(sound, 16., 0.0625);
+        
+        // rectify
+        //sound = sign(sound);
+
+        // try downsampling
+        env = doubleslope(B-Bon, 0.01, 8., 0.);
+        sound = 0.3 * _unisin(quant(_t,256.,0.004) * f * .25, 0.05);
+    
+        // check tuning
+        sound += _sin(_t * f * 0.25);
+    }    
+    
+    else if(Bsyn == 3)
+    {
+        float kappa = 1.4;
+        env *= exp(-kappa*(B-Bon));
+        sound = _unisin(t*freqC1(note),0.001)
+              + _tri(t*2.*freqC1(note)*(1.+0.0001*_sin(0.5*Bproc))) * smoothstep(0.0,0.3, Bprog);
+
+    	//try some trumpet sound
+        float freq_LFO = 0.005 * smoothstep(0.,1.,_t) * _tri(_t);
+        sound = _saw(_t*freqC1(note)*(1.+freq_LFO) + 0.3 * smoothstep(0.,0.7,_t) * _saw(_t*3.01*freqC1(note)));
+        
+        // now model after DX reface
+        // frequency ratio
+        float FR2 = 0.998;
+        float FR1 = 0.5;
+       	// level
+        float LV2 = 0.5;
+        float LV1 = 1.;
+        // feedback
+        float FB2 = 0.1;
+        float FB1 = 0.6;
+		// actual algorithm (5?)
+        float OP2 = _saw(_t * FR2 * (freqC1(note) + FB2 * _saw(_t * FR2 * freqC1(note))));
+        float OP1 = LV1 * _saw(_t * FR1 * freqC1(note) + LV2 * OP2 + FB1 * _sin(_t * FR1 * freqC1(note)));
+        
+        sound = OP1;
+        
+    }    
+    
+    return clamp(env,0.,1.) * clamp(sound, -1., 1.);
+}
+
+### MIGHTY UNDERWATER !!! STEAL THOSE (well they are mine) ###
+
+if(Bsyn == 0) // mighty strings (pad?) pls
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,0.,0.5,0.1,0.8);
+        
+        float filterQ = 20.;
+        float filterCO = 25000.+ 4500. * env_ADSR(Bprog,Boff-Bon,0.,0.5,0.1,10.);
+
+        sound = 1.05*macesaw(t, f, filterCO, filterQ, 1., 0.3, 0., 0.);
+       	//sound = _saw(p); // for comparison
+        
+        // lo-fi noise
+        //sound = quanti(sound, 128.);
+    }
+
+    
+        
+    if(Bsyn == 1) // lofi-wah
+    { 
+        float b = 4.*fract(Bprog); //bar subdivisions
+        env *= clip(5.*b*(exp(-4.*b+1.)));
+
+        float filterQ = 40.;
+        float filterCO = (900. - 600.*_sin(1.2*b)) * f/110.; // key scaling!
+
+        sound = 0.3 * _tri(p)
+              + 0.3 * _tri(f*(t + 0.05 + 0.001 * _tri(0.33*t)))
+              + 0.4 * macesaw(quanti(t,2048.), f, filterCO, filterQ, 0.2, 0.2, 3., 30.);
+    }    
+    
+    if(Bsyn == 31) // nice buzzing bass
+    { 
+        //p = quanti(p, 2048.);
+        env *= clip(8.*_sin(8.*Bprog));
+        
+        sound = 0.35 * _tri(p) + 0.3 * (_sin(p) + _sin(.5*p)) + 0.05 * _saw(2.*p)
+              + 0.35 * _tri(f*(t + 0.01 + 0.0002 * _tri(0.5*t)))
+              + 0.5 * _tri(f*(t + 0.05 + 0.001 * _tri(0.33*t)));
+    }
+        
+    if(Bsyn == 24) // I like!
+    {
+        env *= clip(2.5 * fract(16.*Bprog));
+        sound = 0.5 * (_saw(0.99*p) + _squ(.5*p,0.2) + _sin(.48*p+.25)) - .35;
+
+// WAS EIN FETTER BASS (sicher auch guter lead)
+        //env *= 1.; //clip(3.1*_saw(16.*Bprog));
+        //sound = 0.5 * (_saw(0.99*p) + _squ(.5*p,0.2) + _sin(.48*p+.25)) - .4;
+		
+        
+        // an sich geiler sound, aber übersteuert zu arg - Idee: mal in gnuplot plotten und dann auf [-1:1] ausrichten
+        //sound = 0.33 * (_saw(0.99*p) + _squ(.5*p,0.2) + _sin(.48*p+.25));
+    
+    }
+    
+    if(Bsyn == 0) // mighty brass pls
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,A,D,S,R);
+        
+        float filterQ = 20.;
+        float filterCO = 500. + 4500. * env_ADSR(Bprog, Boff-Bon,.66*A,D,S,10.);
+        float invCO = 1./filterCO;
+
+        sound = 1.05*macesaw(t, f, filterCO, filterQ, 1., 0.3);
+       	//sound = _saw(p); // for comparison
+        
+        // lo-fi noise
+        sound = quanti(sound, 128.);
+    }
+    
+    if(Bsyn == 1)
+    {
+        p = quanti(p, 1024.-512.*Bproc);
+        sound = 0.5 * (_sq(p) + _sq(0.97*p+.3));
+        sound = 0.;
+    }
+    
+        // chorus? and delayorama!
+        float ch_step = 0.002;
+        int ch_amt = 3;
+        float delay_step = 0.002;
+        int delay_amt    = 1; //1: disable
+        float delay_dec  = 2.5;
+        float norm = 1./(float(ch_amt) + float(delay_amt));
+        for(int ch = 0; ch < ch_amt; ch += 1)
+        {
+            float ch_time = float(ch)*ch_step * (1. + 0.001 * _sin(20.*time));
+        	r += norm * distsin(time-ch_time, B, Bon, Boff, Bpitch, Bsyn);
+        }
+
+### ALREADY HAVE THESE? ###
+float facekick(float t, float t_on, float vel)
+{
+    t = t - min(t, t_on); // reset time to Bon event
+    
+    float f   = 50. + 150. * smoothstep(-0.12, 0., -t);
+    float env = smoothstep(0.,0.015,t) * smoothstep(-0.08, 0., 0.16 - t);
+    
+    float kick_body = env * TRISQ(t, f, 3, 1., 0.8, 8., 4., 1.); // more heavy bass drum: increase reso parameters?
+    
+    float kick_click = 0.4 * step(t,0.03) * _sin(t*1100. * _saw(t*800.));
+    
+    float kick_blobb = (1.-exp(-1000.*t))*exp(-40.*t) * _sin((400.-200.*t)*t * _sin(1.*f*t));
+    
+	return vel * (kick_body + kick_blobb + 0.1*kick_click);
+}
+
+float hardkick(float t, float t_on, float vel)
+{
+    t = t - min(t, t_on); // reset time to Bon event
+    
+    float f   = 60. + 150. * smoothstep(-0.3, 0., -t);
+    float env = smoothstep(0.,0.01,t) * smoothstep(-0.1, 0.2, 0.3 - t);
+    
+    float kick_body = env * .1*TRISQ(t, f, 100, 1., 1., .1, 16., 10.); // more heavy bass drum: increase reso parameters?
+   
+    kick_body += .7 * (smoothstep(0.,0.01,t) * smoothstep(-0.2, 0.2, 0.3 - t)) * _sin(t*f*.5);
+
+    float kick_click = 1.5*step(t,0.05) * _sin(t*5000. * _saw(t*1000.));
+    
+    kick_click = s_atan(40.*(1.-exp(-1000.*t))*exp(-80.*t) * _sin((1200.-1000.*sin(1000.*t*sin(30.*t)))*t));
+    
+    float kick_blobb = s_crzy(10.*(1.-exp(-1000.*t))*exp(-30.*t) * _sin((300.-300.*t)*t));
+    
+	return vel * 2.*clamp(kick_body + kick_blobb + kick_click,-1.5,1.5);
+}
+
+float oddnoise(float t, float t_on, float vel)
+{
+    t = t - min(t, t_on); // reset time to Bon event
+    
+    float kick_click = 1.5*step(t,0.05) * _sin(t*5000. * _saw(t*1000.));
+    
+    kick_click = s_atan(8.*(1.-exp(-1000.*t))*exp(-80.*t) * _sin((1200.-1000.*sin(1000.*t*t))*t));
+    
+	return vel * 2.*clamp(kick_click,-1.5,1.5);
+}
+
+ONE DAY, CHECK "ProtoSeq_Ma2" for more...
+like e.g.
+    
+    if(Bsyn == 17) // deftiges pad
+    {
+        env *= env_ADSR(Bprog,Boff-Bon,1.5,2.,0.2,0.8);
+        
+        env *= 0.5;
+        
+        float filterQ = 20.;
+        float filterCO = 200. + 100. * env_ADSR(Bprog,Boff-Bon,1.5,2.5,0.2,10.);
+
+        sound = 0.9*macesaw(t, f, filterCO, filterQ, 0.010, 0.020, 0.3, 3.);
+       	// t --> quanti(t, 4096); // some nice wicked lo-bit shit
+        
+        // lo-fi noise
+        //sound = quanti(sound, 128.);
+    }
+    
+### THE BASIC ADDITIVE BASS SYNTH ###
+float matzebass(float time, int note)
+{
+    float ret = 0.;
+
+    // Parameter            Bedeutung
+    // =============================================================================================
+    // maxN                 maximale Fourierkomponente der Sägezahn-Synthese (eine Art hard-cutoff)
+    // VOICES				Anzahl leichtverstimmter Grundschwingungen (mehr Schwebung)
+    // ENV_...              Envelope ADSR
+    // CUTOFF               Cutoff-Parameter irgendwie proportional zur Cutofffrequenz
+    // RESO                 Menge an Gauss-Anteil um CUTOFF (simuliert Resonanz, 0 = nichts)
+    // RESO_Q               Breite besagten Gauss, oder sowas in der Art
+    // ADSR_AMT             Grad an ADSR für Filter-CUTOFF (0 = gar nicht, 1 = voll)
+    // FILTER_...           Filter ADSR
+    // SUB_AMT              Beimischung weiterer Sinüsschen ein Oktävchen tiefer (sollte man moderat halten)
+    // SUB_VOICES           Anzahl der Sub-Sini
+    // DIST_AMT             Grad der Verzerrung (besser gering, und könnte eine geileres Kurve distort() brauchen)
+    // DIST_TRSH            sowas wie "wenn Signal drüber, dann übersteuern"
+    // DIST_GAIN			Signalanhebung durch Distortion (kann 1.0 bleiben)
+    
+    int maxN = 20;
+    
+    int VOICES = 4;
+    
+    float ENV_A = 0.3;
+    float ENV_D = 0.4;
+    float ENV_S = 0.8;
+    float ENV_R = 2.0;
+    
+    float CUTOFF = 3.;
+    float RESO   = 1.;
+    float RESO_Q = 1.;
+    
+    float ADSR_AMT = 1.0;
+    float FILTER_A = 0.5;
+    float FILTER_D = 0.1;
+    float FILTER_S = 2.0;
+    float FILTER_R = 2.0;
+
+    float DIST_AMT = 0.1;
+    float DIST_TRSH = 0.7;
+    float DIST_GAIN = 1.0;
+    
+    float SUB_AMT = 0.3;
+    int   SUB_VOICES = 2;
+    
+    // filtered approxsaw
+    for(int N=1; N<maxN; N++)
+    {
+        float FILTER = CUTOFF * pow(adsr_envelope(time, FILTER_A, FILTER_D, FILTER_S, FILTER_R, 0., 10.), ADSR_AMT);
+        ret += pow(-1.,float(N+1)) * UNISINE(float(N)*time,note,VOICES)/float(N) * LP(float(N),FILTER,RESO,RESO_Q);
+    }
+    
+    // distortion
+    ret = mix(ret, limit(distort(ret),DIST_TRSH,DIST_GAIN), DIST_AMT);
+    
+    // add another SUB oszillator (or some)
+    ret = (ret + SUB_AMT * UNISINE(time*0.5,note,SUB_VOICES))/(1.+SUB_AMT);
+    
+	return ret * adsr_envelope(time, ENV_A, ENV_D, ENV_S, ENV_R, 0., 10.);
+}

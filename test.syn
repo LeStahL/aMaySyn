@@ -12,7 +12,7 @@ form subc chorus subb 4 1e-2
 env dec expdecay .03
 form maini mix baseD dec*0.15*FMsyn dec*.8*subc*l1
 form mainc chorus maini 10 .3
-main Someshit mainc
+#main Someshit mainc
 
 form b2 mix base r0*baseQ
 main Basss base*slowenv

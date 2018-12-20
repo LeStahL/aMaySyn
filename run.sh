@@ -1,1 +1,1 @@
-python3 ma2.py
+python3 ma2.py $@
