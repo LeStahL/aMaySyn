@@ -45,9 +45,9 @@ for self-reference mostly, here are the current key events:
             \item[\textbf{[SHIFT]+[CTRL]+[$\leftarrow\!/\!\rightarrow$}]: move all modules in this track through time
             \item[\textbf{[C]}] 
             \item[\textbf{[Pg$\uparrow$/Pg$\downarrow$]}] assign another pattern 
-            \item[\textbf{[C]}] 
-            \item[\textbf{[C]}] 
-            \item[\textbf{[C]}] 
+            \item[\textbf{[A/S]}] switch this track's synth (Drums, GFX, None are special values). If you update via F5, this list might change!
+            \item[\textbf{[F3]}] rename track
+            \item[\textbf{[F4]}] change some track parameters in a space-separated list of values (currently, these are \emph{track normalization factor} and \emph{maximum note release} (more about this in the Sequencer section) 
             
             \item[\textbf{[ALT]+$\ldots$}]     Usually it's like that: during editing, you will get more precision
     \end{itemize}
@@ -55,5 +55,75 @@ for self-reference mostly, here are the current key events:
     here, you set NOTEs into TRACKs.
     \begin{itemize}
     \end{itemize}
+   
+\section{Sequencer}
+  The way aMacSyn stored its song information is structured in TRACKS, MODULES, PATTERNS and NOTES. It is designed like this to allow for long repetitions without the need to store much redundancy. Each TRACK contains MODULES, each MODULE is assigned one specific PATTERN, and each PATTERN contains NOTES. E.g. If you want to repeat a certain structure of 8 notes for 4 times, write these 8 notes into a pattern, then put 4 modules inside your track and assign each module this specific pattern $-$ voila; you just saved some storage.\\
+  
+  \noindent
+  Now the GPU lives in a way in which each unit of time (e.g. each sample) has no memory of the one beforehand. Therefore, each sample we have to figure out which modules are playing simultaneously, and then inside the corresponding patterns, which notes play simultaneously, and with this knowledge eventually call the synth generator.\\
+  
+  \noindent
+  \emph{max release}:\\
+  One specific detail is the idea of \emph{release}, e.g. a note that was played before and was defined in a way not to stop instantaneously after the note itself ended. You can define this value for each track (currently via pressing \textbf{[F4]}) so the sequencer will then look for notes that \emph{at most} this amount of beats might have stopped before the actual point in time. Obviously, if you want to implement long-releasing synths, you have to increase this value, but in order to save computation time, try to keep it as short as possible, or just have a super-mega-overpowered machine which can live with any max release.
+  
+\section{The aMaySyn language}
+  My mission was set to find a way in which one has the option to think terms established in the synthesizer world, not having to think about the peculiarity of GLSL, but still be able to combine ideas for synths, in a resourceful and playful way.\\
+  
+  \noindent
+  Now I have no idea whether that worked. But I have this language for now. It works like this: there are basic forms, some compound forms, and after a while, there are main forms. The latter ones are the ones you can actually select in the aMaySyn editor, Let's first talk about non-drum-synths for now $-$ this is the list of forms I currently implemented
+  
+  \begin{itemize}
+    \item Generally, each of the following \texttt{<FORM...>} parameters can consist of a constant numerical value, a basic form, an advanced form, or also an arbitrary product of any of the preceding forms, separated with a multiplication asterisk \textbf{but not any space!} E.g. \texttt{2.0*envA*saw1} will return the product of two times some form called \texttt{envA} times some form called \texttt{saw1}. Get the idea?
+    \item \texttt{MAIN <ID> <FORM1> <FORM2> <FORM3> ...}\\
+      each MAIN form will be a linear combination of each term that is passed after its name, and it will be called NAME in the editor. they will be available in the track synth list in the order they appear in the synth definition (.syn) file.
+    \item Reserved forms ('uniforms'): These are pre-defined values that you can mention, but not redefine. These are (currently)
+    
+      \begin{tabular}{ll}
+        \texttt{f} & the note frequency in Hz\\
+        \texttt{t} & the time in seconds\\
+        \texttt{$_$t} & the time in seconds since the beginning of the current note\\
+        \texttt{B} & the current beat (which is time scaled with the beats per seconds, or BPM/60)\\
+        \texttt{vel} & the note velocity \textcolor{red}{...one day, you can modify that in the editor}\\
+        \texttt{Bsyn} & the number of the synth assigned to the current track (you will not use it)\\
+        \texttt{Bproc} & the relative percentage the current note is inbetween its beginning and end\\
+        \texttt{Bprog} & the amount of beats since the beginning of the current note, i.e. just \texttt{$_$t} scaled\\
+        \texttt{L} & the length of the track in beats\\
+        \texttt{tL} & the length of the track in seconds\\
+        \texttt{SPB} & the value of seconds per beats, i.e. just the inverse of BPS\\
+        \texttt{BPS} & the value of beats per seconds, e.g. just BPM/60\\
+        \texttt{BPM} & the value of beats per minute, e.g. the track speed\\
+        \texttt{note} & the integer value of the current note in half steps (i forgot where I defined the zero)\\
+        \texttt{Fsample} & the sample rate in Hz, most probably 44100\\
+        
+      \end{tabular}
+      
+    \item \texttt{OSC <ID> [SHAPE:SIN/SAW/TRI/SQU] <FREQ> <PHASE> <PARAMS>}:
 
+    \item \texttt{LFO <ID> [SHAPE:SIN/SAW/TRI/SQU] <FREQ> <PHASE> <PARAMS>}:
+
+    \item \texttt{ENV <ID> [SHAPE:ADSR/ADSREXP/DOUBLESLOPE/SS/SSDROP/EXPDECAY/EXPDECAYREPEAT] <PARAMS>}:
+
+    \item \texttt{GAC <ID> <PARAMS>}:
+      \textcolor{red}{yeah, I'll get to that.}
+      
+    \item \texttt{FORM <ID> <OPERATOR> <PARAMS>}
+      so these are compound forms. \texttt{<OPERATOR>} can be - currently - one of:
+      \begin{itemize}
+        \item \texttt{MIX}
+        \item \texttt{DETUNE}
+        \item \texttt{PITCHSHIFT}
+        \item \texttt{QUANTIZE}
+        \item \texttt{OVERDRIVE}
+        \item \texttt{CHORUS}
+        \item \texttt{DELAY}
+        \item \texttt{WAVESHAPE}
+        \item \texttt{SATURATE}
+      \end{itemize}
+      \textcolor{red}{yeeeah... explain these later on...}
+      
+      \item \texttt{DRUM <ID> ...}
+      the DRUMs are actually similar to OSCs, but with more pre-defined component, and independent of the trigger note or its frequency (however, if you want some variation, you might use \texttt{vel}, \textcolor{red}{I just have to implement that into the editor}
+  \end{itemize}
+  
 \end{document}
+ 

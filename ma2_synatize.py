@@ -14,6 +14,7 @@ def GLstr(s):
 #reserved keywords you cannot name a form after ~ f,t are essential, and maybe we want to use the other
 _f = {'ID':'f', 'type':'uniform'}
 _t = {'ID':'t', 'type':'uniform'}
+_t_ = {'ID':'_t', 'type':'uniform'}
 _B = {'ID':'B', 'type':'uniform'}
 _vel = {'ID':'vel', 'type':'uniform'}
 _Bsyn = {'ID':'Bsyn', 'type':'uniform'}
@@ -33,7 +34,7 @@ def synatize(syn_file = 'test.syn'):
 
     syncode = ""
 
-    form_list = [_f, _t, _B, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample]
+    form_list = [_f, _t, _t_, _B, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample]
     main_list = []
    
     print('READING', './' + syn_file + ':')
@@ -45,7 +46,7 @@ def synatize(syn_file = 'test.syn'):
         if l=='\n' or l[0]=='#': continue
     
         line = l.split()
-        cmd = line[0]
+        cmd = line[0].lower()
         cid = line[1]
         arg = line[2:]
        
@@ -66,13 +67,13 @@ def synatize(syn_file = 'test.syn'):
             form_list.append({'ID':cid, 'type':cmd, 'value':round(rand_min+(rand_max-rand_min)*random(),digits)})
     
         elif cmd == 'osc' or cmd == 'lfo':
-            form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0], 'freq':arg[1], 'phase':arg[2] if len(arg)>2 else '0', 'par':arg[3] if len(arg)>3 else '0'})
+            form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0].lower(), 'freq':arg[1], 'phase':arg[2] if len(arg)>2 else '0', 'par':arg[3] if len(arg)>3 else '0'})
 
         elif cmd == 'drum':
-            form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0], 'par':arg[1:]})
+            form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0].lower(), 'par':arg[1:]})
 
         elif cmd == 'env':
-            shape = arg[0]
+            shape = arg[0].lower()
             form = {'ID':cid, 'type':cmd, 'shape':shape}
             
             if shape == 'adsr' or shape == 'adsrexp':
@@ -96,7 +97,7 @@ def synatize(syn_file = 'test.syn'):
 
         # advanced forms ("operators"), like detune, chorus, delay, waveshaper/distortion, and more advanced: filter, reverb/*vec2 mainSound( float time )
         elif cmd == 'form':
-            op = arg[0]
+            op = arg[0].lower()
             form = {'ID':cid, 'type':cmd, 'OP':op}
 
             if op == 'mix':

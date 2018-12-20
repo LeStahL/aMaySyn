@@ -15,7 +15,7 @@ form mainc chorus maini 10 .3
 #main Someshit mainc
 
 form b2 mix base r0*baseQ
-main Basss base*slowenv
+MAIn Basss base*slowenv
 
 random f0 50 100 1
 random f1 150 250 1

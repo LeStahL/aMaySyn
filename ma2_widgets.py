@@ -163,6 +163,10 @@ class PatternWidget(Widget):
                 Color(*((1,1,1) if not self.isKeyBlack(key) else (.1,.1,.1)))
                 Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
 
+                if pattern and key == pattern.getNote().note_pitch:
+                    Color(.7,1,.3,.6)
+                    Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
+
                 Color(*((1,1,1) if self.isKeyBlack(key) else (.3,.3,.3)),1)
                 if not isDrum:
                     label = CoreLabel(text = self.claviature[key % 12] + str(key//12), font_size = font_size, font_name = self.font_name)
