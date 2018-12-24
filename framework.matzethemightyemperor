@@ -97,6 +97,8 @@ float env_ADSR(float x, float L, float A, float D, float S, float R)
     return (x < A ? att : (x < A+D ? dec : S)) * rel;    
 }
 
+//FILTERCODE
+
 float env_ADSRexp(float x, float L, float A, float D, float S, float R)
 {
     float att = pow(x/A,8.);

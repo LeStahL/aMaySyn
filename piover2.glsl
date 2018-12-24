@@ -97,12 +97,52 @@ float env_ADSR(float x, float L, float A, float D, float S, float R)
     return (x < A ? att : (x < A+D ? dec : S)) * rel;    
 }
 
+// CUDOS TO metabog https://www.shadertoy.com/view/XljSD3 - thanks for letting me steal
+float resolpsomesaw1(float time, float f, float fa, float reso)
+{
+    int maxTaps = 128;
+    fa= sqrt(fa);
+    float c = pow(0.5, (128.0-fa*128.0)   / 16.0);
+  	float r = pow(0.5, (reso*128.0+24.0) / 16.0);
+    
+    float v0 = 0.;
+    float v1 = 0.;
+    
+    for(int i = 0; i < maxTaps; i++)
+    {
+          float _TIME = time - float(maxTaps-i)*(1.0/44100.0);
+          float inp = (2.*fract(f*_TIME+0.)-1.);
+          v0 =  (1.0-r*c)*v0  -  (c)*v1  + (c)*inp;
+  		  v1 =  (1.0-r*c)*v1  +  (c)*v0;
+    }
+    
+    return v1;
+}
+
+
 float env_ADSRexp(float x, float L, float A, float D, float S, float R)
 {
     float att = pow(x/A,8.);
     float dec = S + (1.-S) * exp(-(x-A)/D);
     float rel = (x <= L-R) ? 1. : pow((L-x)/R,4.);
     return (x < A ? att : dec) * rel;    
+}
+
+//matze: not happy that I include this as is, but we'll just live with it, it is ancient knowledge
+float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decvar)
+{
+    float snd = 0.;
+    float B2 = mod(B,2.);
+    float f = 60.*fvar;
+	float dt = var1 * 2.*PI/15. * B/sqrt(10.*var2-.5*var3*B);
+    int maxN = 10 + dmaxN;
+    for(int i=0; i<2*maxN+1; i++)
+    {
+        float t = time + float(i - maxN)*dt;
+        snd += _sin(f*t + .5*(1.+B2amt*B2)*_sin(.5*f*t));
+    }
+    float env = exp(-2.*decvar*B);
+    return atan(snd * env);
 }
 
 float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
@@ -168,8 +208,14 @@ float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
       s = _sin(f*t)
       +0.1*GAC(t,0.,1.,2.,0.5,3.,2.,2.,0.25)*_sin(f*t)
       +.1*GAC(t,0.,1.,2.,0.5,3.,2.,2.,0.25)*supershape(_sin(f*t),1.,.01,.7,.1,.6,.8);}
+    else if(Bsyn == 5){
+      s = resolpsomesaw1(t,f,.1,.4);}
     else if(Bsyn == -1){
-      s = s_atan((smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((87.9+(240.9-87.9)*smoothstep(-.3, 0.,-_t))*t))+_sin(.5*(87.9+(240.9-87.9)*smoothstep(-.3, 0.,-_t))*t)))+ 1.2*step(_t,.05)*_sin(5000.*t*.8*_saw(1000.*t*.8)));}
+      s = s_atan(vel*(smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((81.3+(208.8-81.3)*smoothstep(-.3, 0.,-_t))*t))+_sin(.5*(81.3+(208.8-81.3)*smoothstep(-.3, 0.,-_t))*t)))+ 1.2*step(_t,.05)*_sin(5000.*t*.8*_saw(1000.*t*.8)));}
+    else if(Bsyn == -2){
+      s = vel*fract(sin(t*100.*.9)*50000.*.9)*doubleslope(t,.03,.15,.15);}
+    else if(Bsyn == -3){
+      s = vel*bitexplosion(t, Bprog, 1,1.,1.,1.,1.,1.,1.);}
     
 	return clamp(env,0.,1.) * s_atan(s);
 }
@@ -187,7 +233,7 @@ float mainSynth(float time)
 {
     int NO_trks = 1;
     int trk_sep[2] = int[2](0,1);
-    int trk_syn[1] = int[1](4);
+    int trk_syn[1] = int[1](5);
     float trk_norm[1] = float[1](.9);
     float trk_rel[1] = float[1](.7);
     float mod_on[1] = float[1](0.);
@@ -195,7 +241,7 @@ float mainSynth(float time)
     int mod_ptn[1] = int[1](0);
     float mod_transp[1] = float[1](0.);
     float max_mod_off = 8.;
-    int drum_index = 5;
+    int drum_index = 6;
     float drum_synths = 1.;
     int NO_ptns = 1;
     int ptn_sep[2] = int[2](0,17);

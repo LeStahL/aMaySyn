@@ -496,7 +496,7 @@ class Ma2Widget(Widget):
         gf.close()
 
         self.loadSynths()
-        syncode = synatize_build(self.synatize_form_list, self.synatize_main_list)
+        syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list)
 
         seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
         seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
@@ -519,7 +519,7 @@ class Ma2Widget(Widget):
 
         if time_offset!=0: seqcode += 'time += '+GLfloat(time_offset)+';\n' + 4*' '
 
-        glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(BPM)+";")
+        glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(BPM)+";").replace("//FILTERCODE",filtercode)
         
         with open(filename, "w") as out_file:
             out_file.write(glslcode)

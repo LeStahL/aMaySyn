@@ -91,6 +91,9 @@ def synatize(syn_file = 'test.syn'):
             
             form_list.append(form)
 
+        elif cmd == 'filter':
+            form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0].lower(), 'source':arg[1], 'par':arg[2:]})
+
         # global automation curve - implemented just one for now, let's think of something great some other time
         elif cmd == 'gac':
             form_list.append({'ID':cid, 'type':cmd, 'par':arg})
@@ -122,10 +125,11 @@ def synatize(syn_file = 'test.syn'):
                 pass
                 
             form_list.append(form)
-            
+
     drum_list = [d['ID'] for d in main_list if d['type']=='maindrum']
-    
+
     return form_list, main_list, drum_list
+
 
 def synatize_build(form_list, main_list):
 
@@ -249,7 +253,7 @@ def synatize_build(form_list, main_list):
                     return 'vel*fract(sin(_TIME*100.*'+FMtimbre1+')*50000.*'+FMtimbre2+')*doubleslope(_TIME,'+env_attack+','+env_decay+','+env_sustain+')'
                     
                 elif form['shape'] == 'bitexplosion':
-                    return 'vel*bitexplosion(_TIME, _BEAT, '+int(form['par'][0]) + ',' + ','.join(instance(form['par'][p]) for p in range(1,6)) + ')' 
+                    return 'vel*bitexplosion(_TIME, _BPROG, '+str(int(form['par'][0])) + ',' + ','.join(instance(form['par'][p]) for p in range(1,7)) + ')' 
 
 
         elif form['type']=='env':
@@ -272,6 +276,10 @@ def synatize_build(form_list, main_list):
 
         elif form['type']=='gac':
             return 'GAC(_TIME,' + ','.join([instance(form['par'][p]) for p in range(8)]) + ')'
+
+        elif form['type']=='filter':
+            if form['shape']=='resolp':
+                return 'resolp'+form['source']+'(_TIME,'+param(form['source'],'freq')+','+instance(form['par'][0])+','+instance(form['par'][1])+')'
 
         else:
             return '1.'
@@ -326,8 +334,19 @@ def synatize_build(form_list, main_list):
         print('RANDOM', r['ID'], '=', r['value'])
 
     print("\nBUILD SYN CODE:\n", 4*' '+syncode, sep="")
-        
-    return syncode
+
+    filter_list = [f for f in form_list if f['type']=='filter']
+    filtercode = '' 
+    for form in filter_list:
+        if form['shape']=='resolp':
+            ff = open("framework.resolptemplate")
+            ffcode = ff.read()
+            ff.close()
+            filtercode += ffcode.replace('TEMPLATE',form['source']).replace('INSTANCE',instance(form['source'])).replace('vel*','')
+
+    print("\nBUILD FILTER CODE:\n", filtercode, sep="")
+
+    return syncode, filtercode
 
 
 if __name__ == '__main__':
