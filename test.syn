@@ -12,7 +12,7 @@ form subc chorus subb 4 1e-2
 env dec expdecay .03
 form maini mix baseD dec*0.15*FMsyn dec*.8*subc*l1
 form mainc chorus maini 10 .3
-#main Someshit mainc
+main Someshit mainc
 
 form b2 mix base r0*baseQ
 MAIn Basss base*slowenv
@@ -22,6 +22,12 @@ random f1 150 250 1
 drum BDbody kick f0 f1 0.3 0.1 0.3 10 1.2 .05 .8
 maindrum BD BDbody 
 
+drum shaker fmnoise 0.03 0.15 0.15 0.9 0.9
+maindrum SHK shaker 
+
+drum explosion bitexplosion 1 1 1 1 1 1 1 
+maindrum EXPL explosion 
+
 osc somesaw1 saw f 0
 form somesawD1 detune somesaw1 0.01 0.033 0.04
 osc somesaw2 saw .5*f 0.01
@@ -30,3 +36,8 @@ form somesaw mix somesawD1 .6*somesawD2
 env stutter expdecayrepeat 16. .125
 env slowdec expdecay 1.5
 main Supersaw stutter*slowdec*somesaw
+
+osc S01 sin f 0
+gac G01 0 1. 2. -.5 3. 2. 2. -.25
+form S01w waveshape S01 1. 0.01 0.7 0.1 0.6 0.8
+main WShape S01 -.1*G01*S01 .1*G01*S01w

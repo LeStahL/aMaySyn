@@ -10,7 +10,7 @@ class Pattern():
     def __init__(self, name = 'NJU', length = 1):
         self.name = name
         self.notes = []
-        self.length = length if length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
+        self.length = length if length and length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
         self.current_note = 0
         self.current_gap = 0
         self.randomizeColor()
@@ -28,28 +28,54 @@ class Pattern():
         self.color = Color(random.uniform(.05,.95), .8, .88, mode = 'hsv').rgb
         
     def addNote(self, note = None, select = True, append = False, clone = False):
-        if note is None: note = Note()
+        if note is None:
+            note = Note()
+            append = False
         if clone: select = False
         
-        note_info = (note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch, note.note_vel)
-        note = Note(*note_info)
+        note = Note(note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch, note.note_vel)
         note.tag()
         
         if note.note_off > self.length: return
         
         self.notes.append(note)
         self.notes.sort(key = lambda n: n.note_on)
-
         self.current_note = self.getFirstTaggedNote()
-        # cloning: since we have polyphonic mode now, we can not just assign the right gap - have to do it via space/backspace - will be changed to polyphonic cloning
-            
         self.untagAllNotes()
-
+        # cloning: since we have polyphonic mode now, we can not just assign the right gap - have to do it via space/backspace - will be changed to polyphonic cloning
         if not clone: self.setGap(to = 0)
+
+    def fillNote(self, note = None): #this is for instant pattern creation... copy the content during the current note (plus gap) and repeat it as long as the pattern allows to
+        if note is None: return
+
+        copy_span = note.note_len + self.current_gap
+        copy_pos = note.note_off + self.current_gap
+        note.tag()
+    
+        notes_to_copy = [n for n in self.notes if n.note_on <= copy_pos and n.note_off > note.note_on]
+        print("yanked some notes, ", len(notes_to_copy), notes_to_copy)
+
+        while copy_pos + copy_span <= self.length:
+            for n in notes_to_copy:
+                copy_on = copy_pos + n.note_on - note.note_on
+                copy_len = n.note_len
+                
+                if n.note_on < note.note_on:
+                    copy_on = copy_pos
+                    copy_len = n.note_len - (note.note_on - n.note_on)
+                if n.note_off > note.note_off:
+                    copy_len = note.note_off - n.note_on
+                    
+                self.notes.append(Note(copy_on, copy_len, n.note_pitch, n.note_vel))
+                
+            copy_pos += copy_span 
+            
+        self.notes.sort(key = lambda n: n.note_on)
+        self.current_note = self.getFirstTaggedNote()
+        self.untagAllNotes()
 
     def delNote(self):
         self.printNoteList()
-        print('test', self.current_note, self.current_note if self.current_note is not None else -1)
 
         if self.notes:
             del self.notes[self.current_note if self.current_note is not None else -1]

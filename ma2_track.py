@@ -117,6 +117,13 @@ class Track():
     def clearModules(self):
         self.modules=[]
 
+    def prepareForPatternDeletion(self, pattern_to_delete):
+        patterns = App.get_running_app().root.patterns
+        for m in self.modules:
+            print('KILL', m.pattern, pattern_to_delete, patterns)
+            if m.pattern == pattern_to_delete:
+                m.pattern = patterns[patterns.index(m.pattern)-1]
+
     def switchSynth(self, inc):
         if self.synths:
             self.current_synth = (self.current_synth + inc) % len(self.synths)
@@ -150,3 +157,6 @@ class Module():
     def setPattern(self, pattern):
         if App.get_running_app().root.existsPattern(pattern):
             self.pattern = pattern
+
+    def getPatternName(self):
+        return self.pattern.name

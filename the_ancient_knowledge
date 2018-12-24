@@ -1,4 +1,4 @@
-# THIS FILE IS A REMINDER, WHICH OF THE OLD FUNCTIONALY I HAVE NOT PORTED TO AMAZYN YET (but might want to)
+# THIS FILE IS A REMINDER, WHICH OF THE OLD FUNCTIONALY I HAVE NOT PORTED TO AMAYSYN YET (but might want to)
 
 float shake(float t, float t_on, int vel, int Bsyn) // shaker is just some mod of hihat (hut)
 {

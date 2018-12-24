@@ -37,6 +37,7 @@ GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f >= 1 else 
 
 synths = ['D_Drums', '__GFX', '__None']
 drumkit = ['SideChn']
+gacs = []
 BPM = 80.;
 time_offset = 0.;
 
@@ -67,9 +68,11 @@ class Ma2Widget(Widget):
     def getModule(self, offset=0):      return self.getTrack().getModule(offset) if self.getTrack() else None
     def getModuleTranspose(self):       return self.getModule().transpose if self.getModule() else 0
     def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None
+    def getModulePatternIndex(self):    return self.patterns.index(self.getModulePattern()) if self.patterns and self.getModulePattern() in self.patterns else -1
     def getPattern(self, offset=0):     return self.patterns[(self.patterns.index(self.getModulePattern()) + offset) % len(self.patterns)] if self.getModulePattern() in self.patterns else self.patterns[0] if self.patterns else None
     def getPatternLen(self, offset=0):  return self.getPattern(offset).length if self.getPattern(offset) else None
     def getPatternName(self):           return self.getPattern().name if self.getPattern() else 'None'
+    def getPatternIndex(self):          return self.patterns.index(self.getPattern()) if self.patterns and self.getPattern() and self.getPattern() in self.patterns else -1
     def getNote(self):                  return self.getPattern().getNote() if self.getPattern() else None
 
     def existsPattern(self, pattern):   return pattern in self.patterns
@@ -109,9 +112,10 @@ class Ma2Widget(Widget):
 
         if 'ctrl' in modifiers:
             if k == 'n':                        self.clearSong()
-            elif k == 'l':                      self.loadCSV()
-            elif k == 's':                      self.saveCSV()
+            elif k == 'l':                      self.loadCSV(prompt_title = True)
+            elif k == 's':                      self.saveCSV(prompt_title = True)
             elif k == 'b':                      self.buildGLSL()
+            elif k == 'z':                      self.loadCSV(backup = True)
 
         # for precision work, press 'alt'
         inc_step = 1 if 'alt' not in modifiers else .25
@@ -147,8 +151,8 @@ class Ma2Widget(Widget):
                 elif k == '-'\
                   or k == 'numpadsubstract':    self.getTrack().delModule()
 
-                elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(+1))
-                elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(-1))
+                elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(+1))
+                elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(-1))
 
                 elif k == 'a':                  self.getTrack().switchSynth(-1)
                 elif k == 's':                  self.getTrack().switchSynth(+1)
@@ -201,19 +205,23 @@ class Ma2Widget(Widget):
                 elif k == '+'\
                   or k == 'numpadadd':          self.getPattern().addNote(self.getNote(), append = True)
                 elif k == 'c':                  self.getPattern().addNote(self.getNote(), append = True, clone = True)
+                elif k == '*'\
+                  or k == 'numpadmul':          self.getPattern().fillNote(self.getNote())
                 elif k == '-'\
                   or k == 'numpadsubstract':    self.getPattern().delNote()
                 elif k == 'spacebar':           self.getPattern().setGap(inc = True)
                 elif k == 'backspace':          self.getPattern().setGap(dec = True)
                 
-                
-                elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(+1))
-                elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(-1))
+                elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(+1))
+                elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(-1))
 
-                elif k == 'f12':                 self.getPattern().printNoteList()
+                elif k == 'f3':                 self.renamePattern()
+                elif k == 'f12':                self.getPattern().printNoteList()
 
         # MISSING:
         #       moveAllNotes()
+
+        self.saveCSV(backup = True)
 
         self.update()
         return True
@@ -228,7 +236,7 @@ class Ma2Widget(Widget):
             
     def updateLabels(self, dt = 0):
         self.btnTitle.text = 'TITLE: ' + self.title
-        self.btnPtnTitle.text = 'PTN: ' + self.getPatternName()
+        self.btnPtnTitle.text = 'PTN: ' + self.getPatternName() + ' (' + str(self.getPatternIndex()+1) + '/' + str(len(self.patterns)) + ')'
         self.btnPtnInfo.text = 'PTN LEN: ' + str(self.getPatternLen())
 
     def switchActive(self):
@@ -280,7 +288,10 @@ class Ma2Widget(Widget):
             popup.open()
         if not length:
             length = self.getPatternLen()
+            
         self.patterns.append(Pattern(name = name, length = length))
+        if self.getModule():
+            self.getModule().setPattern(self.patterns[-1])
 
         if clone_current:
             for n in self.getPattern().notes:
@@ -288,11 +299,27 @@ class Ma2Widget(Widget):
 
     def handlePatternName(self, *args, **kwargs):
         self._keyboard_request()
-        self.patterns[-1].name = args[0].text
+        p = self.patterns[-1]
+        p.name = args[0].text
+        while [i.name for i in self.patterns].count(p.name) > 1: p.name += '.' #unique names
+        self.update()
+
+    def renamePattern(self):
+        popup = InputPrompt(self, title = 'ENTER PATTERN NAME', title_font = self.font_name, default_text = self.getPatternName())
+        popup.bind(on_dismiss = self.handlePatternRename)
+        popup.open()
+
+    def handlePatternRename(self, *args, **kwargs):
+        self._keyboard_request()
+        p = self.getPattern()
+        p.name = args[0].text
+        while [i.name for i in self.patterns].count(p.name) > 1: p.name += '.' #unique names
         self.update()
 
     def delPattern(self):
         if self.patterns and self.current_pattern is not None:
+            if len(self.patterns) == 1: self.patterns.append(Pattern()) # have to have one
+            for t in self.tracks: t.prepareForPatternDeletion(self.getPattern())
             del self.patterns[self.current_pattern]
 
     def clearSong(self):
@@ -313,7 +340,6 @@ class Ma2Widget(Widget):
     def setupInit(self):
         self.loadSynths()
         self.setupSomething()
-        
         
         if len(sys.argv) > 1:
             self.title = sys.argv[1]
@@ -350,7 +376,7 @@ class Ma2Widget(Widget):
         synths = ['I_' + m['ID'] for m in self.synatize_main_list if m['type']=='main']
         synths.extend(['D_Drums', '__GFX', '__None'])
         
-        print(synths)
+        print(synths, drumkit)
         
         drumkit.insert(0,'SideChn')
         #drumkit = ['SideChn', 'Kick', 'Kick2', 'Snar', 'HiHt', 'Shak', 'Odd Nois', 'Emty1', 'Emty2', 'Emty3', 'Emty4']
@@ -362,10 +388,13 @@ class Ma2Widget(Widget):
 
 ###################### EXPORT FUNCTIONS #####################
 
-    def loadCSV(self, dt=0):
+    def loadCSV(self, dt = 0, backup = False, prompt_title = False):
+        if prompt_title: self.renameSong()
         filename = self.title + '.may'
-        
+        if backup: filename = '.' + filename
+                
         if not os.path.isfile(filename):
+            if backup: return
             print(filename,'not around, trying to load test.may')
             filename = 'test.may'
             if not os.path.isfile(filename):
@@ -415,23 +444,22 @@ class Ma2Widget(Widget):
                         for p in self.patterns:
                             if m.pattern.name == p.name: m.setPattern(p)
 
-    def saveCSV(self):
+    def saveCSV(self, backup = False, prompt_title = False):
+        if prompt_title: self.rename_song()
         filename = self.title + '.may'
+        if backup: filename = '.' + filename
         
         out_str = self.title + '|' + str(len(self.tracks)) + '|'
         
         for t in self.tracks:
             out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(t.getNorm()) + '|' + str(t.getMaxRelease()) + '|' + str(len(t.modules)) + '|'
-            
             for m in t.modules:
                 out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
-                # TODO check: pattern names have to be unique! in str(self.patterns.index(m.pattern.name))
         
         out_str += str(len(self.patterns))
         
         for p in self.patterns:
             out_str += '|' + p.name + '|' + str(p.length) + '|' + str(len(p.notes))
-            
             for n in p.notes:
                 out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) + '|' + str(n.note_vel)
 
@@ -440,9 +468,10 @@ class Ma2Widget(Widget):
         out_csv.write(out_str)
         out_csv.close()
         
-        out_tmp = open('.last', "w")
-        out_tmp.write(self.title)
-        out_tmp.close()
+        if not backup:
+            out_tmp = open('.last', "w")
+            out_tmp.write(self.title)
+            out_tmp.close()
         
     def buildGLSL(self):
         filename = self.title + '.glsl'
@@ -487,7 +516,8 @@ class Ma2Widget(Widget):
         seqcode += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_off) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         seqcode += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
-        seqcode += 'time += '+GLfloat(time_offset)+';\n' + 4*' '
+
+        if time_offset!=0: seqcode += 'time += '+GLfloat(time_offset)+';\n' + 4*' '
 
         glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(BPM)+";")
         
@@ -555,7 +585,6 @@ class Ma2Widget(Widget):
         popup.open()
     def handleEditCurve(self, *args):
         self._keyboard_request()
-        self.title = args[0].text
         self.update()        
 
 class InputPrompt(ModalView):
@@ -631,71 +660,7 @@ class CurvePrompt(ModalView):
         self.text = args[0].text
         self.dismiss()
 
-class CurveWidget(Widget):
-
-    w = 1200
-    h = 600
-    b = 150
-    o = 15
-    
-    res = 100
-    
-    c_x = 0
-    c_y = 0
-    
-    fit_plot = []
-    fit_dots = 5
-    
-    def __init__(self, parent, **kwargs):
-        super(CurveWidget, self).__init__(**kwargs)
-        self.c_x = parent.center_x
-        self.c_y = parent.center_y
-        self.update()
-                               
-    def on_touch_down(self, touch):
-        self.fit_plot.append([touch.x, touch.y])
-        
-        self.update()
-
-        if len(self.fit_plot) == self.fit_dots:
-            print("FIT NOW!")
-            
-            print(self.fit_plot)
-            self.fit_plot = []
-            
-    def update(self):
-        self.canvas.clear()
-        with self.canvas:
-            
-            Color(0,0,0)
-            Rectangle(pos=(self.c_x - self.w/2, self.c_y - self.b), size=(self.w, self.h))
-            
-            Color(1,0,1,.5)
-            Line(rectangle = (self.c_x - self.w/2, self.c_y - self.b, self.w, self.h), width = 4)
-
-            plot = []
-            for ix in range(self.res):
-                plot.append([self.c_x + (self.w-2*self.o)*(ix / (self.res+1) - .5), self.c_y - (self.b+self.o) + (self.h-2*self.o)*self.curve(ix / self.res)])
-
-            Color(.6,.8,.8)
-            Line(points = plot, width = 3)
-                
-            for ic in range(len(self.fit_plot)):
-                Color(.1,.3,.2)
-                Ellipse(pos = (self.fit_plot[ic][0] - self.o/2, self.fit_plot[ic][1] - self.o/2), size=(self.o, self.o))
-
-    def curve(self,x):
-        a = .5
-        b = 0
-        c = 0.5
-        d = -.2
-        e = 10
-        f = pi/2
-        g = -.2
-        h = .2
-        i = .3
-        return clip(a + b*x + c*x*x + d*sin(e*x + f) + g*exp(-h*x), 0, 1)
-        
+       
 class Ma2App(App):
     title = 'Matze trying to be the Great Emperor again'
     

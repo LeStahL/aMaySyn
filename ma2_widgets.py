@@ -8,8 +8,12 @@ from kivy.properties import NumericProperty, ObjectProperty, BooleanProperty
 from kivy.core.window import Window
 from kivy.config import Config
 from kivy.clock import Clock
-from kivy.graphics import Color, Rectangle, Line
+from kivy.graphics import Color, Rectangle, Line, Ellipse
 from kivy.core.text import Label as CoreLabel
+from math import pi, sin, exp
+
+import numpy as np
+from scipy import optimize
 
 from ma2_track import *
 from ma2_pattern import *
@@ -163,7 +167,7 @@ class PatternWidget(Widget):
                 Color(*((1,1,1) if not self.isKeyBlack(key) else (.1,.1,.1)))
                 Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
 
-                if pattern and key == pattern.getNote().note_pitch:
+                if pattern and pattern.notes and key == pattern.getNote().note_pitch:
                     Color(.7,1,.3,.6)
                     Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
 
@@ -241,3 +245,85 @@ class PatternWidget(Widget):
                         if pattern.current_gap:
                             Color(1,1,1,.4)
                             Rectangle(pos = (draw_x + 4 * bar_w * n.note_len - 1, draw_y), size = (4 * bar_w * pattern.current_gap, key_h / 4))
+
+
+class CurveWidget(Widget):
+
+    w = 1200
+    h = 600
+    b = 150
+    o = 15
+    
+    res = 100
+    
+    c_x = 0
+    c_y = 0
+    
+    fit_plot = []
+    fit_dots = 8
+    
+    latest_pars = [.5, 0, 0.5, -.2, 10, pi/2, -.2, .2] # I like this one
+    
+    def __init__(self, parent, **kwargs):
+        super(CurveWidget, self).__init__(**kwargs)
+        self.c_x = parent.center_x
+        self.c_y = parent.center_y
+        self.update()
+                               
+    def on_touch_down(self, touch):
+        self.fit_plot.append([touch.x, touch.y])
+        
+        self.update()
+
+        if len(self.fit_plot) == self.fit_dots:
+            print("FIT NOW!")
+            
+            def testfunc(x, p0, p1, p2, p3, p4, p5, p6, p7):
+                return self.automation_curve(x, pars=[p0,p1,p2,p3,p4,p5,p6,p7])
+            
+            x_data = [self.coord_plot2internal(f)[0] for f in self.fit_plot]
+            y_data = [self.coord_plot2internal(f)[1] for f in self.fit_plot]
+            
+            try:
+                pars, par_covars = optimize.curve_fit(testfunc, x_data, y_data, self.latest_pars)
+            except RuntimeError as e:
+                print('Shit.', e)
+            else:
+                self.latest_pars = pars
+            
+            self.fit_plot = []
+            self.update()
+
+    def coord_internal2plot(self, iCoord):
+        return (self.c_x + (self.w-2*self.o)*iCoord[0], self.c_y - (self.b+self.o) + (self.h-2*self.o)*iCoord[1])
+    
+    def coord_plot2internal(self, pCoord): #float?
+        return ((pCoord[0] - self.c_x)/(self.w-2*self.o), (pCoord[1] - self.c_y + (self.b+self.o))/(self.h-2*self.o))
+    
+    def update(self):
+        self.canvas.clear()
+        with self.canvas:
+            
+            Color(0,0,0)
+            Rectangle(pos=(self.c_x - self.w/2, self.c_y - self.b), size=(self.w, self.h))
+            
+            Color(1,0,1,.5)
+            Line(rectangle = (self.c_x - self.w/2, self.c_y - self.b, self.w, self.h), width = 4)
+
+            plot = []
+            for ix in range(self.res):
+                plot.append(self.coord_internal2plot((ix / (self.res+1) - .5, self.automation_curve(ix / self.res))))
+
+            Color(.6,.8,.8)
+            Line(points = plot, width = 3)
+                
+            for ic in range(len(self.fit_plot)):
+                Color(.1,.3,.2)
+                Ellipse(pos = (self.fit_plot[ic][0] - self.o/2, self.fit_plot[ic][1] - self.o/2), size=(self.o, self.o))
+
+    def automation_curve(self,x,pars=[]):
+        if not pars or len(pars)!=8:
+            pars = self.latest_pars
+
+        return np.clip(pars[0] + pars[1]*x + pars[2]*x*x + pars[3]*np.sin(pars[4]*x + pars[5]) + pars[6]*np.exp(-pars[7]*x), 0, 1)
+ 

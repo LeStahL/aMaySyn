@@ -123,7 +123,7 @@ def synatize(syn_file = 'test.syn'):
                 
             form_list.append(form)
             
-    drum_list = [d['ID'] for d in form_list if d['type']=='maindrum']
+    drum_list = [d['ID'] for d in main_list if d['type']=='maindrum']
     
     return form_list, main_list, drum_list
 
@@ -171,6 +171,7 @@ def synatize_build(form_list, main_list):
                 return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['decay']),t)) + '*' + \
                                                instance(form['source']).replace('_PROG','(_PROG-'+'{:.1e}'.format(t*float(form['delay']))+')') for t in range(int(form['number']))]) + ')'
             elif form['OP'] == 'waveshape':
+                print(form['par'])
                 return 'supershape(' + instance(form['source']) + ',' + ','.join(instance(form['par'][p]) for p in range(6)) + ')'
             elif form['OP'] == 'saturate':
                 if form['mode'] == 'crazy':
@@ -221,7 +222,7 @@ def synatize_build(form_list, main_list):
 
         elif form['type'] == 'drum':
             
-                if form['shape'] == 'kick': # <start freq> <end freq> <freq decay time> <env attack time> <env decay time> <distortion>
+                if form['shape'] == 'kick': # <start freq> <end freq> <freq decay time> <env attack time> <env decay time> <distortion> ...
                     freq_start = instance(form['par'][0])
                     freq_end = instance(form['par'][1])
                     freq_decay = instance(form['par'][2])
@@ -233,14 +234,23 @@ def synatize_build(form_list, main_list):
                     click_timbre = instance(form['par'][8])
 
                     freq_env = '('+freq_start+'+('+freq_end+'-'+freq_start+')*smoothstep(-'+freq_decay+', 0.,-_PROG))'
-                    amp_env = '(smoothstep(0.,'+env_attack+',_PROG)*smoothstep(-('+env_attack+'+'+env_decay+'),-'+env_attack+',-_PROG)'
+                    amp_env = 'vel*(smoothstep(0.,'+env_attack+',_PROG)*smoothstep(-('+env_attack+'+'+env_decay+'),-'+env_attack+',-_PROG)'
                     return 's_atan('+amp_env+'*(clip('+distortion+'*_tri('+freq_env+'*_TIME))+_sin(.5*'+freq_env+'*_TIME)))+ '+click_amp+'*step(_PROG,'+click_delay+')*_sin(5000.*_TIME*'+click_timbre+'*_saw(1000.*_TIME*'+click_timbre+')))'
                 
                 elif form['shape'] == 'snare':
                     return 0.
 
-                elif form['shape'] == 'noise':
-                    return 0.
+                elif form['shape'] == 'fmnoise':
+                    env_attack = instance(form['par'][0])
+                    env_decay = instance(form['par'][1])
+                    env_sustain = instance(form['par'][2])
+                    FMtimbre1 = instance(form['par'][3])
+                    FMtimbre2 = instance(form['par'][4])
+                    return 'vel*fract(sin(_TIME*100.*'+FMtimbre1+')*50000.*'+FMtimbre2+')*doubleslope(_TIME,'+env_attack+','+env_decay+','+env_sustain+')'
+                    
+                elif form['shape'] == 'bitexplosion':
+                    return 'vel*bitexplosion(_TIME, _BEAT, '+int(form['par'][0]) + ',' + ','.join(instance(form['par'][p]) for p in range(1,6)) + ')' 
+
 
         elif form['type']=='env':
             if form['shape'] == 'adsr':

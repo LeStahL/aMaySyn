@@ -105,6 +105,23 @@ float env_ADSRexp(float x, float L, float A, float D, float S, float R)
     return (x < A ? att : dec) * rel;    
 }
 
+//matze: not happy that I include this as is, but we'll just live with it, it is ancient knowledge
+float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decvar)
+{
+    float snd = 0.;
+    float B2 = mod(B,2.);
+    float f = 60.*fvar;
+	float dt = var1 * 2.*PI/15. * B/sqrt(10.*var2-.5*var3*B);
+    int maxN = 10 + dmaxN;
+    for(int i=0; i<2*maxN+1; i++)
+    {
+        float t = time + float(i - maxN)*dt;
+        snd += _sin(f*t + .5*(1.+B2amt*B2)*_sin(.5*f*t));
+    }
+    float env = exp(-2.*decvar*B);
+    return atan(snd * env);
+}
+
 float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
 {
     float Bprog = B-Bon;
@@ -138,9 +155,10 @@ float mainSynth(float time)
     float r = 0.;
     float d = 0.;
 
-    //which beat are we at?
-    float BT = mod(BPS * time, max_mod_off); // mod for looping
+    // mod for looping
+    float BT = mod(BPS * time, max_mod_off);
     if(BT > max_mod_off) return r;
+    time = SPB * BT;
 
     float r_sidechain = 1.;
 
