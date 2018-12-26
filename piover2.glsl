@@ -22,6 +22,7 @@ const float BPS = BPM/60.;
 const float SPB = 60./BPM;
 
 const float Fsample = 44100.; // I think?
+const float Tsample = 2.267573696e-5;
 
 float doubleslope(float t, float a, float d, float s)
 {
@@ -97,25 +98,46 @@ float env_ADSR(float x, float L, float A, float D, float S, float R)
     return (x < A ? att : (x < A+D ? dec : S)) * rel;    
 }
 
-// CUDOS TO metabog https://www.shadertoy.com/view/XljSD3 - thanks for letting me steal
-float resolpsomesaw1(float time, float f, float fa, float reso)
+// CHEERS TO metabog https://www.shadertoy.com/view/XljSD3 - thanks for letting me steal
+float resolpsomesaw1(float time, float f, float tL, float fa, float reso)
 {
     int maxTaps = 128;
-    fa= sqrt(fa);
-    float c = pow(0.5, (128.0-fa*128.0)   / 16.0);
-  	float r = pow(0.5, (reso*128.0+24.0) / 16.0);
+    fa = sqrt(fa*Tsample);
+    float c = pow(0.5, (128.0-fa*128.0)  / 16.0);
+    float r = pow(0.5, (reso*128.0+24.0) / 16.0);
     
     float v0 = 0.;
     float v1 = 0.;
     
     for(int i = 0; i < maxTaps; i++)
     {
-          float _TIME = time - float(maxTaps-i)*(1.0/44100.0);
+          float _TIME = time - float(maxTaps-i)*Tsample;
+          float Bprog = _TIME * BPS; //might need that
           float inp = (2.*fract(f*_TIME+0.)-1.);
           v0 =  (1.0-r*c)*v0  -  (c)*v1  + (c)*inp;
-  		  v1 =  (1.0-r*c)*v1  +  (c)*v0;
+          v1 =  (1.0-r*c)*v1  +  (c)*v0;
     }
+    return v1;
+}
+// CHEERS TO metabog https://www.shadertoy.com/view/XljSD3 - thanks for letting me steal
+float resolpsaw2D(float time, float f, float tL, float fa, float reso)
+{
+    int maxTaps = 128;
+    fa = sqrt(fa*Tsample);
+    float c = pow(0.5, (128.0-fa*128.0)  / 16.0);
+    float r = pow(0.5, (reso*128.0+24.0) / 16.0);
     
+    float v0 = 0.;
+    float v1 = 0.;
+    
+    for(int i = 0; i < maxTaps; i++)
+    {
+          float _TIME = time - float(maxTaps-i)*Tsample;
+          float Bprog = _TIME * BPS; //might need that
+          float inp = s_atan((2.*fract((f+.3*_sin(5.*Bprog)*env_ADSR(_TIME,tL,.2,.3,.8,.2))*_TIME+0.)-1.)+(2.*fract((1.-.01)*(f+.3*_sin(5.*Bprog)*env_ADSR(_TIME,tL,.2,.3,.8,.2))*_TIME+0.)-1.)+(2.*fract((1.-.011)*(f+.3*_sin(5.*Bprog)*env_ADSR(_TIME,tL,.2,.3,.8,.2))*_TIME+0.)-1.)+(2.*fract((1.+.02)*(f+.3*_sin(5.*Bprog)*env_ADSR(_TIME,tL,.2,.3,.8,.2))*_TIME+0.)-1.));
+          v0 =  (1.0-r*c)*v0  -  (c)*v1  + (c)*inp;
+          v1 =  (1.0-r*c)*v1  +  (c)*v0;
+    }
     return v1;
 }
 
@@ -160,62 +182,25 @@ float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
 
 	if(Bsyn == 0){}
     else if(Bsyn == 1){
-      s = ((s_atan(_sin(.5*f*(t-0.0))+_sin((1.-.01)*.5*f*(t-0.0)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-0.0),_sin(.5*f*(t-0.0)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-0.0)-0.0))
-      +_sin(2.5198*.5*f*((t-0.0)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-0.0)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-0.0)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-3.0e-01))+_sin((1.-.01)*.5*f*(t-3.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-3.0e-01),_sin(.5*f*(t-3.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-3.0e-01)-0.0))
-      +_sin(2.5198*.5*f*((t-3.0e-01)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-3.0e-01)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-3.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-6.0e-01))+_sin((1.-.01)*.5*f*(t-6.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-6.0e-01),_sin(.5*f*(t-6.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-6.0e-01)-0.0))
-      +_sin(2.5198*.5*f*((t-6.0e-01)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-6.0e-01)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-6.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-9.0e-01))+_sin((1.-.01)*.5*f*(t-9.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-9.0e-01),_sin(.5*f*(t-9.0e-01)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-9.0e-01)-0.0))
-      +_sin(2.5198*.5*f*((t-9.0e-01)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-9.0e-01)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-9.0e-01)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.2))+_sin((1.-.01)*.5*f*(t-1.2)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-1.2),_sin(.5*f*(t-1.2)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-1.2)-0.0))
-      +_sin(2.5198*.5*f*((t-1.2)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-1.2)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-1.2)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.5))+_sin((1.-.01)*.5*f*(t-1.5)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-1.5),_sin(.5*f*(t-1.5)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-1.5)-0.0))
-      +_sin(2.5198*.5*f*((t-1.5)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-1.5)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-1.5)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-1.8))+_sin((1.-.01)*.5*f*(t-1.8)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-1.8),_sin(.5*f*(t-1.8)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-1.8)-0.0))
-      +_sin(2.5198*.5*f*((t-1.8)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-1.8)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-1.8)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.1))+_sin((1.-.01)*.5*f*(t-2.1)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-2.1),_sin(.5*f*(t-2.1)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-2.1)-0.0))
-      +_sin(2.5198*.5*f*((t-2.1)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-2.1)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-2.1)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.4))+_sin((1.-.01)*.5*f*(t-2.4)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-2.4),_sin(.5*f*(t-2.4)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-2.4)-0.0))
-      +_sin(2.5198*.5*f*((t-2.4)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-2.4)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-2.4)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.)))
-      +(s_atan(_sin(.5*f*(t-2.7))+_sin((1.-.01)*.5*f*(t-2.7)))+theta(Bprog)*exp(-.03*Bprog)*.15*_sin(.5*f*(t-2.7),_sin(.5*f*(t-2.7)))+theta(Bprog)*exp(-.03*Bprog)*.8*(_sin(2.5198*.5*f*((t-2.7)-0.0))
-      +_sin(2.5198*.5*f*((t-2.7)-1.0e-02))
-      +_sin(2.5198*.5*f*((t-2.7)-2.0e-02))
-      +_sin(2.5198*.5*f*((t-2.7)-3.0e-02)))*(.7+.5*_tri(.5*Bprog+0.))));}
-    else if(Bsyn == 2){
       s = _sin(.5*f*t)*env_ADSR(_t,tL,.5,2.,.5,.1);}
+    else if(Bsyn == 2){
+      s = theta(Bprog)*exp(-16.*mod(Bprog,.125))*theta(Bprog)*exp(-1.5*Bprog)*(s_atan((2.*fract(f*t+0.)-1.)+(2.*fract((1.-.01)*f*t+0.)-1.)+(2.*fract((1.-.033)*f*t+0.)-1.)+(2.*fract((1.-.04)*f*t+0.)-1.))+.6*s_atan((2.*fract(.5*f*t+.01)-1.)+(2.*fract((1.-.05)*.5*f*t+.01)-1.)+(2.*fract((1.+.03)*.5*f*t+.01)-1.)+(2.*fract((1.+.02)*.5*f*t+.01)-1.)));}
     else if(Bsyn == 3){
-      s = theta(Bprog)*exp(-16.*mod(Bprog,.125))*theta(Bprog)*exp(-1.5*Bprog)*(s_atan((2.*fract(f*t+0.)-1.)+(2.*fract((1.-.01)*f*t+0.)-1.)+(2.*fract((1.-.033)*f*t+0.)-1.)+(2.*fract((1.-.04)*f*t+0.)-1.))+.6*s_atan((2.*fract(.5*f*t+.01)-1.)+(2.*fract((1.-.05)*.5*f*t+.01)-1.)+(2.*fract((1.-0.03)*.5*f*t+.01)-1.)+(2.*fract((1.-0.02)*.5*f*t+.01)-1.)));}
-    else if(Bsyn == 4){
       s = _sin(f*t)
-      +0.1*GAC(t,0.,1.,2.,0.5,3.,2.,2.,0.25)*_sin(f*t)
-      +.1*GAC(t,0.,1.,2.,0.5,3.,2.,2.,0.25)*supershape(_sin(f*t),1.,.01,.7,.1,.6,.8);}
+      +-.1*GAC(t,0.,1.,2.,-.5,3.,2.,2.,-.25)*_sin(f*t)
+      +.1*GAC(t,0.,1.,2.,-.5,3.,2.,2.,-.25)*supershape(_sin(f*t),1.,.01,.7,.1,.6,.8);}
+    else if(Bsyn == 4){
+      s = resolpsomesaw1(_t,f,tL,.1,.4);}
     else if(Bsyn == 5){
-      s = resolpsomesaw1(t,f,.1,.4);}
+      s = env_ADSR(_t,tL,.2,.3,.8,.2)*resolpsaw2D(_t,f,tL,300.*env_ADSR(Bprog,L,.5,.5,.4,0.),0.);}
     else if(Bsyn == -1){
-      s = s_atan(vel*(smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((81.3+(208.8-81.3)*smoothstep(-.3, 0.,-_t))*t))+_sin(.5*(81.3+(208.8-81.3)*smoothstep(-.3, 0.,-_t))*t)))+ 1.2*step(_t,.05)*_sin(5000.*t*.8*_saw(1000.*t*.8)));}
+      s = s_atan(vel*(smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((59.9+(144.7-59.9)*smoothstep(-.1, 0.,-_t))*_t))+_sin(.5*(59.9+(144.7-59.9)*smoothstep(-.1, 0.,-_t))*_t)))+ 1.2*step(_t,.05)*_sin(5000.*_t*.8*_saw(1000.*_t*.8)));}
     else if(Bsyn == -2){
-      s = vel*fract(sin(t*100.*.9)*50000.*.9)*doubleslope(t,.03,.15,.15);}
+      s = vel*fract(sin(t*100.*.9)*50000.*.9)*doubleslope(_t,.03,.15,.15);}
     else if(Bsyn == -3){
       s = vel*bitexplosion(t, Bprog, 1,1.,1.,1.,1.,1.,1.);}
+    else if(Bsyn == -4){
+      s = (.6+.25*_psq(4.*B,0.))*vel*fract(sin(t*100.*.3)*50000.*2.)*doubleslope(_t,0.,.05,0.);}
     
 	return clamp(env,0.,1.) * s_atan(s);
 }
@@ -231,26 +216,25 @@ float BA8(float x, int pattern)
 
 float mainSynth(float time)
 {
-    int NO_trks = 1;
-    int trk_sep[2] = int[2](0,1);
-    int trk_syn[1] = int[1](5);
-    float trk_norm[1] = float[1](.9);
-    float trk_rel[1] = float[1](.7);
-    float mod_on[1] = float[1](0.);
-    float mod_off[1] = float[1](8.);
-    int mod_ptn[1] = int[1](0);
-    float mod_transp[1] = float[1](0.);
+    int NO_trks = 2;
+    int trk_sep[3] = int[3](0,1,5);
+    int trk_syn[2] = int[2](5,6);
+    float trk_norm[2] = float[2](.9,1.);
+    float trk_rel[2] = float[2](.7,.5);
+    float mod_on[5] = float[5](0.,0.,2.,4.,6.);
+    float mod_off[5] = float[5](8.,2.,4.,6.,8.);
+    int mod_ptn[5] = int[5](0,1,1,1,1);
+    float mod_transp[5] = float[5](-12.,0.,0.,0.,0.);
     float max_mod_off = 8.;
     int drum_index = 6;
-    float drum_synths = 1.;
-    int NO_ptns = 1;
-    int ptn_sep[2] = int[2](0,17);
-    float note_on[17] = float[17](0.,1.,1.5,2.,2.5,3.,4.,4.,4.5,4.5,5.,5.5,5.5,6.,6.5,7.,7.5);
-    float note_off[17] = float[17](1.,1.5,2.,2.5,3.,4.,4.5,4.5,5.,5.,5.5,6.,6.,7.,7.,8.,8.);
-    float note_pitch[17] = float[17](31.,35.,33.,36.,33.,27.,50.,35.,33.,49.,36.,39.,45.,28.,40.,24.,39.);
-    float note_vel[17] = float[17](1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.);
+    float drum_synths = 5.;
+    int NO_ptns = 2;
+    int ptn_sep[3] = int[3](0,24,43);
+    float note_on[43] = float[43](0.,0.,0.,1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.,7.,7.,7.,0.,.125,.25,.375,.5,.5,.625,.75,.875,1.,1.125,1.25,1.375,1.5,1.5,1.625,1.75,1.75,1.875);
+    float note_off[43] = float[43](1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.,7.,7.,7.,8.,8.,8.,.125,.25,.375,.5,.625,.625,.75,.875,1.,1.125,1.25,1.375,1.5,1.625,1.625,1.75,1.875,1.875,2.);
+    float note_pitch[43] = float[43](36.,72.,63.,34.,70.,65.,39.,70.,67.,37.,72.,65.,36.,72.,63.,34.,70.,65.,27.,70.,58.,29.,69.,60.,24.,24.,24.,24.,21.,24.,24.,24.,24.,24.,24.,24.,24.,81.,24.,24.,81.,24.,24.);
+    float note_vel[43] = float[43](1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.);
     
-   
     float r = 0.;
     float d = 0.;
 
@@ -295,20 +279,17 @@ float mainSynth(float time)
                 int Bdrum = int(mod(note_pitch[ptn_sep[ptn]+_note], drum_synths));
                 float Bvel = note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
 
-                float d = 0.;
-
-                if(Bdrum == 0) // Sidechain - have to multiply, actually?
-                {
+                //0 is for sidechaining - am I doing this right?
+                if(Bdrum == 0)
                     r_sidechain = anticlick - .999 * theta(B-Bon) * smoothstep(Boff,Bon,B);
-                }
-                else d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
+                else
+                    d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
             }
             else
             {
                 r += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff,
                                                note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[_mod], trk_syn[trk]);
             }
-
         }
     }
 

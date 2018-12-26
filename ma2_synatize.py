@@ -1,7 +1,7 @@
 #import math
 from random import random
 
-GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f >= 1 else 1:]
+GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 else 1:].replace('-0.','-.')
 
 def GLstr(s):
     try:
@@ -67,7 +67,7 @@ def synatize(syn_file = 'test.syn'):
             form_list.append({'ID':cid, 'type':cmd, 'value':round(rand_min+(rand_max-rand_min)*random(),digits)})
     
         elif cmd == 'osc' or cmd == 'lfo':
-            form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0].lower(), 'freq':arg[1], 'phase':arg[2] if len(arg)>2 else '0', 'par':arg[3] if len(arg)>3 else '0'})
+            form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0].lower(), 'freq':arg[1], 'phase':arg[2] if len(arg)>2 else '0', 'par':arg[3:] if len(arg)>3 else []})
 
         elif cmd == 'drum':
             form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0].lower(), 'par':arg[1:]})
@@ -77,7 +77,7 @@ def synatize(syn_file = 'test.syn'):
             form = {'ID':cid, 'type':cmd, 'shape':shape}
             
             if shape == 'adsr' or shape == 'adsrexp':
-                form.update({'attack':arg[1], 'decay':arg[2], 'sustain':arg[3], 'release':arg[4], 'par':arg[5] if len(arg)>5 else ''})
+                form.update({'attack':arg[1], 'decay':arg[2], 'sustain':arg[3], 'release':arg[4], 'par':arg[5:] if len(arg)>5 else []})
             elif shape == 'doubleslope':
                 form.update({'attack':arg[1], 'decay':arg[2], 'sustain':arg[3], 'par':arg[4] if len(arg)>4 else ''})
             elif shape == 'ss':
@@ -94,7 +94,7 @@ def synatize(syn_file = 'test.syn'):
         elif cmd == 'filter':
             form_list.append({'ID':cid, 'type':cmd, 'shape':arg[0].lower(), 'source':arg[1], 'par':arg[2:]})
 
-        # global automation curve - implemented just one for now, let's think of something great some other time
+        # generic automation curve - implemented just basic for now, let's think of something great some other time
         elif cmd == 'gac':
             form_list.append({'ID':cid, 'type':cmd, 'par':arg})
 
@@ -149,7 +149,7 @@ def synatize_build(form_list, main_list):
             return product;
 
         elif not form:
-            return GLstr(ID)
+            return GLstr(ID).replace('--','+')
         
         elif form['type']=='uniform':
             return ID
@@ -192,7 +192,10 @@ def synatize_build(form_list, main_list):
                     pre = 'vel*'
 
                 elif form['type'] == 'lfo':
-                    phi = instance(form['freq']) + ('*Bprog' if form['par'] != 'time' else '*_TIME')
+                    tvar = '*Bprog' if 'global' not in form['par'] else '*B'
+                    if 'time' in form['par']: tvar = '*_PROG' if 'global' not in form['par'] else '*_TIME'
+                        
+                    phi = instance(form['freq']) + tvar
                     pre = ''
                     if form['shape'] == 'squ': form['shape'] = 'psq'
 
@@ -210,13 +213,13 @@ def synatize_build(form_list, main_list):
                     if form['par'] == '0':
                         return pre + '_sq(' + phi + ')'
                     else:
-                        return pre + '_sq(' + phi + ',' + instance(form['par']) + ')'
+                        return pre + '_sq(' + phi + ',' + instance(form['par'][0]) + ')'
 
                 elif form['shape'] == 'psq':
                     if form['par'] == '0':
                         return pre + '_psq(' + phi + ')'
                     else:
-                        return pre + '_psq(' + phi + ',' + instance(form['par']) + ')'
+                        return pre + '_psq(' + phi + ',' + instance(form['par'][0]) + ')'
 
                 elif form['shape'] == 'tri':
                         return pre + '_tri(' + phi + '+' + instance(form['phase']) + ')'
@@ -239,7 +242,7 @@ def synatize_build(form_list, main_list):
 
                     freq_env = '('+freq_start+'+('+freq_end+'-'+freq_start+')*smoothstep(-'+freq_decay+', 0.,-_PROG))'
                     amp_env = 'vel*(smoothstep(0.,'+env_attack+',_PROG)*smoothstep(-('+env_attack+'+'+env_decay+'),-'+env_attack+',-_PROG)'
-                    return 's_atan('+amp_env+'*(clip('+distortion+'*_tri('+freq_env+'*_TIME))+_sin(.5*'+freq_env+'*_TIME)))+ '+click_amp+'*step(_PROG,'+click_delay+')*_sin(5000.*_TIME*'+click_timbre+'*_saw(1000.*_TIME*'+click_timbre+')))'
+                    return 's_atan('+amp_env+'*(clip('+distortion+'*_tri('+freq_env+'*_PROG))+_sin(.5*'+freq_env+'*_PROG)))+ '+click_amp+'*step(_PROG,'+click_delay+')*_sin(5000.*_PROG*'+click_timbre+'*_saw(1000.*_PROG*'+click_timbre+')))'
                 
                 elif form['shape'] == 'snare':
                     return 0.
@@ -250,15 +253,16 @@ def synatize_build(form_list, main_list):
                     env_sustain = instance(form['par'][2])
                     FMtimbre1 = instance(form['par'][3])
                     FMtimbre2 = instance(form['par'][4])
-                    return 'vel*fract(sin(_TIME*100.*'+FMtimbre1+')*50000.*'+FMtimbre2+')*doubleslope(_TIME,'+env_attack+','+env_decay+','+env_sustain+')'
+                    return 'vel*fract(sin(_TIME*100.*'+FMtimbre1+')*50000.*'+FMtimbre2+')*doubleslope(_PROG,'+env_attack+','+env_decay+','+env_sustain+')'
                     
                 elif form['shape'] == 'bitexplosion':
                     return 'vel*bitexplosion(_TIME, _BPROG, '+str(int(form['par'][0])) + ',' + ','.join(instance(form['par'][p]) for p in range(1,7)) + ')' 
 
-
         elif form['type']=='env':
             if form['shape'] == 'adsr':
-                return 'env_ADSR(_PROG,tL,'+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
+                tvar = '_BPROG' if 'beat' in form['par'] else '_PROG'
+                Lvar = 'L' if 'beat' in form['par'] else 'tL'
+                return 'env_ADSR('+tvar+','+Lvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
             elif form['shape'] == 'adsrexp':
                 return 'env_ADSRexp(_PROG,tL,'+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
             elif form['shape'] == 'doubleslope':
@@ -275,11 +279,17 @@ def synatize_build(form_list, main_list):
                 return '1.'
 
         elif form['type']=='gac':
-            return 'GAC(_TIME,' + ','.join([instance(form['par'][p]) for p in range(8)]) + ')'
+            tvar = '_PROG'
+            pars = [(form['par'][p] if len(form['par'])>p else '0') for p in range(9)]
+            if 'global' in form['par']:
+                tvar = '_TIME'
+                pars.remove('global')
+                
+            return 'GAC('+tvar+',' + ','.join([instance(pars[p]) for p in range(8)]) + ')'
 
         elif form['type']=='filter':
             if form['shape']=='resolp':
-                return 'resolp'+form['source']+'(_TIME,'+param(form['source'],'freq')+','+instance(form['par'][0])+','+instance(form['par'][1])+')'
+                return 'resolp'+form['source']+'(_PROG,f,tL,'+instance(form['par'][0])+','+instance(form['par'][1])+')'
 
         else:
             return '1.'
@@ -342,7 +352,7 @@ def synatize_build(form_list, main_list):
             ff = open("framework.resolptemplate")
             ffcode = ff.read()
             ff.close()
-            filtercode += ffcode.replace('TEMPLATE',form['source']).replace('INSTANCE',instance(form['source'])).replace('vel*','')
+            filtercode += ffcode.replace('TEMPLATE',form['source']).replace('INSTANCE',instance(form['source'])).replace('vel*','').replace('_PROG','_TIME')
 
     print("\nBUILD FILTER CODE:\n", filtercode, sep="")
 

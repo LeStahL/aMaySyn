@@ -74,23 +74,35 @@ class Pattern():
         self.current_note = self.getFirstTaggedNote()
         self.untagAllNotes()
 
-    def delNote(self):
-        self.printNoteList()
-
+    def delNote(self, is_drumtrack = False):
         if self.notes:
+            old_note = self.current_note
+            old_pitch = self.notes[old_note].note_pitch
+            
             del self.notes[self.current_note if self.current_note is not None else -1]
+
             if self.current_note > 0:
                 self.current_note = min(self.current_note-1, len(self.notes)-1)
 
+            if is_drumtrack:
+                for n in self.notes[old_note:] + self.notes[0:old_note-1]:
+                    if n.note_pitch == old_pitch:
+                        n.tag()
+                        self.notes.sort(key = lambda n: n.note_on)
+                        self.current_note = self.getFirstTaggedNote()
+                        self.untagAllNotes()
+                        break
+
     def setGap(self, to = 0, inc = False, dec = False):
-        if inc:
-            self.current_gap += self.getNote().note_len
-        elif dec:
-            self.current_gap = max(self.current_gap - self.getNote().note_len, 0)
-        elif to is not None:
-            self.current_gap = to
-        else:
-            pass
+        if self.notes:
+            if inc:
+                self.current_gap += self.getNote().note_len
+            elif dec:
+                self.current_gap = max(self.current_gap - self.getNote().note_len, 0)
+            elif to is not None:
+                self.current_gap = to
+            else:
+                pass
 
     def untagAllNotes(self):
         for n in self.notes:

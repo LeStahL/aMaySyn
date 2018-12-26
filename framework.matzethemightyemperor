@@ -22,6 +22,7 @@ const float BPS = BPM/60.;
 const float SPB = 60./BPM;
 
 const float Fsample = 44100.; // I think?
+const float Tsample = 2.267573696e-5;
 
 float doubleslope(float t, float a, float d, float s)
 {
@@ -153,7 +154,6 @@ float BA8(float x, int pattern)
 float mainSynth(float time)
 {
     //SEQCODE
-   
     float r = 0.;
     float d = 0.;
 
@@ -198,20 +198,17 @@ float mainSynth(float time)
                 int Bdrum = int(mod(note_pitch[ptn_sep[ptn]+_note], drum_synths));
                 float Bvel = note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
 
-                float d = 0.;
-
-                if(Bdrum == 0) // Sidechain - have to multiply, actually?
-                {
+                //0 is for sidechaining - am I doing this right?
+                if(Bdrum == 0)
                     r_sidechain = anticlick - .999 * theta(B-Bon) * smoothstep(Boff,Bon,B);
-                }
-                else d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
+                else
+                    d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
             }
             else
             {
                 r += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff,
                                                note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[_mod], trk_syn[trk]);
             }
-
         }
     }
 

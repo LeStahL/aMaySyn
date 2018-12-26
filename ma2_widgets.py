@@ -24,6 +24,8 @@ class TrackWidget(Widget):
     def __init__(self, **kwargs):
         super(TrackWidget, self).__init__(**kwargs)
 
+    marker_list = {}
+
     def drawTrackList(self, tracklist = [], current_track = None):
 
         pad_l = 10
@@ -111,6 +113,23 @@ class TrackWidget(Widget):
                 
                 draw_x += beat_w
             
+            for m in self.marker_list:
+                Color(.7,0,.1,.7)
+                draw_x = grid_l + self.marker_list[m] * beat_w
+                Line(points = [draw_x, draw_y, draw_x, self.top - pad_t], width=1.5)
+
+                label = CoreLabel(text = m, font_size = 9, font_name = self.font_name)
+                label.refresh()
+                Rectangle(size = label.texture.size, pos = (draw_x - label.width/2, draw_y-10), texture = label.texture)
+                Rectangle(size = label.texture.size, pos = (draw_x - label.width/2 - .5, draw_y-10), texture = label.texture)
+
+
+    def updateMarker(self, label, position):
+        self.marker_list.update({label: position})
+        
+        markers_to_remove = {l:p for l,p in self.marker_list.items() if p<=0}
+        for m in markers_to_remove:
+            del self.marker_list[m]
     
 class PatternWidget(Widget):
     active = BooleanProperty(False)
@@ -167,7 +186,7 @@ class PatternWidget(Widget):
                 Color(*((1,1,1) if not self.isKeyBlack(key) else (.1,.1,.1)))
                 Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
 
-                if pattern and pattern.notes and key == pattern.getNote().note_pitch:
+                if pattern and pattern.notes and key == pattern.getNote().note_pitch - offset_v:
                     Color(.7,1,.3,.6)
                     Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
 

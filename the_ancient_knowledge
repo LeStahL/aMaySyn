@@ -17,7 +17,6 @@ float hut(float t, float t_on, int vel, int Bsyn)
     //float kick_blubb = (1.-exp(-1000.*t))*exp(-30.*t) * _sin((400.-200.*t)*t * _saw(4.*f*t));
 }
 
-
 float snare(float t, float t_on, int vel, int Bsyn)
 {
     // #define _tri(a) (4.*abs(fract(a)-.5) - 1.)
@@ -38,7 +37,6 @@ float snare(float t, float t_on, int vel, int Bsyn)
     
     return float(vel)/100. * clamp(overdrv * snr + noise, -1., 1.) * doubleslope(t,0.0,0.25,0.3);
 }
-
 
 float facekick(float t, float t_on, int vel, int Bsyn)
 {

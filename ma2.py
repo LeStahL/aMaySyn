@@ -33,13 +33,11 @@ Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
 #Config.set('graphics', 'fullscreen', 'auto')
 
-GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f >= 1 else 1:]
+GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 else 1:].replace('-0.','-.')
 
 synths = ['D_Drums', '__GFX', '__None']
 drumkit = ['SideChn']
 gacs = []
-BPM = 80.;
-time_offset = 0.;
 
 class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
@@ -56,6 +54,8 @@ class Ma2Widget(Widget):
     synatize_main_list = []
     
     title = 'piover2'
+    BPM = 80.;
+    B_offset = 0.;
     
     btnTitle = ObjectProperty()
     
@@ -105,6 +105,7 @@ class Ma2Widget(Widget):
         elif k == 'f1':                         self.reRandomizeColors()
 
         elif k == 'f2':                         self.renameSong()
+        elif k == 'f3':                         self.changeSongParameters()
 
         elif k == 'f5':                         self.loadSynths(update = True)
 
@@ -112,10 +113,15 @@ class Ma2Widget(Widget):
 
         if 'ctrl' in modifiers:
             if k == 'n':                        self.clearSong()
-            elif k == 'l':                      self.loadCSV(prompt_title = True)
-            elif k == 's':                      self.saveCSV(prompt_title = True)
+            elif k == 'l':                      self.loadCSV(prompt_title = False)
+            elif k == 's':                      self.saveCSV(prompt_title = False)
             elif k == 'b':                      self.buildGLSL()
+            elif k == 't':                      self.saveCSV(backup = True)
             elif k == 'z':                      self.loadCSV(backup = True)
+
+        else:
+            if k == 'a':                        self.getTrack().switchSynth(-1)
+            elif k == 's':                      self.getTrack().switchSynth(+1)
 
         # for precision work, press 'alt'
         inc_step = 1 if 'alt' not in modifiers else .25
@@ -154,11 +160,8 @@ class Ma2Widget(Widget):
                 elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(+1))
                 elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(-1))
 
-                elif k == 'a':                  self.getTrack().switchSynth(-1)
-                elif k == 's':                  self.getTrack().switchSynth(+1)
-                
-                elif k == 'f3':                 self.renameTrack()
-                elif k == 'f4':                 self.changeTrackParameters()
+                elif k == 'f6':                 self.renameTrack()
+                elif k == 'f7':                 self.changeTrackParameters()
                 elif k == 'f12':                self.printPatterns()
 
         if(self.thePtnWidget.active) and self.getPattern():
@@ -208,20 +211,23 @@ class Ma2Widget(Widget):
                 elif k == '*'\
                   or k == 'numpadmul':          self.getPattern().fillNote(self.getNote())
                 elif k == '-'\
-                  or k == 'numpadsubstract':    self.getPattern().delNote()
+                  or k == 'numpadsubstract':    self.getPattern().delNote(is_drumtrack = self.isDrumTrack())
                 elif k == 'spacebar':           self.getPattern().setGap(inc = True)
                 elif k == 'backspace':          self.getPattern().setGap(dec = True)
                 
                 elif k == 'pagedown':           self.getTrack().switchModulePattern(self.getPattern(+1))
                 elif k == 'pageup':             self.getTrack().switchModulePattern(self.getPattern(-1))
 
-                elif k == 'f3':                 self.renamePattern()
+                elif k == 'f6':                 self.renamePattern()
                 elif k == 'f12':                self.getPattern().printNoteList()
 
         # MISSING:
         #       moveAllNotes()
-
-        self.saveCSV(backup = True)
+        #       addTrack() / delTrack() via shortcut
+        #       scrolling in track view / note view / unlimited size
+        #       mouse support
+        #       openGL linking
+        #       prompt for new song title before loading/saving (doesn't work at the moment because the BG app doesn't wait for the input)
 
         self.update()
         return True
@@ -250,6 +256,19 @@ class Ma2Widget(Widget):
     def handleRenameSong(self, *args):
         self._keyboard_request()
         self.title = args[0].text
+        self.update()
+
+    def changeSongParameters(self):
+        par_string = str(self.BPM) + ' ' + str(self.B_offset)
+        popup = InputPrompt(self, title = 'ENTER BPM, <SPACE>, STARTING BEAT', title_font = self.font_name, default_text = par_string)
+        popup.bind(on_dismiss = self.handleChangeSongParameters)
+        popup.open()
+    def handleChangeSongParameters(self, *args):
+        self._keyboard_request()
+        pars = args[0].text.split()
+        self.BPM = float(pars[0])
+        self.B_offset = float(pars[1])
+        self.theTrkWidget.updateMarker('OFFSET',self.B_offset)
         self.update()
 
     def renameTrack(self):
@@ -325,7 +344,7 @@ class Ma2Widget(Widget):
     def clearSong(self):
         del self.tracks[:]
         del self.patterns[:]
-        self.tracks = [Track(name = 'NJU TREK', synth = 'I_None')]
+        self.tracks = [Track(synths = ['I_None'], name = 'NJU TREK')]
         self.patterns = [Pattern()]
         self.tracks[0].addModule(0, self.patterns[0])
         
@@ -333,9 +352,9 @@ class Ma2Widget(Widget):
         self.current_module = None
         self.current_pattern = 0
         self.current_note = None
-        self.title = 'new Song'
 
-        self.update()
+        self.renameSong()
+        self.loadSynths(update = True)
         
     def setupInit(self):
         self.loadSynths()
@@ -366,7 +385,7 @@ class Ma2Widget(Widget):
 
     def loadSynths(self, update = False):
         
-        global synths
+        global synths, drumkit
         
         filename = self.title + '.syn'
         if not os.path.exists(filename): filename = 'test.syn'
@@ -376,11 +395,10 @@ class Ma2Widget(Widget):
         synths = ['I_' + m['ID'] for m in self.synatize_main_list if m['type']=='main']
         synths.extend(['D_Drums', '__GFX', '__None'])
         
-        print(synths, drumkit)
-        
         drumkit.insert(0,'SideChn')
-        #drumkit = ['SideChn', 'Kick', 'Kick2', 'Snar', 'HiHt', 'Shak', 'Odd Nois', 'Emty1', 'Emty2', 'Emty3', 'Emty4']
         self.thePtnWidget.updateDrumkit(drumkit)
+
+        print(synths, drumkit)
         
         if update:
             for t in self.tracks: t.updateSynths(synths)
@@ -411,10 +429,12 @@ class Ma2Widget(Widget):
                 self.title = r[0]
                 self.tracks = []
                 self.patterns = []
+                self.BPM = float(r[1])
+                self.B_offset = float(r[2])
                 
-                c = 2
+                c = 4
                 ### read tracks -- with modules assigned to dummy patterns
-                for _ in range(int(r[1])):
+                for _ in range(int(r[3])):
                     track = Track(synths, name = r[c], synth = int(r[c+1]))
                     track.setParameters(norm = float(r[c+2]), maxrelease = float(r[c+3]))
 
@@ -445,11 +465,11 @@ class Ma2Widget(Widget):
                             if m.pattern.name == p.name: m.setPattern(p)
 
     def saveCSV(self, backup = False, prompt_title = False):
-        if prompt_title: self.rename_song()
+        if prompt_title: self.renameSong()
         filename = self.title + '.may'
         if backup: filename = '.' + filename
         
-        out_str = self.title + '|' + str(len(self.tracks)) + '|'
+        out_str = '|'.join([self.title, str(self.BPM), str(self.B_offset), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
             out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(t.getNorm()) + '|' + str(t.getMaxRelease()) + '|' + str(len(t.modules)) + '|'
@@ -467,12 +487,13 @@ class Ma2Widget(Widget):
         out_csv = open(filename, "w")
         out_csv.write(out_str)
         out_csv.close()
+        print(filename, "written.")
         
         if not backup:
             out_tmp = open('.last', "w")
             out_tmp.write(self.title)
             out_tmp.close()
-        
+
     def buildGLSL(self):
         filename = self.title + '.glsl'
 
@@ -517,9 +538,9 @@ class Ma2Widget(Widget):
         seqcode += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
 
-        if time_offset!=0: seqcode += 'time += '+GLfloat(time_offset)+';\n' + 4*' '
+        if self.B_offset!=0: seqcode += 'time += '+'{:.4f}'.format(self.B_offset/self.BPM*60)+';\n' + 4*' '
 
-        glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(BPM)+";").replace("//FILTERCODE",filtercode)
+        glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(self.BPM)+";").replace("//FILTERCODE",filtercode)
         
         with open(filename, "w") as out_file:
             out_file.write(glslcode)
