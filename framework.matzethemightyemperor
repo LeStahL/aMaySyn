@@ -58,14 +58,12 @@ float GAC(float t, float offset, float a, float b, float c, float d, float e, fl
     return t<0. ? 0. : a + b*t + c*t*t + d*sin(e*t) + f*exp(-g*t);
 }
 
-float MACESQ(float t, float f, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
+float MACESQ(float t, float f, float phase, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
     float ret = 0.;
     
-    int Ninc = 8; // try this: leaving out harmonics...
-    
-    float p = f*t;
-    for(int N=0; N<=MAXN; N+=Ninc)
+    float p = f*t + phase;
+    for(int N=0; N<=NMAX; N+=NINC)
     {
         float mode     = 2.*float(N) + 1.;
         float inv_mode = 1./mode; 		// avoid division? save table of Nmax <= 20 in some array or whatever
@@ -85,9 +83,9 @@ float MACESQ(float t, float f, int MAXN, float MIX, float INR, float NDECAY, flo
     return s_atan(ret);
 }
 
-float QMACESQ(float t, float f, float QUANT, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
+float QMACESQ(float t, float f, float phase, float QUANT, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
-    return MACESQ(quant(t,QUANT,1./QUANT), f, MAXN, MIX, INR, NDECAY, RES, RES_Q, DET, PW);
+    return MACESQ(quant(t,QUANT,1./QUANT), f, phase, NMAX, NINC MIX, INR, NDECAY, RES, RES_Q, DET, PW);
 }
 
 float env_ADSR(float x, float L, float A, float D, float S, float R)

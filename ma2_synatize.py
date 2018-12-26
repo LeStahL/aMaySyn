@@ -49,6 +49,14 @@ def synatize(syn_file = 'test.syn'):
         cmd = line[0].lower()
         cid = line[1]
         arg = line[2:]
+        
+        # small sanity check for number of arguments
+        try:
+            assert len(line) >= arg_required(cmd, arg)
+        except AssertionError as e:
+            print('ERROR! THIS LINE DOES NOT MATCH THE NUMBER OF REQUIRED ARGUMENTS:', l, 'REQUIRES: '+str(arg_required(cmd, arg))+' ARGUMENTS.', sep='\n')
+            quit()
+        
        
         if cid in [f['ID'] for f in form_list]:
             print(' -> ERROR! ID \"' + cid + '\" already taken. Ignoring line.')
@@ -224,6 +232,9 @@ def synatize_build(form_list, main_list):
                 elif form['shape'] == 'tri':
                         return pre + '_tri(' + phi + '+' + instance(form['phase']) + ')'
 
+                elif form['shape'] == 'macesq':
+                        return 'MACESQ(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + ','.join([instance(p) for p in form['par']]) + ')'
+
                 else:
                     return '0.'
 
@@ -358,6 +369,22 @@ def synatize_build(form_list, main_list):
 
     return syncode, filtercode
 
+
+def arg_required(cmd, arg):
+    arg0 = arg[0].lower()  
+    req = 3
+
+    if cmd == 'osc':
+        req += 1
+        if arg0 == 'squ' or arg0 == 'psq': req += 2
+        if arg0 == 'macesq': req += 11
+    elif cmd == 'lfo':
+        pass
+    # ... add on demand...
+    elif cmd == 'random':
+        req = 4
+    
+    return req
 
 if __name__ == '__main__':
     synatize()
