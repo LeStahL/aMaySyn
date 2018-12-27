@@ -141,7 +141,10 @@ class Ma2Widget(Widget):
                 elif k == 'end':                self.getTrack().moveModule(0, move_end = True)
 
             elif 'ctrl' in modifiers:
-                pass
+                if k == '+'\
+                  or k == 'numpadadd':          self.addTrack()
+                elif k == '-'\
+                  or k == 'numpadsubstract':    self.delTrack()
             
             else:
                 if   k == 'left':               self.getTrack().switchModule(-1)
@@ -223,7 +226,6 @@ class Ma2Widget(Widget):
 
         # MISSING:
         #       moveAllNotes()
-        #       addTrack() / delTrack() via shortcut
         #       scrolling in track view / note view / unlimited size
         #       mouse support
         #       openGL linking
@@ -281,17 +283,17 @@ class Ma2Widget(Widget):
         self.update()
 
     def changeTrackParameters(self):
-        par_string = str(self.getTrack().getNorm()) + ' ' + str(self.getTrack().getMaxRelease())
-        popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR, <SPACE>, MAXIMUM RELEASE [BEATS]"', title_font = self.font_name, default_text = par_string)
+        par_string = str(self.getTrack().getNorm()) + ' ' + str(self.getTrack().getRelease())
+        popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR, <SPACE>, RELEASE [BEATS]"', title_font = self.font_name, default_text = par_string)
         popup.bind(on_dismiss = self.handleChangeTrackParameters)
         popup.open()
     def handleChangeTrackParameters(self, *args):
         self._keyboard_request()
         pars = args[0].text.split()
-        self.getTrack().setParameters(norm = pars[0], maxrelease = pars[1])
+        self.getTrack().setParameters(norm = pars[0], release = pars[1])
         self.update()
 
-    def addTrack(self, name, synth = None):
+    def addTrack(self, name = 'NJU TREK', synth = None):
         self.tracks.append(Track(synths, name = name, synth = synth))
         if len(self.tracks) == 1: self.current_track = 0
         self.update()
@@ -299,6 +301,11 @@ class Ma2Widget(Widget):
     def switchTrack(self, inc):
         self.current_track = (self.current_track + inc) % len(self.tracks)
         self.update()
+
+    def delTrack(self):
+        if self.tracks and self.current_track is not None:
+            if len(self.tracks) == 1: self.tracks.append(Track(synths)) # have to have one
+            del self.tracks[self.current_track]
         
     def addPattern(self, name = "", length = None, clone_current = False):
         if name == "":
@@ -436,7 +443,7 @@ class Ma2Widget(Widget):
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[3])):
                     track = Track(synths, name = r[c], synth = int(r[c+1]))
-                    track.setParameters(norm = float(r[c+2]), maxrelease = float(r[c+3]))
+                    track.setParameters(norm = float(r[c+2]), release = float(r[c+3]))
 
                     c += 4
                     for _ in range(int(r[c])):
@@ -472,7 +479,7 @@ class Ma2Widget(Widget):
         out_str = '|'.join([self.title, str(self.BPM), str(self.B_offset), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
-            out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(t.getNorm()) + '|' + str(t.getMaxRelease()) + '|' + str(len(t.modules)) + '|'
+            out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(t.getNorm()) + '|' + str(t.getRelease()) + '|' + str(len(t.modules)) + '|'
             for m in t.modules:
                 out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
         
@@ -523,7 +530,7 @@ class Ma2Widget(Widget):
         seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
         seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float trk_norm[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
-        seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getMaxRelease()) for t in tracks) + ');\n' + 4*' '
+        seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getRelease()) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '

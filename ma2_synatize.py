@@ -54,7 +54,7 @@ def synatize(syn_file = 'test.syn'):
         try:
             assert len(line) >= arg_required(cmd, arg)
         except AssertionError as e:
-            print('ERROR! THIS LINE DOES NOT MATCH THE NUMBER OF REQUIRED ARGUMENTS:', l, 'REQUIRES: '+str(arg_required(cmd, arg))+' ARGUMENTS.', sep='\n')
+            print('ERROR! THIS LINE DOES NOT MATCH THE NUMBER OF REQUIRED ARGUMENTS:', l, 'REQUIRES: '+str(arg_required(cmd, arg))+' ARGUMENTS. HAS: '+str(len(line)), sep='\n')
             quit()
         
        
@@ -94,8 +94,11 @@ def synatize(syn_file = 'test.syn'):
                 form.update({'decay':arg[1], 'par':arg[2] if len(arg)>2 else ''})
             elif shape == 'expdecay' or shape == 'expdecayrepeat':
                 form.update({'decay':arg[1], 'par':arg[2] if len(arg)>2 else ''})
+            elif shape == 'ahd':
+                form.update({'attack':arg[1], 'hold':arg[2], 'decay':arg[3]})
             else:
-                pass
+                print('ERROR! THIS ENVELOPE DOES NOT EXIST:', l, sep='\n')
+                quit()
             
             form_list.append(form)
 
@@ -130,7 +133,8 @@ def synatize(syn_file = 'test.syn'):
             elif op == 'saturate':
                 form.update({'source':arg[1], 'gain':arg[2], 'mode':arg[3] if len(arg)>3 else 'default'})
             else:
-                pass
+                print('ERROR! THIS FORM DOES NOT EXIST:', l, sep='\n')
+                quit()
                 
             form_list.append(form)
 
@@ -141,15 +145,18 @@ def synatize(syn_file = 'test.syn'):
 
 def synatize_build(form_list, main_list):
 
-    def instance(ID, mod={}):
+    def instance(ID, mod={}, force_int = False):
         
         form = next((f for f in form_list if f['ID']==ID), None)
         
         if mod:
             form = form.copy()
             form.update(mod)
+
+        if ID[0]=='"' and ID[-1]=='"':
+            return '('+ID[1:-1]+')'
         
-        if '*' in ID:
+        elif '*' in ID:
             IDproduct = ID.split('*')
             product = ''
             for factorID in IDproduct:
@@ -157,7 +164,10 @@ def synatize_build(form_list, main_list):
             return product;
 
         elif not form:
-            return GLstr(ID).replace('--','+')
+            if force_int:
+                return str(int(float(ID)))
+            else:
+                return GLstr(ID).replace('--','+')
         
         elif form['type']=='uniform':
             return ID
@@ -233,7 +243,12 @@ def synatize_build(form_list, main_list):
                         return pre + '_tri(' + phi + '+' + instance(form['phase']) + ')'
 
                 elif form['shape'] == 'macesq':
-                        return 'MACESQ(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + ','.join([instance(p) for p in form['par']]) + ')'
+                        keyF = '' if not 'follow' in form['par'] else 'F'
+                        form['par'][0] = str(int(float(form['par'][0])))
+                        form['par'][1] = str(int(float(form['par'][1]))) 
+                        print("LOLOL", form['par'])
+                        return 'MACESQ' + keyF + '(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + ','.join(instance(form['par'][p], force_int=True) for p in range(0,2)) \
+                                                                                                                  + ',' + ','.join(instance(form['par'][p]) for p in range(2,9))+ ')'
 
                 else:
                     return '0.'
@@ -314,7 +329,9 @@ def synatize_build(form_list, main_list):
             elif form['shape'] == 'expdecay':
                 return 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*_BPROG)'
             elif form['shape'] == 'expdecayrepeat':
-                return 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*mod(_BPROG,'+instance(form['par'])+'))'                
+                return 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*mod(_BPROG,'+instance(form['par'])+'))'
+            elif form['shape'] == 'ahd':
+                return 'AHDslope(_PROG,'+instance(form['attack'])+','+instance(form['hold'])+','+instance(form['decay'])+')'
             else:
                 return '1.'
 
@@ -403,18 +420,44 @@ def arg_required(cmd, arg):
     arg0 = arg[0].lower()  
     req = 3
 
-    if cmd == 'osc':
+    if cmd == 'osc' or cmd == 'lfo':
         req += 1
         if arg0 == 'squ' or arg0 == 'psq': req += 2
-        if arg0 == 'macesq': req += 11
-    elif cmd == 'lfo':
-        pass
+        elif arg0 == 'macesq': req += 11
+        
     elif cmd == 'drum':
-        if arg0 == 'kick': req += 9
+        if arg0 == 'kick': req += 10
+        elif arg0 == 'kick2': req += 17
         elif arg0 == 'snare': req += 13
-    # ... add on demand...
+        elif arg0 == 'fmnoise': req += 5
+        elif arg0 == 'bitexplosion': req += 7
+
+    elif cmd == 'env':
+        if arg0 == 'adsr' or arg0 == 'adsrexp': req += 4
+        elif arg0 == 'doubleslope': req += 3
+        elif arg0 == 'ss' or arg0 == 'ssdrop': req += 1
+        elif arg0 == 'expdecay' or arg0 == 'expdecayrepeat': req += 1
+        elif arg0 == 'ahd': req += 3
+        
+    elif cmd == 'form':
+        if arg0 == 'mix': req += 1
+        elif arg0 == 'detune' \
+          or arg0 == 'pitchshift' \
+          or arg0 == 'quantize' \
+          or arg0 == 'overdrive' \
+          or arg0 == 'saturate': req += 2
+        elif arg0 == 'chorus': req += 3
+        elif arg0 == 'delay': req += 4
+        elif arg0 == 'waveshape': req += 7
+        
+    elif cmd == 'filter':
+        if arg0 == 'resolp': req += 3
+        
     elif cmd == 'random':
-        req = 4
+        req += 1
+
+    elif cmd == 'gac':
+        req += 7
     
     return req
 

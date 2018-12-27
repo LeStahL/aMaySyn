@@ -29,6 +29,27 @@ float doubleslope(float t, float a, float d, float s)
     return smoothstep(-.00001,a,t) - (1.-s) * smoothstep(0.,d,t-a);
 }
 
+float AHDslope(float t, float a, float h, float d)
+{
+    return t<a ? t/a : t<a+h ? 1. : t < a+h+d ? 1.+(1.-t)*(a+h)/d : 0.;
+}
+
+float env_ADSR(float x, float L, float A, float D, float S, float R)
+{
+    float att = x/A;
+    float dec = 1. - (1.-S)*(x-A)/D;
+    float rel = (x <= L-R) ? 1. : (L-x)/R;
+    return x<A ? att : x<A+D ? dec : x<= L-R ? S : x<=L ? (L-x)/R : 0.;
+}
+
+float env_ADSRexp(float x, float L, float A, float D, float S, float R)
+{
+    float att = pow(x/A,8.);
+    float dec = S + (1.-S) * exp(-(x-A)/D);
+    float rel = (x <= L-R) ? 1. : pow((L-x)/R,4.);
+    return (x < A ? att : dec) * rel;    
+}
+
 float s_atan(float a) { return 2./PI * atan(a); }
 float s_crzy(float amp) { return clamp( s_atan(amp) - 0.1*cos(0.9*amp*exp(amp)), -1., 1.); }
 float squarey(float a, float edge) { return abs(a) < edge ? a : floor(4.*a+.5)*.25; } 
@@ -61,20 +82,50 @@ float GAC(float t, float offset, float a, float b, float c, float d, float e, fl
 float MACESQ(float t, float f, float phase, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
     float ret = 0.;
+
+    float p = f*t + phase;
+    for(int N=0; N<=NMAX; N+=NINC)
+    {
+        float mode     = 2.*float(N) + 1.;
+        float inv_mode = 1./mode;
+        float comp_SAW = 2./PI * (1. - 2.*float(N % 2)) * 1./float(N);
+        float comp_TRI = (N % 2 == 1 ? -1. : 1.) * inv_mode*inv_mode;
+        float comp_SQU = inv_mode * (1. + (2.*float(N%2)-1.)*_sin(PW));
+        float comp_HAE = 1./(2.*PI*float(N)) * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);
+        float comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI +  (-MIX)  * comp_SAW
+                       : MIX < 1. ?   MIX    * comp_TRI + (1.-MIX) * comp_SQU
+                                  : (MIX-1.) * comp_HAE + (2.-MIX) * comp_SQU;
+
+        float filter_N = pow(1. + pow(float(N) * INR,2.*NDECAY),-.5) + RES * exp(-pow(float(N)*INR*RES_Q,2.));
+
+        if(abs(filter_N*comp_mix) < 1e-6) break;
+        
+        ret += comp_mix * filter_N * (_sin(mode * p) + _sin(mode * p * (1.+DET)));
+    }
+    return s_atan(ret);
+}
+
+float MACESQF(float t, float f, float phase, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW)
+{ // variation: key following
+    float ret = 0.;
+    float inv_CO = 1./CO;
+    float INR = f/CO;
+    float IRESQ = 1./RES_Q;
     
     float p = f*t + phase;
     for(int N=0; N<=NMAX; N+=NINC)
     {
         float mode     = 2.*float(N) + 1.;
-        float inv_mode = 1./mode; 		// avoid division? save table of Nmax <= 20 in some array or whatever
+        float inv_mode = 1./mode;
+        float comp_SAW = 2./PI * (1. - 2.*float(N % 2)) * 1./float(N);
         float comp_TRI = (N % 2 == 1 ? -1. : 1.) * inv_mode*inv_mode;
-        float comp_SQU = inv_mode * (1. + (2.*float(N%2)-1.)*_sin(PW)); 
-        float comp_mix = (MIX * comp_TRI + (1.-MIX) * comp_SQU);
-        
-        //one special mode from legacy code 'matzeskuh' - I computed some shitty-but-fun Fourier coefficients for PWM
-        if(MIX < -.01) comp_mix = 1./(2.*PI*float(N)) * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);
+        float comp_SQU = inv_mode * (1. + (2.*float(N%2)-1.)*_sin(PW));
+        float comp_HAE = 1./(2.*PI*float(N)) * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);
+        float comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI +  (-MIX)  * comp_SAW
+                       : MIX < 1. ?   MIX    * comp_TRI + (1.-MIX) * comp_SQU
+                                  : (MIX-1.) * comp_HAE + (2.-MIX) * comp_SQU;
 
-        float filter_N = pow(1. + pow(float(N) * INR,2.*NDECAY),-.5) + RES * exp(-pow(float(N)*INR*RES_Q,2.));
+        float filter_N = pow(1. + pow(float(N) * INR,NDECAY),-.5) + RES * exp(-pow((float(N)*f-CO)*IRESQ,2.));
 
         if(abs(filter_N*comp_mix) < 1e-6) break;
         
@@ -88,25 +139,8 @@ float QMACESQ(float t, float f, float phase, float QUANT, int NMAX, int NINC, fl
     return MACESQ(quant(t,QUANT,1./QUANT), f, phase, NMAX, NINC, MIX, INR, NDECAY, RES, RES_Q, DET, PW);
 }
 
-float env_ADSR(float x, float L, float A, float D, float S, float R)
-{
-    float att = x/A;
-    float dec = 1. - (1.-S)*(x-A)/D;
-    float rel = (x <= L-R) ? 1. : (L-x)/R;
-    return (x < A ? att : (x < A+D ? dec : S)) * rel;    
-}
-
 //FILTERCODE
 
-float env_ADSRexp(float x, float L, float A, float D, float S, float R)
-{
-    float att = pow(x/A,8.);
-    float dec = S + (1.-S) * exp(-(x-A)/D);
-    float rel = (x <= L-R) ? 1. : pow((L-x)/R,4.);
-    return (x < A ? att : dec) * rel;    
-}
-
-//matze: not happy that I include this as is, but we'll just live with it, it is ancient knowledge
 float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decvar)
 {
     float snd = 0.;
@@ -187,7 +221,7 @@ float mainSynth(float time)
         for(int _note = _noteL; _note <= _noteU; _note++)
         {
             Bon    = note_on[(ptn_sep[ptn]+_note)];
-            Boff   = note_off[(ptn_sep[ptn]+_note)];
+            Boff   = note_off[(ptn_sep[ptn]+_note)] + trk_rel[trk];
 
             float anticlick = 1.-exp(-1000.*(B-Bon)); //multiply this elsewhere?
 

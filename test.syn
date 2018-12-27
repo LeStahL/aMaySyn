@@ -23,10 +23,10 @@ drum BDbody kick f0 f1 0.1 0.1 0.1 0.3 1.2 .05 .8 10
 maindrum BD1 BDbody
 
 drum BDbody2 kick2 50 200 0.12 0.015 0.1 0.15 0.4 0.03 1. 5 10 0.8 1 1 1 .1 .1
-maindrum BD2 BDbody2
+maindrum BD2 3.*BDbody2
 
 drum shaker fmnoise 0.03 0.15 0.15 0.9 0.9
-maindrum SHK shaker 
+maindrum SHK .7*shaker 
 
 drum explosion bitexplosion 1 1 1 1 1 1 1 
 maindrum EXPL explosion 
@@ -60,7 +60,37 @@ main stryngth1 stringenv*Fstr
 drum hut fmnoise 0 0.05 0 .3 2
 lfo acclfo squ 4. 0 0 beat global
 form acc mix .6 .25*acclfo
-maindrum HAT acc*hut
+maindrum HAT .4*acc*hut
 
 drum snr snare 6000 800 350 0.01 0.01 0.25 0.3 0.1 .7 0.05 0.3 0.3 1.6
 maindrum SNR snr
+
+osc A1osc3 tri .5*f
+osc A1osc2 saw 2*f .4*A1osc3
+osc A1osc1 squ .25*f 0.25 0.2*A1osc2
+form A1osc1d detune A1osc1 0.004
+env shortenv ahd 0.0 0.2 0.2
+form A1oscmix mix A1osc1d 0.8*A1osc2
+form A1oscmixW waveshape A1oscmix A1osc2 0.1 .3 0.3 0.8 0.8
+env shortdec ahd 0.0001 0.0001 0.4
+filter A1oscmixF resolp A1oscmixW 800*shortdec .1
+main PercBass shortenv*A1oscmixF*5.
+
+# THIS SYNTH NEEDS RELEASE = 2 - have to include such a thing here
+env A14_env adsr 2 0 .2 2 beat
+env A14_fenv adsr 2 0 1 2 beat
+form A14_fenv2 mix 600*A14_fenv "40.*sqrt(f)"
+osc A14_osc macesq A14_fenv2 0. 200 1 1 30 .002 0 0.1 -.01 0 follow
+form A14_oscA mix 0.5*A14_env*A14_osc
+form A14_oscAD overdrive A14_oscA 0.8
+main A14_Kuh A14_oscAD
+
+# NEEDS RELEASE = 2
+env A15_env adsr 3 0 0.2 2 beat
+env A15_fenv adsr 2 0 1 2
+form A15_fenv2 mix 100*A14_fenv "20.*sqrt(f)"
+osc A15_osc1 macesq A15_fenv2 0 200 1 -1 50 "-0.01-0.005*_sin(0.5*Bproc)" "0.01-0.008*_sin(0.25*Bproc+.25)" 0. 0 0 follow
+osc A15_osc2 macesq A15_fenv2 0 200 1 1 30 .002 0 0.1 -.01 "0.1+0.06*_sin(0.25*_t)" follow
+form A15_oscA mix 0.2*A15_osc1 0.3*A15_osc2
+form A15_oscAD overdrive A15_oscA 0.8
+main A15_Kuh A15_oscAD

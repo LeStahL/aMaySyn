@@ -1,7 +1,7 @@
 # THIS FILE IS A REMINDER, WHICH OF THE OLD FUNCTIONALY I HAVE NOT PORTED TO AMAYSYN YET (but might want to)
 
-
-float facekick(float t, float t_on, int vel, int Bsyn)
+### ALREADY HAVE THESE? ###
+float facekick(float t, float t_on, float vel)
 {
     t = t - min(t, t_on); // reset time to Bon event
     
@@ -14,9 +14,44 @@ float facekick(float t, float t_on, int vel, int Bsyn)
     
     float kick_blobb = (1.-exp(-1000.*t))*exp(-40.*t) * _sin((400.-200.*t)*t * _sin(1.*f*t));
     
-	return float(vel)/100. * (kick_body + kick_blobb + kick_click);
+	return vel * (kick_body + kick_blobb + 0.1*kick_click);
 }
 
+float hardkick(float t, float t_on, float vel)
+{
+    t = t - min(t, t_on); // reset time to Bon event
+    
+    float f   = 60. + 150. * smoothstep(-0.3, 0., -t);
+    float env = smoothstep(0.,0.01,t) * smoothstep(-0.1, 0.2, 0.3 - t);
+    
+    float kick_body = env * .1*TRISQ(t, f, 100, 1., 1., .1, 16., 10.); // more heavy bass drum: increase reso parameters?
+   
+    kick_body += .7 * (smoothstep(0.,0.01,t) * smoothstep(-0.2, 0.2, 0.3 - t)) * _sin(t*f*.5);
+
+    float kick_click = 1.5*step(t,0.05) * _sin(t*5000. * _saw(t*1000.));
+    
+    kick_click = s_atan(40.*(1.-exp(-1000.*t))*exp(-80.*t) * _sin((1200.-1000.*sin(1000.*t*sin(30.*t)))*t));
+    
+    float kick_blobb = s_crzy(10.*(1.-exp(-1000.*t))*exp(-30.*t) * _sin((300.-300.*t)*t));
+    
+	return vel * 2.*clamp(kick_body + kick_blobb + kick_click,-1.5,1.5);
+}
+
+float oddnoise(float t, float t_on, float vel)
+{
+    t = t - min(t, t_on); // reset time to Bon event
+    
+    float kick_click = 1.5*step(t,0.05) * _sin(t*5000. * _saw(t*1000.));
+    
+    kick_click = s_atan(8.*(1.-exp(-1000.*t))*exp(-80.*t) * _sin((1200.-1000.*sin(1000.*t*t))*t));
+    
+	return vel * 2.*clamp(kick_click,-1.5,1.5);
+}
+
+
+### FROM HERE ON - SYNTHS ###
+
+// done
     if(Bsyn == 14) // test of mace-sq (matzeskuh)
     {
         env *= env_ADSR(Bprog,Boff-Bon,2.,0.,0.2,2.);
@@ -28,8 +63,9 @@ float facekick(float t, float t_on, int vel, int Bsyn)
         sound += 0.3*macesanderekuh(t, f, filterCO, 30., 0.002, -0.01, 0.0, 0.0, 0.1);
         
         sound = clip(0.8*sound);
-    }
+    } 
 
+// done    
     if(Bsyn == 15) // can I manage some horns, some day?
     {
         env *= env_ADSR(Bprog,Boff-Bon,3.,0.,0.2,2.);
@@ -244,148 +280,9 @@ float facekick(float t, float t_on, int vel, int Bsyn)
     }    
 
 
-float pseudorandom(float x)
-{
-    return fract(sin(dot(vec2(x),vec2(12.9898,78.233))) * 43758.5453);
-}
-
-// Beat
-float basickick (float t, float s, float f)
-{
-    t = min(t, s);
-    return _sin(t * f * smoothstep(2.0*s, 0.0, t));
-}
-
-float asskick(float t)
-{
-    float ass = 0.;
-
-    float BodFrqA   = 1000.;
-    float BodFrqS   = 60.;
-    float BodFrqE   = 40.;
-    float BodFrqDec = 0.0002;
-    float BodFrqRel = 0.01;
-    float BodFrqAlf = 1.0;   // alpha: linear-exponential mixing (alpha=1: linear)
-
-    float BodSquMix = 0.1;
-    float BodOvrdrv = 1.8; 
-
-    float BodAmpAtt = 0.001;
-    float BodAmpHld = 0.255;
-    float BodAmpRel = 0.5;
-    float BodAmpAlf = 0.5;
-    float BodAmpGat = 0.01;
-
-    // Body
-
-    float Amp = 0.;
-    //attack and hold phases
-    if(t < BodAmpHld)
-        Amp = (t < BodAmpAtt) ? t/BodAmpAtt : 1.;
-    //release phase (two kinds of decay)
-    else
-    {
-        float t0 = t - BodAmpHld;
-
-        float LinDec = 1. - t0/BodAmpRel;
-        float ExpDec = pow(BodAmpGat, t0/BodAmpRel);
-
-        Amp = BodAmpAlf * LinDec + (1.-BodAmpAlf) * ExpDec;
-    }
-    //simple gate
-    if(Amp < BodAmpGat) Amp = 0.;
-
-    float Freq = 0.;
-    // first, steep decay
-    if(t < BodFrqDec)
-        Freq = BodFrqA + (BodFrqS - BodFrqA) * t/BodFrqDec;
-    else
-    {
-        float t0 = t - BodFrqDec;
-
-        float FrqLinDec = BodFrqS + (BodFrqE - BodFrqS) * t0/BodFrqRel;
-        float FrqExpDec = BodFrqS * pow(BodFrqE/BodFrqS, t0/BodFrqRel);
-
-        Freq = BodFrqAlf * FrqLinDec + (1. - BodFrqAlf) * FrqExpDec;
-
-        if(Freq < BodFrqE) Freq = BodFrqE; // shouldn't be possible by construction, but as a kind of safety net
-    }  
-
-    float phase = 2.*PI*Freq*t;
-    ass = Amp * ( (1.-BodSquMix) * sin(phase) + BodSquMix/sqrt(2.) * sign(sin(phase))); //factor 1/sqrt(2) evens out the powers
-
-    ass *= BodOvrdrv;
-    
-    ass = clamp(ass, -1., 1.);
-    
-    // + Pop (relative volume, sine, short decay, sweep over pitch midrange)
-
-    float PopFrqS = 900.;
-    float PopFrqE = 100.;
-    float PopFrqDec = 0.1;
-    float PopFrqAlf = 0.5;
-    float PopAmpHld = 0.1; // = PopFrqDec?
-    float PopAmpMix = 0.3;   // > 1 for more overdrive =)
-
-    float FrqLinDec = PopFrqS + (PopFrqE - PopFrqS) * t/PopFrqDec;
-    float FrqExpDec = PopFrqS * pow(PopFrqE/PopFrqS, t/PopFrqDec);
-
-    Freq = PopFrqAlf * FrqLinDec + (1. - PopFrqAlf) * FrqExpDec;
-
-    if(Freq < PopFrqE) Freq = PopFrqE;
-
-    if(t < PopAmpHld) ass += PopAmpMix * sin(2.*PI*Freq*t); 
-
-    
-    // + Click (relative volume, frequency modulated) 
-
-    float ClkCarFrq = 2000.;
-    float ClkModFrq = 100.;
-    float ClkModAmt = 0.2;
-    float ClkAmpHld = 0.025;
-    float ClkAmpMix = 0.3;   // > 1 for more overdrive =)
-
-    if(t < ClkAmpHld) ass += _sin(ClkCarFrq*t * (1. + ClkModAmt*_sin(ClkModFrq*t)) );
-
-    // + Noise?? 
-    // ...
-
-    // <-- high pass? can we filter somehow?
-    
-    ass = clamp(ass, -1., +1.);
-
-    return ass;
-}
 
 ## SOFT SYNTHWAVEY ## - but same as above?
 
-float snare(float t, float t_on, int vel, int Bsyn)
-{
-    // #define _tri(a) (4.*abs(fract(a)-.5) - 1.)
-    t = t - min(t, t_on);
-    float f1 = 6000.;
-    float f2 = 800.;
-    float f3 = 350.;
-    float dec12 = 0.01;
-    float dec23 = 0.01;
-    float rel = 0.1;
-    float snr = _tri(t * (f3 + (f1-f2)*smoothstep(-dec12,0.,-t)
-                             + (f2-f3)*smoothstep(-dec12-dec23,-dec12,-t))) * smoothstep(-rel,-dec12-dec23,-t);
-        
-    //noise part
-    float noise = fract(sin(t * 90.) * 45000.) * doubleslope(t,0.05,0.3,0.3);
-    
-    float overdrv = 0.;
-    
-    return float(vel)/100. * clamp(overdrv * snr + noise, -1., 1.) * doubleslope(t,0.0,0.25,0.3);
-}
-
-
-float hut(float t, float t_on, int vel, int Bsyn)
-{
-    t = t - min(t, t_on);
-    return float(vel)/100. * fract(sin(t * 90.) * 45000.) * doubleslope(t,0.,0.12,0.0);
-}
 
     if(Bsyn == 0)
     {
@@ -728,53 +625,6 @@ if(Bsyn == 0) // mighty strings (pad?) pls
         	r += norm * distsin(time-ch_time, B, Bon, Boff, Bpitch, Bsyn);
         }
 
-### ALREADY HAVE THESE? ###
-float facekick(float t, float t_on, float vel)
-{
-    t = t - min(t, t_on); // reset time to Bon event
-    
-    float f   = 50. + 150. * smoothstep(-0.12, 0., -t);
-    float env = smoothstep(0.,0.015,t) * smoothstep(-0.08, 0., 0.16 - t);
-    
-    float kick_body = env * TRISQ(t, f, 3, 1., 0.8, 8., 4., 1.); // more heavy bass drum: increase reso parameters?
-    
-    float kick_click = 0.4 * step(t,0.03) * _sin(t*1100. * _saw(t*800.));
-    
-    float kick_blobb = (1.-exp(-1000.*t))*exp(-40.*t) * _sin((400.-200.*t)*t * _sin(1.*f*t));
-    
-	return vel * (kick_body + kick_blobb + 0.1*kick_click);
-}
-
-float hardkick(float t, float t_on, float vel)
-{
-    t = t - min(t, t_on); // reset time to Bon event
-    
-    float f   = 60. + 150. * smoothstep(-0.3, 0., -t);
-    float env = smoothstep(0.,0.01,t) * smoothstep(-0.1, 0.2, 0.3 - t);
-    
-    float kick_body = env * .1*TRISQ(t, f, 100, 1., 1., .1, 16., 10.); // more heavy bass drum: increase reso parameters?
-   
-    kick_body += .7 * (smoothstep(0.,0.01,t) * smoothstep(-0.2, 0.2, 0.3 - t)) * _sin(t*f*.5);
-
-    float kick_click = 1.5*step(t,0.05) * _sin(t*5000. * _saw(t*1000.));
-    
-    kick_click = s_atan(40.*(1.-exp(-1000.*t))*exp(-80.*t) * _sin((1200.-1000.*sin(1000.*t*sin(30.*t)))*t));
-    
-    float kick_blobb = s_crzy(10.*(1.-exp(-1000.*t))*exp(-30.*t) * _sin((300.-300.*t)*t));
-    
-	return vel * 2.*clamp(kick_body + kick_blobb + kick_click,-1.5,1.5);
-}
-
-float oddnoise(float t, float t_on, float vel)
-{
-    t = t - min(t, t_on); // reset time to Bon event
-    
-    float kick_click = 1.5*step(t,0.05) * _sin(t*5000. * _saw(t*1000.));
-    
-    kick_click = s_atan(8.*(1.-exp(-1000.*t))*exp(-80.*t) * _sin((1200.-1000.*sin(1000.*t*t))*t));
-    
-	return vel * 2.*clamp(kick_click,-1.5,1.5);
-}
 
 ONE DAY, CHECK "ProtoSeq_Ma2" for more...
 like e.g.
@@ -856,4 +706,118 @@ float matzebass(float time, int note)
     ret = (ret + SUB_AMT * UNISINE(time*0.5,note,SUB_VOICES))/(1.+SUB_AMT);
     
 	return ret * adsr_envelope(time, ENV_A, ENV_D, ENV_S, ENV_R, 0., 10.);
+}
+
+### and now: overly complicated or useless drum stuff
+float pseudorandom(float x)
+{
+    return fract(sin(dot(vec2(x),vec2(12.9898,78.233))) * 43758.5453);
+}
+
+// Beat
+float basickick (float t, float s, float f)
+{
+    t = min(t, s);
+    return _sin(t * f * smoothstep(2.0*s, 0.0, t));
+}
+
+float asskick(float t)
+{
+    float ass = 0.;
+
+    float BodFrqA   = 1000.;
+    float BodFrqS   = 60.;
+    float BodFrqE   = 40.;
+    float BodFrqDec = 0.0002;
+    float BodFrqRel = 0.01;
+    float BodFrqAlf = 1.0;   // alpha: linear-exponential mixing (alpha=1: linear)
+
+    float BodSquMix = 0.1;
+    float BodOvrdrv = 1.8; 
+
+    float BodAmpAtt = 0.001;
+    float BodAmpHld = 0.255;
+    float BodAmpRel = 0.5;
+    float BodAmpAlf = 0.5;
+    float BodAmpGat = 0.01;
+
+    // Body
+
+    float Amp = 0.;
+    //attack and hold phases
+    if(t < BodAmpHld)
+        Amp = (t < BodAmpAtt) ? t/BodAmpAtt : 1.;
+    //release phase (two kinds of decay)
+    else
+    {
+        float t0 = t - BodAmpHld;
+
+        float LinDec = 1. - t0/BodAmpRel;
+        float ExpDec = pow(BodAmpGat, t0/BodAmpRel);
+
+        Amp = BodAmpAlf * LinDec + (1.-BodAmpAlf) * ExpDec;
+    }
+    //simple gate
+    if(Amp < BodAmpGat) Amp = 0.;
+
+    float Freq = 0.;
+    // first, steep decay
+    if(t < BodFrqDec)
+        Freq = BodFrqA + (BodFrqS - BodFrqA) * t/BodFrqDec;
+    else
+    {
+        float t0 = t - BodFrqDec;
+
+        float FrqLinDec = BodFrqS + (BodFrqE - BodFrqS) * t0/BodFrqRel;
+        float FrqExpDec = BodFrqS * pow(BodFrqE/BodFrqS, t0/BodFrqRel);
+
+        Freq = BodFrqAlf * FrqLinDec + (1. - BodFrqAlf) * FrqExpDec;
+
+        if(Freq < BodFrqE) Freq = BodFrqE; // shouldn't be possible by construction, but as a kind of safety net
+    }  
+
+    float phase = 2.*PI*Freq*t;
+    ass = Amp * ( (1.-BodSquMix) * sin(phase) + BodSquMix/sqrt(2.) * sign(sin(phase))); //factor 1/sqrt(2) evens out the powers
+
+    ass *= BodOvrdrv;
+    
+    ass = clamp(ass, -1., 1.);
+    
+    // + Pop (relative volume, sine, short decay, sweep over pitch midrange)
+
+    float PopFrqS = 900.;
+    float PopFrqE = 100.;
+    float PopFrqDec = 0.1;
+    float PopFrqAlf = 0.5;
+    float PopAmpHld = 0.1; // = PopFrqDec?
+    float PopAmpMix = 0.3;   // > 1 for more overdrive =)
+
+    float FrqLinDec = PopFrqS + (PopFrqE - PopFrqS) * t/PopFrqDec;
+    float FrqExpDec = PopFrqS * pow(PopFrqE/PopFrqS, t/PopFrqDec);
+
+    Freq = PopFrqAlf * FrqLinDec + (1. - PopFrqAlf) * FrqExpDec;
+
+    if(Freq < PopFrqE) Freq = PopFrqE;
+
+    if(t < PopAmpHld) ass += PopAmpMix * sin(2.*PI*Freq*t); 
+
+    
+    // + Click (relative volume, frequency modulated) 
+
+    float ClkCarFrq = 2000.;
+    float ClkModFrq = 100.;
+    float ClkModAmt = 0.2;
+    float ClkAmpHld = 0.025;
+    float ClkAmpMix = 0.3;   // > 1 for more overdrive =)
+
+    if(t < ClkAmpHld) ass += _sin(ClkCarFrq*t * (1. + ClkModAmt*_sin(ClkModFrq*t)) );
+
+    // + Noise?? 
+    // ...
+
+    // <-- high pass? can we filter somehow?
+    
+    ass = clamp(ass, -1., +1.);
+
+    return ass;
 }
