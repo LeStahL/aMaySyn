@@ -19,8 +19,11 @@ MAIn Basss base*slowenv
 
 random f0 50 80 1
 random f1 100 150 1
-drum BDbody kick f0 f1 0.1 0.1 0.3 10 1.2 .05 .8
-maindrum BD BDbody
+drum BDbody kick f0 f1 0.1 0.1 0.1 0.3 1.2 .05 .8 10 
+maindrum BD1 BDbody
+
+drum BDbody2 kick2 50 200 0.12 0.015 0.1 0.15 0.4 0.03 1. 5 10 0.8 1 1 1 .1 .1
+maindrum BD2 BDbody2
 
 drum shaker fmnoise 0.03 0.15 0.15 0.9 0.9
 maindrum SHK shaker 
@@ -58,3 +61,6 @@ drum hut fmnoise 0 0.05 0 .3 2
 lfo acclfo squ 4. 0 0 beat global
 form acc mix .6 .25*acclfo
 maindrum HAT acc*hut
+
+drum snr snare 6000 800 350 0.01 0.01 0.25 0.3 0.1 .7 0.05 0.3 0.3 1.6
+maindrum SNR snr

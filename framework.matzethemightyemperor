@@ -85,7 +85,7 @@ float MACESQ(float t, float f, float phase, int NMAX, int NINC, float MIX, float
 
 float QMACESQ(float t, float f, float phase, float QUANT, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
-    return MACESQ(quant(t,QUANT,1./QUANT), f, phase, NMAX, NINC MIX, INR, NDECAY, RES, RES_Q, DET, PW);
+    return MACESQ(quant(t,QUANT,1./QUANT), f, phase, NMAX, NINC, MIX, INR, NDECAY, RES, RES_Q, DET, PW);
 }
 
 float env_ADSR(float x, float L, float A, float D, float S, float R)

@@ -58,14 +58,12 @@ float GAC(float t, float offset, float a, float b, float c, float d, float e, fl
     return t<0. ? 0. : a + b*t + c*t*t + d*sin(e*t) + f*exp(-g*t);
 }
 
-float MACESQ(float t, float f, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
+float MACESQ(float t, float f, float phase, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
     float ret = 0.;
     
-    int Ninc = 8; // try this: leaving out harmonics...
-    
-    float p = f*t;
-    for(int N=0; N<=MAXN; N+=Ninc)
+    float p = f*t + phase;
+    for(int N=0; N<=NMAX; N+=NINC)
     {
         float mode     = 2.*float(N) + 1.;
         float inv_mode = 1./mode; 		// avoid division? save table of Nmax <= 20 in some array or whatever
@@ -85,9 +83,9 @@ float MACESQ(float t, float f, int MAXN, float MIX, float INR, float NDECAY, flo
     return s_atan(ret);
 }
 
-float QMACESQ(float t, float f, float QUANT, int MAXN, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
+float QMACESQ(float t, float f, float phase, float QUANT, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
 {
-    return MACESQ(quant(t,QUANT,1./QUANT), f, MAXN, MIX, INR, NDECAY, RES, RES_Q, DET, PW);
+    return MACESQ(quant(t,QUANT,1./QUANT), f, phase, NMAX, NINC, MIX, INR, NDECAY, RES, RES_Q, DET, PW);
 }
 
 float env_ADSR(float x, float L, float A, float D, float S, float R)
@@ -194,13 +192,17 @@ float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
     else if(Bsyn == 5){
       s = env_ADSR(_t,tL,.2,.3,.8,.2)*resolpsaw2D(_t,f,tL,300.*env_ADSR(Bprog,L,.5,.5,.4,0.),0.);}
     else if(Bsyn == -1){
-      s = s_atan(vel*(smoothstep(0.,.1,_t)*smoothstep(-(.1+.3),-.1,-_t)*(clip(10.*_tri((59.9+(144.7-59.9)*smoothstep(-.1, 0.,-_t))*_t))+_sin(.5*(59.9+(144.7-59.9)*smoothstep(-.1, 0.,-_t))*_t)))+ 1.2*step(_t,.05)*_sin(5000.*_t*.8*_saw(1000.*_t*.8)));}
+      s = s_atan(vel*smoothstep(0.,.1,_t)*smoothstep(.1+.3,.3,_t)*(clip(10.*_tri((61.5+(115.5-61.5)*smoothstep(-.1, 0.,-_t))*_t))+_sin(.5*(61.5+(115.5-61.5)*smoothstep(-.1, 0.,-_t))*_t)))+1.2*step(_t,.05)*_sin(5000.*_t*.8*_saw(1000.*_t*.8));}
     else if(Bsyn == -2){
-      s = vel*fract(sin(t*100.*.9)*50000.*.9)*doubleslope(_t,.03,.15,.15);}
+      s = s_atan(vel*smoothstep(0.,.015,_t)*smoothstep(.1+.15,.15,_t)*MACESQ(_t,(50.+(200.-50.)*smoothstep(-.12, 0.,-_t)),5.,10,1,.8,1.,1.,1.,.1,.1,0.) + .4*.5*step(_t,.03)*_sin(_t*1100.*1.*_saw(_t*800.*1.)) + .4*(1.-exp(-1000.*_t))*exp(-40.*_t)*_sin((400.-200.*_t)*_t*_sin(1.*(50.+(200.-50.)*smoothstep(-.12, 0.,-_t))*_t)));}
     else if(Bsyn == -3){
-      s = vel*bitexplosion(t, Bprog, 1,1.,1.,1.,1.,1.,1.);}
+      s = vel*fract(sin(t*100.*.9)*50000.*.9)*doubleslope(_t,.03,.15,.15);}
     else if(Bsyn == -4){
+      s = vel*bitexplosion(t, Bprog, 1,1.,1.,1.,1.,1.,1.);}
+    else if(Bsyn == -5){
       s = (.6+.25*_psq(4.*B,0.))*vel*fract(sin(t*100.*.3)*50000.*2.)*doubleslope(_t,0.,.05,0.);}
+    else if(Bsyn == -6){
+      s = vel*clamp(1.6*_tri(_t*(350.+(6000.-800.)*smoothstep(-.01,0.,-_t)+(800.-350.)*smoothstep(-.01-.01,-.01,-_t)))*smoothstep(-.1,-.01-.01,-_t) + .7*fract(sin(t*90.)*4.5e4)*doubleslope(_t,.05,.3,.3),-1., 1.)*doubleslope(_t,0.,.25,.3);}
     
 	return clamp(env,0.,1.) * s_atan(s);
 }
@@ -227,13 +229,13 @@ float mainSynth(float time)
     float mod_transp[5] = float[5](-12.,0.,0.,0.,0.);
     float max_mod_off = 8.;
     int drum_index = 6;
-    float drum_synths = 5.;
+    float drum_synths = 7.;
     int NO_ptns = 2;
-    int ptn_sep[3] = int[3](0,24,43);
-    float note_on[43] = float[43](0.,0.,0.,1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.,7.,7.,7.,0.,.125,.25,.375,.5,.5,.625,.75,.875,1.,1.125,1.25,1.375,1.5,1.5,1.625,1.75,1.75,1.875);
-    float note_off[43] = float[43](1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.,7.,7.,7.,8.,8.,8.,.125,.25,.375,.5,.625,.625,.75,.875,1.,1.125,1.25,1.375,1.5,1.625,1.625,1.75,1.875,1.875,2.);
-    float note_pitch[43] = float[43](36.,72.,63.,34.,70.,65.,39.,70.,67.,37.,72.,65.,36.,72.,63.,34.,70.,65.,27.,70.,58.,29.,69.,60.,24.,24.,24.,24.,21.,24.,24.,24.,24.,24.,24.,24.,24.,81.,24.,24.,81.,24.,24.);
-    float note_vel[43] = float[43](1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.);
+    int ptn_sep[3] = int[3](0,24,36);
+    float note_on[36] = float[36](0.,0.,0.,1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.,7.,7.,7.,0.,.125,.375,.5,.625,.875,1.125,1.25,1.375,1.5,1.625,1.875);
+    float note_off[36] = float[36](1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.,7.,7.,7.,8.,8.,8.,.375,.25,.5,.625,.75,1.,1.25,1.625,1.5,1.625,1.75,2.);
+    float note_pitch[36] = float[36](36.,72.,63.,34.,70.,65.,39.,70.,67.,37.,72.,65.,36.,72.,63.,34.,70.,65.,27.,70.,58.,29.,69.,60.,16.,19.,19.,20.,19.,19.,19.,2.,19.,76.,19.,19.);
+    float note_vel[36] = float[36](1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.);
     
     float r = 0.;
     float d = 0.;

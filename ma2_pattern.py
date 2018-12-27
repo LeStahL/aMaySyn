@@ -119,9 +119,11 @@ class Pattern():
         if self.notes:
             self.getNote().note_pitch = max(0, min(88, self.getNote().note_pitch + inc)) # TODO find out whether 88 is way too high..
 
-    def shiftAllNotes(self, inc):
-        for n in self.notes:
+    def shiftAllNotes(self, inc, is_drumtrack = False, drumkit_length = 1):
+        notes = self.notes if not is_drumtrack else [n for n in self.notes if n.note_pitch % drumkit_length == self.getNote().note_pitch % drumkit_length]
+        for n in notes:
             n.note_pitch = max(0, min(88, n.note_pitch + inc))
+        self.printNoteList()
 
     def stretchNote(self, inc):
         # here I had lots of possibilities .. is inc > or < 0? but these where on the monophonic synth. Let's rethink polyphonic!

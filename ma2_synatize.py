@@ -240,24 +240,53 @@ def synatize_build(form_list, main_list):
 
         elif form['type'] == 'drum':
             
-                if form['shape'] == 'kick': # <start freq> <end freq> <freq decay time> <env attack time> <env decay time> <distortion> ...
+                if form['shape'] == 'kick' or form['shape'] == 'kick2': # <start freq> <end freq> <freq decay time> <env attack time> <env decay time> <distortion> ...
                     freq_start = instance(form['par'][0])
                     freq_end = instance(form['par'][1])
                     freq_decay = instance(form['par'][2])
                     env_attack = instance(form['par'][3])
-                    env_decay = instance(form['par'][4])
-                    distortion = instance(form['par'][5])
+                    env_hold = instance(form['par'][4])
+                    env_decay = instance(form['par'][5])
                     click_amp = instance(form['par'][6])
                     click_delay = instance(form['par'][7])
                     click_timbre = instance(form['par'][8])
 
                     freq_env = '('+freq_start+'+('+freq_end+'-'+freq_start+')*smoothstep(-'+freq_decay+', 0.,-_PROG))'
-                    amp_env = 'vel*(smoothstep(0.,'+env_attack+',_PROG)*smoothstep(-('+env_attack+'+'+env_decay+'),-'+env_attack+',-_PROG)'
-                    return 's_atan('+amp_env+'*(clip('+distortion+'*_tri('+freq_env+'*_PROG))+_sin(.5*'+freq_env+'*_PROG)))+ '+click_amp+'*step(_PROG,'+click_delay+')*_sin(5000.*_PROG*'+click_timbre+'*_saw(1000.*_PROG*'+click_timbre+')))'
+                    amp_env = 'vel*smoothstep(0.,'+env_attack+',_PROG)*smoothstep('+env_hold+'+'+env_decay+','+env_decay+',_PROG)'
+
+                    if form['shape'] == 'kick':
+                        distortion = instance(form['par'][9])
+                        return 's_atan('+amp_env+'*(clip('+distortion+'*_tri('+freq_env+'*_PROG))+_sin(.5*'+freq_env+'*_PROG)))+'+click_amp+'*step(_PROG,'+click_delay+')*_sin(5000.*_PROG*'+click_timbre+'*_saw(1000.*_PROG*'+click_timbre+'))'
+                    
+                    elif form['shape'] == 'kick2':
+                        sq_PHASE = instance(form['par'][9])
+                        sq_NMAX = str(int(float(form['par'][10])))
+                        sq_MIX = instance(form['par'][11])
+                        sq_INR = instance(form['par'][12])
+                        sq_NDECAY = instance(form['par'][13])
+                        sq_RES = instance(form['par'][14])
+                        sq_RESQ = instance(form['par'][15])
+                        sq_DET = instance(form['par'][16])
+                        return 's_atan('+amp_env+'*MACESQ(_PROG,'+freq_env+','+sq_PHASE+','+sq_NMAX+',1,'+sq_MIX+','+sq_INR+','+sq_NDECAY+','+sq_RES+','+sq_RESQ+','+sq_DET+',0.) + '+click_amp+'*.5*step(_PROG,'+click_delay+')*_sin(_PROG*1100.*'+click_timbre+'*_saw(_PROG*800.*'+click_timbre+')) + '+click_amp+'*(1.-exp(-1000.*_PROG))*exp(-40.*_PROG)*_sin((400.-200.*_PROG)*_PROG*_sin(1.*'+freq_env+'*_PROG)))'
                 
                 elif form['shape'] == 'snare':
-                    return 0.
-
+                    freq_0 = instance(form['par'][0])
+                    freq_1 = instance(form['par'][1])
+                    freq_2 = instance(form['par'][2])
+                    fdec01 = instance(form['par'][3])
+                    fdec12 = instance(form['par'][4])
+                    envdec = instance(form['par'][5])
+                    envsus = instance(form['par'][6])
+                    envrel = instance(form['par'][7])
+                    ns_amt = instance(form['par'][8])
+                    ns_att = instance(form['par'][9])
+                    ns_dec = instance(form['par'][10])
+                    ns_sus = instance(form['par'][11])
+                    overdr = instance(form['par'][12])
+                    
+                    freq_env = '('+freq_2+'+('+freq_0+'-'+freq_1+')*smoothstep(-'+fdec01+',0.,-_PROG)+('+freq_1+'-'+freq_2+')*smoothstep(-'+fdec01+'-'+fdec12+',-'+fdec01+',-_PROG))'
+                    return 'vel*clamp('+overdr+'*_tri(_PROG*'+freq_env+')*smoothstep(-'+envrel+',-'+fdec01+'-'+fdec12+',-_PROG) + '+ns_amt+'*fract(sin(t*90.)*4.5e4)*doubleslope(_PROG,'+ns_att+','+ns_dec+','+ns_sus+'),-1., 1.)*doubleslope(_PROG,0.,'+envdec+','+envsus+')'
+                    
                 elif form['shape'] == 'fmnoise':
                     env_attack = instance(form['par'][0])
                     env_decay = instance(form['par'][1])
@@ -380,6 +409,9 @@ def arg_required(cmd, arg):
         if arg0 == 'macesq': req += 11
     elif cmd == 'lfo':
         pass
+    elif cmd == 'drum':
+        if arg0 == 'kick': req += 9
+        elif arg0 == 'snare': req += 13
     # ... add on demand...
     elif cmd == 'random':
         req = 4

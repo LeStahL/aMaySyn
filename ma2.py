@@ -175,8 +175,8 @@ class Ma2Widget(Widget):
             elif 'shift' in modifiers:
                 if   k == 'left':               self.getPattern().stretchNote(-inc_step/8)
                 elif k == 'right':              self.getPattern().stretchNote(+inc_step/8)
-                elif k == 'up':                 self.getPattern().shiftAllNotes(+1)
-                elif k == 'down':               self.getPattern().shiftAllNotes(-1)
+                elif k == 'up':                 self.getPattern().shiftAllNotes(+1, is_drumtrack = self.isDrumTrack(), drumkit_length = len(drumkit))
+                elif k == 'down':               self.getPattern().shiftAllNotes(-1, is_drumtrack = self.isDrumTrack(), drumkit_length = len(drumkit))
 
                 elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step)
                 elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step)
