@@ -283,14 +283,14 @@ class Ma2Widget(Widget):
         self.update()
 
     def changeTrackParameters(self):
-        par_string = str(self.getTrack().getNorm()) + ' ' + str(self.getTrack().getRelease())
-        popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR, <SPACE>, RELEASE [BEATS]"', title_font = self.font_name, default_text = par_string)
+        par_string = str(self.getTrack().getNorm())
+        popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR', title_font = self.font_name, default_text = par_string)
         popup.bind(on_dismiss = self.handleChangeTrackParameters)
         popup.open()
     def handleChangeTrackParameters(self, *args):
         self._keyboard_request()
         pars = args[0].text.split()
-        self.getTrack().setParameters(norm = pars[0], release = pars[1])
+        self.getTrack().setParameters(norm = pars[0])
         self.update()
 
     def addTrack(self, name = 'NJU TREK', synth = None):
@@ -443,9 +443,9 @@ class Ma2Widget(Widget):
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[3])):
                     track = Track(synths, name = r[c], synth = int(r[c+1]))
-                    track.setParameters(norm = float(r[c+2]), release = float(r[c+3]))
+                    track.setParameters(norm = float(r[c+2]))
 
-                    c += 4
+                    c += 3
                     for _ in range(int(r[c])):
                         track.modules.append(Module(float(r[c+2]), Pattern(name=r[c+1]), int(r[c+3])))
                         c += 3
@@ -479,7 +479,7 @@ class Ma2Widget(Widget):
         out_str = '|'.join([self.title, str(self.BPM), str(self.B_offset), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
-            out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(t.getNorm()) + '|' + str(t.getRelease()) + '|' + str(len(t.modules)) + '|'
+            out_str += t.name + '|' + str(t.getSynthIndex()) + '|' + str(t.getNorm()) + '|' + str(len(t.modules)) + '|'
             for m in t.modules:
                 out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
         
@@ -526,11 +526,13 @@ class Ma2Widget(Widget):
         self.loadSynths()
         syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list)
 
+        syn_rel = [(float(m['rel']) if 'rel' in m else 0) for m in self.synatize_main_list if m['type']=='main'] + [0]
+
         seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
         seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
         seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float trk_norm[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
-        seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getRelease()) for t in tracks) + ');\n' + 4*' '
+        seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_rel[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '

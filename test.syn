@@ -41,7 +41,7 @@ env slowdec expdecay 1.5
 main Supersaw stutter*slowdec*somesaw
 
 osc S01 sin f 0
-gac G01 0 1. 2. -.5 3. 2. 2. -.25 global
+gac G01 0 1. 2. -.5 3. 2. 2. -.25 mode=global
 form S01w waveshape S01 1. 0.01 0.7 0.1 0.6 0.8
 main WShape S01 -.1*G01*S01 .1*G01*S01w
 
@@ -53,12 +53,12 @@ lfo stringvib sin 5.
 form fvib mix f 0.3*stringvib*stringenv
 osc saw2 saw fvib 0
 form saw2D detune saw2 0.01 0.011 -0.02
-env stringfilter adsr 0.5 0.5 0.4 0. beat
+env stringfilter adsr 0.5 0.5 0.4 0. mode=beat
 filter Fstr resolp saw2D 300*stringfilter 0.
 main stryngth1 stringenv*Fstr
 
 drum hut fmnoise 0 0.05 0 .3 2
-lfo acclfo squ 4. 0 0 beat global
+lfo acclfo squ 4. 0 0 mode=beat,global
 form acc mix .6 .25*acclfo
 maindrum HAT .4*acc*hut
 
@@ -76,21 +76,27 @@ env shortdec ahd 0.0001 0.0001 0.4
 filter A1oscmixF resolp A1oscmixW 800*shortdec .1
 main PercBass shortenv*A1oscmixF*5.
 
-# THIS SYNTH NEEDS RELEASE = 2 - have to include such a thing here
-env A14_env adsr 2 0 .2 2 beat
-env A14_fenv adsr 2 0 1 2 beat
+env A14_env adsr 2 0 .2 2 mode=beat
+env A14_fenv adsr 2 0 1 2 mode=beat
 form A14_fenv2 mix 600*A14_fenv "40.*sqrt(f)"
-osc A14_osc macesq A14_fenv2 0. 200 1 1 30 .002 0 0.1 -.01 0 follow
+osc A14_osc macesq f 0. 200 1 1 A14_fenv2 30 0 0.1 -.01 0 mode=follow
 form A14_oscA mix 0.5*A14_env*A14_osc
 form A14_oscAD overdrive A14_oscA 0.8
-main A14_Kuh A14_oscAD
+main A14_Kuh A14_oscAD rel=2
 
-# NEEDS RELEASE = 2
-env A15_env adsr 3 0 0.2 2 beat
+env A15_env adsr 3 0 0.2 2 mode=beat
 env A15_fenv adsr 2 0 1 2
 form A15_fenv2 mix 100*A14_fenv "20.*sqrt(f)"
-osc A15_osc1 macesq A15_fenv2 0 200 1 -1 50 "-0.01-0.005*_sin(0.5*Bproc)" "0.01-0.008*_sin(0.25*Bproc+.25)" 0. 0 0 follow
-osc A15_osc2 macesq A15_fenv2 0 200 1 1 30 .002 0 0.1 -.01 "0.1+0.06*_sin(0.25*_t)" follow
+osc A15_osc1 macesq f 0 200 1 -1 A15_fenv2 50 "0.01-0.008*_sin(0.25*Bproc+.25)" 0. 0 0 mode=follow
+osc A15_osc2 macesq f 0 200 1 1 A15_fenv2 30 0 0.1 -.01 "0.1+0.06*_sin(0.25*_t)" mode=follow
 form A15_oscA mix 0.2*A15_osc1 0.3*A15_osc2
 form A15_oscAD overdrive A15_oscA 0.8
-main A15_Kuh A15_oscAD
+main A15_Kuh A15_oscAD rel=2
+
+env A16_env adsr 1.5 2 .2 .8
+osc A16_osc1 saw f A16_lfo1
+osc A16_osc2 saw f .25
+osc A16_osc3 saw f A16_lfo3
+lfo A16_lfo3 sin .5 scale=.2 shift=0 mode=time
+lfo A16_lfo1 sin 2 scale=.1 shift=.1 mode=time
+main A16_Supsaw 0.5*A16_osc1 A16_osc2 A16_osc3 rel=.8

@@ -11,7 +11,6 @@ class Track():
     current_synth = -1
     
     par_norm = 1.
-    par_release = 0.0
     
     def __init__(self, synths, name = '', synth = -1):
         self.synths = synths
@@ -35,7 +34,6 @@ class Track():
     def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
 
     def getNorm(self):                    return self.par_norm
-    def getRelease(self):                 return self.par_release
 
     def addModule(self, mod_on, pattern, transpose = 0, select = True):
         self.modules.append(Module(mod_on, pattern, transpose))
@@ -136,9 +134,8 @@ class Track():
         else:
             self.current_synth = -1
 
-    def setParameters(self, norm, release):
+    def setParameters(self, norm):
         self.par_norm = float(norm)
-        self.par_release = float(release)
 
 class Module():
 
