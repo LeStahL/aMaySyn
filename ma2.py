@@ -27,13 +27,10 @@ import pyperclip
 from ma2_track import *
 from ma2_pattern import *
 from ma2_widgets import *
-from ma2_synatize import synatize, synatize_build
+from ma2_synatize import synatize, synatize_build, GLfloat
 
 Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
-#Config.set('graphics', 'fullscreen', 'auto')
-
-GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 else 1:].replace('-0.','-.')
 
 synths = ['D_Drums', '__GFX', '__None']
 drumkit = ['SideChn']
@@ -156,7 +153,7 @@ class Ma2Widget(Widget):
 
                 elif k == '+'\
                   or k == 'numpadadd':          self.getTrack().addModule(self.getTrack().getLastModuleOff(), Pattern()) 
-                elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern())
+                elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), transpose = self.getModuleTranspose())
                 elif k == '-'\
                   or k == 'numpadsubstract':    self.getTrack().delModule()
 
@@ -316,12 +313,13 @@ class Ma2Widget(Widget):
             length = self.getPatternLen()
             
         self.patterns.append(Pattern(name = name, length = length))
-        if self.getModule():
-            self.getModule().setPattern(self.patterns[-1])
 
         if clone_current:
             for n in self.getPattern().notes:
                 self.patterns[-1].addNote(n);
+
+        if self.getModule():
+            self.getModule().setPattern(self.patterns[-1])
 
     def handlePatternName(self, *args, **kwargs):
         self._keyboard_request()
@@ -524,9 +522,11 @@ class Ma2Widget(Widget):
         gf.close()
 
         self.loadSynths()
-        syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list)
+        actually_used_synths = [t.getSynthName()[2:] for t in self.tracks]
+        syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths)
 
         syn_rel = [(float(m['rel']) if 'rel' in m else 0) for m in self.synatize_main_list if m['type']=='main'] + [0]
+        max_rel = max(syn_rel)
 
         seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
         seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
@@ -537,7 +537,7 @@ class Ma2Widget(Widget):
         seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '
         seqcode += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.transpose) for t in tracks for m in t.modules) + ');\n' + 4*' '
-        seqcode += 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
+        seqcode += 'float max_mod_off = ' + GLfloat(max_mod_off+max_rel) + ';\n' + 4*' '
         seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
         seqcode += 'float drum_synths = ' + GLfloat(len(drumkit)) + ';\n' + 4*' '
         seqcode += 'int NO_ptns = ' + nP + ';\n' + 4*' '
@@ -700,15 +700,3 @@ class Ma2App(App):
 if __name__ == '__main__':
     Ma2App().run()
 
-# Notes:
-# USABILITY EINSPAREN! ERST WENN RELEVANT WIRD. (bin ja aktuell mein eigener Kunde)
-# tracks in linear form with array for indexing
-# patterns also in linear form with array for indexing
-# limit pattern length to 3 letters (or scale with pattern length in monospaced font)
-# features like "clone note", "clone pattern", "stretch pattern", etc. just in documentation (or 
-# import code function? =O
-# song view window, just for visualization of EVERYTHING
-# pattern automation
-# drums... kP
-
-# TODO custom button, more nerd-stylish..

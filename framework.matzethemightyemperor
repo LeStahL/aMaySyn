@@ -14,6 +14,7 @@ float quant(float a,float div,float invdiv) { return floor(div*a+.5)*invdiv; }
 float quanti(float a,float div) { return floor(div*a+.5)/div; }
 float freqC1(float note){ return 32.7 * pow(2.,note/12.); }
 float minus1hochN(int n) { return (1. - 2.*float(n % 2)); }
+float minus1hochNminus1halbe(int n) { return round(sin(.5*PI*float(n))); }
 
 #define pat4(a,b,c,d,x) mod(x,1.)<.25 ? a : mod(x,1.)<.5 ? b : mod(x,1.) < .75 ? c : d
 
@@ -29,7 +30,7 @@ float doubleslope(float t, float a, float d, float s)
     return smoothstep(-.00001,a,t) - (1.-s) * smoothstep(0.,d,t-a);
 }
 
-float AHDslope(float t, float a, float h, float d)
+float env_AHD(float t, float a, float h, float d)
 {
     return t<a ? t/a : t<a+h ? 1. : t < a+h+d ? 1.+(1.-t)*(a+h)/d : 0.;
 }
@@ -79,64 +80,33 @@ float GAC(float t, float offset, float a, float b, float c, float d, float e, fl
     return t<0. ? 0. : a + b*t + c*t*t + d*sin(e*t) + f*exp(-g*t);
 }
 
-float MACESQ(float t, float f, float phase, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
+float comp_SAW(int N, float inv_N) {return inv_N * minus1hochN(N);}
+float comp_TRI(int N, float inv_N) {return N % 2 == 0 ? 0. : inv_N * inv_N * minus1hochNminus1halbe(N);}
+float comp_SQU(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (1. - minus1hochNminus1halbe(N))*_sin(PW);}
+float comp_HAE(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);}
+
+float MACESQ(float t, float f, float phase, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW, int keyF)
 {
     float ret = 0.;
-
-    float p = f*t + phase;
-    for(int N=0; N<=NMAX; N+=NINC)
-    {
-        float mode     = 2.*float(N) + 1.;
-        float inv_mode = 1./mode;
-        float comp_SAW = 2./PI * (1. - 2.*float(N % 2)) * 1./float(N);
-        float comp_TRI = (N % 2 == 1 ? -1. : 1.) * inv_mode*inv_mode;
-        float comp_SQU = inv_mode * (1. + (2.*float(N%2)-1.)*_sin(PW));
-        float comp_HAE = 1./(2.*PI*float(N)) * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);
-        float comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI +  (-MIX)  * comp_SAW
-                       : MIX < 1. ?   MIX    * comp_TRI + (1.-MIX) * comp_SQU
-                                  : (MIX-1.) * comp_HAE + (2.-MIX) * comp_SQU;
-
-        float filter_N = pow(1. + pow(float(N) * INR,2.*NDECAY),-.5) + RES * exp(-pow(float(N)*INR*RES_Q,2.));
-
-        if(abs(filter_N*comp_mix) < 1e-6) break;
-        
-        ret += comp_mix * filter_N * (_sin(mode * p) + _sin(mode * p * (1.+DET)));
-    }
-    return s_atan(ret);
-}
-
-float MACESQF(float t, float f, float phase, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW)
-{ // variation: key following
-    float ret = 0.;
-    float inv_CO = 1./CO;
-    float INR = f/CO;
-    float IRESQ = 1./RES_Q;
+    float INR = keyF==1 ? 1./CO : f/CO;
+    float IRESQ = keyF==1 ? 1./RES_Q : 1./(RES_Q*f);
     
     float p = f*t + phase;
-    for(int N=0; N<=NMAX; N+=NINC)
+    for(int N=1; N<=NMAX; N+=NINC)
     {
-        float mode     = 2.*float(N) + 1.;
-        float inv_mode = 1./mode;
-        float comp_SAW = 2./PI * (1. - 2.*float(N % 2)) * 1./float(N);
-        float comp_TRI = (N % 2 == 1 ? -1. : 1.) * inv_mode*inv_mode;
-        float comp_SQU = inv_mode * (1. + (2.*float(N%2)-1.)*_sin(PW));
-        float comp_HAE = 1./(2.*PI*float(N)) * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);
-        float comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI +  (-MIX)  * comp_SAW
-                       : MIX < 1. ?   MIX    * comp_TRI + (1.-MIX) * comp_SQU
-                                  : (MIX-1.) * comp_HAE + (2.-MIX) * comp_SQU;
+        float float_N = float(N);
+        float inv_N = 1./float_N;
+        float comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI(N,inv_N)    +  (-MIX)  * comp_SAW(N,inv_N)
+                       : MIX < 1. ?   MIX    * comp_TRI(N,inv_N)    + (1.-MIX) * comp_SQU(N,inv_N,PW)
+                                  : (MIX-1.) * comp_HAE(N,inv_N,PW) + (2.-MIX) * comp_SQU(N,inv_N,PW);
 
-        float filter_N = pow(1. + pow(float(N) * INR,NDECAY),-.5) + RES * exp(-pow((float(N)*f-CO)*IRESQ,2.));
-
-        if(abs(filter_N*comp_mix) < 1e-6) break;
+        float filter_N = pow(1. + pow(float_N*INR,NDECAY),-.5) + RES * exp(-pow((float_N*f-CO)*IRESQ,2.));
         
-        ret += comp_mix * filter_N * (_sin(mode * p) + _sin(mode * p * (1.+DET)));
+        if(abs(filter_N*comp_mix) < 1e-6) break; //or is it wise to break already?
+        
+        ret += comp_mix * filter_N * (_sin(float_N * p) + _sin(float_N * p * (1.+DET)));
     }
     return s_atan(ret);
-}
-
-float QMACESQ(float t, float f, float phase, float QUANT, int NMAX, int NINC, float MIX, float INR, float NDECAY, float RES, float RES_Q, float DET, float PW)
-{
-    return MACESQ(quant(t,QUANT,1./QUANT), f, phase, NMAX, NINC, MIX, INR, NDECAY, RES, RES_Q, DET, PW);
 }
 
 //FILTERCODE
@@ -202,44 +172,49 @@ float mainSynth(float time)
     for(int trk = 0; trk < NO_trks; trk++)
     {
         int TLEN = trk_sep[trk+1] - trk_sep[trk];
-       
-        int _mod = TLEN;
-        for(int i=0; i<TLEN; i++) if(BT < mod_off[(trk_sep[trk]+i)]) {_mod = i; break;}
-        if(_mod == TLEN) continue;
-       
-        float B = BT - mod_on[trk_sep[trk]+_mod];
 
-        int ptn = mod_ptn[trk_sep[trk]+_mod];
-        int PLEN = ptn_sep[ptn+1] - ptn_sep[ptn];
+        int _modU = TLEN-1;
+        for(int i=0; i<TLEN-1; i++) if(BT < mod_on[(trk_sep[trk]+i)]) {_modU = i; break;}
+               
+        int _modL = TLEN-1;
+        for(int i=0; i<TLEN-1; i++) if(BT < mod_off[(trk_sep[trk]+i)] + trk_rel[trk]) {_modL = i; break;}
        
-        int _noteU = PLEN-1;
-        for(int i=0; i<PLEN-1; i++) if(B < note_on[(ptn_sep[ptn]+i+1)]) {_noteU = i; break;}
-
-        int _noteL = PLEN-1;
-        for(int i=0; i<PLEN-1; i++) if(B <= note_off[(ptn_sep[ptn]+i)] + trk_rel[trk]) {_noteL = i; break;}
-       
-        for(int _note = _noteL; _note <= _noteU; _note++)
+        for(int _mod = _modL; _mod <= _modU; _mod++)
         {
-            Bon    = note_on[(ptn_sep[ptn]+_note)];
-            Boff   = note_off[(ptn_sep[ptn]+_note)] + trk_rel[trk];
+            float B = BT - mod_on[trk_sep[trk]+_mod];
 
-            float anticlick = 1.-exp(-1000.*(B-Bon)); //multiply this elsewhere?
+            int ptn = mod_ptn[trk_sep[trk]+_mod];
+            int PLEN = ptn_sep[ptn+1] - ptn_sep[ptn];
+           
+            int _noteU = PLEN-1;
+            for(int i=0; i<PLEN-1; i++) if(B < note_on[(ptn_sep[ptn]+i+1)]) {_noteU = i; break;}
 
-            if(trk_syn[trk] == drum_index)
+            int _noteL = PLEN-1;
+            for(int i=0; i<PLEN-1; i++) if(B <= note_off[(ptn_sep[ptn]+i)] + trk_rel[trk]) {_noteL = i; break;}
+           
+            for(int _note = _noteL; _note <= _noteU; _note++)
             {
-                int Bdrum = int(mod(note_pitch[ptn_sep[ptn]+_note], drum_synths));
-                float Bvel = note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[_mod]/6.);
+                Bon    = note_on[(ptn_sep[ptn]+_note)];
+                Boff   = note_off[(ptn_sep[ptn]+_note)] + trk_rel[trk];
 
-                //0 is for sidechaining - am I doing this right?
-                if(Bdrum == 0)
-                    r_sidechain = anticlick - .999 * theta(B-Bon) * smoothstep(Boff,Bon,B);
+                float anticlick = 1.-exp(-1000.*(B-Bon)); //multiply this elsewhere?
+
+                if(trk_syn[trk] == drum_index)
+                {
+                    int Bdrum = int(mod(note_pitch[ptn_sep[ptn]+_note], drum_synths));
+                    float Bvel = note_vel[(ptn_sep[ptn]+_note)] * pow(2.,mod_transp[trk_sep[trk]+_mod]/6.);
+
+                    //0 is for sidechaining - am I doing this right?
+                    if(Bdrum == 0)
+                        r_sidechain = anticlick - .999 * theta(B-Bon) * smoothstep(Boff,Bon,B);
+                    else
+                        d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
+                }
                 else
-                    d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
-            }
-            else
-            {
-                r += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff,
-                                               note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[_mod], trk_syn[trk]);
+                {
+                    r += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff,
+                                                   note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[trk_sep[trk]+_mod], trk_syn[trk]);
+                }
             }
         }
     }
@@ -250,14 +225,8 @@ float mainSynth(float time)
 
 vec2 mainSound(float t)
 {
-    //maybe this works in enhancing the stereo feel
-    float stereo_width = 0.1;
-    float stereo_delay = 0.00001;
-   
-    //float comp_l = mainSynth(t) + stereo_width * mainSynth(t - stereo_delay);
-    //float comp_r = mainSynth(t) + stereo_width * mainSynth(t + stereo_delay);
-   
-    //return vec2(comp_l * .99999, comp_r * .99999);
-   
-    return vec2(mainSynth(t));
+    //enhance the stereo feel
+    float stereo_delay = 2e-4;
+      
+    return vec2(mainSynth(t), mainSynth(t-stereo_delay));
 }

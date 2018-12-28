@@ -83,7 +83,7 @@ float oddnoise(float t, float t_on, float vel)
         sound = clip(0.8*sound);
     }
     
-    if(Bsyn == 16) // super saw pad
+//    if(Bsyn == 16) // super saw pad
     {
         env *= env_ADSR(Bprog,Boff-Bon,1.5,2.,0.2,0.8);
         
@@ -118,7 +118,7 @@ float oddnoise(float t, float t_on, float vel)
     }
 
     
-    if(Bsyn == 10) // Alright, this is not mellow, but wayne.
+    if(Bsyn == 10) // Alright, this is nto mellow, but wayne.
     {
         sound = _tri(2.*f*t) + _tri(0.999*2.*f*_t*(1.+0.0001*_sin(4.*_t)));
         
@@ -129,7 +129,8 @@ float oddnoise(float t, float t_on, float vel)
         
         sound *= 0.2;
     }
-    
+// done up to here
+        
     // replace sound of Bsyn 0 by something squarey (with some automated PWM)
     if(Bsyn == 0)
     {

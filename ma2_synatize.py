@@ -1,7 +1,7 @@
 #import math
 from random import random
 
-GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 else 1:].replace('-0.','-.')
+GLfloat = lambda f: str(int(f)) + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
 
 def GLstr(s):
     try:
@@ -95,6 +95,8 @@ def synatize(syn_file = 'test.syn'):
             
             if shape == 'adsr' or shape == 'adsrexp':
                 form.update({'attack':arg[1], 'decay':arg[2], 'sustain':arg[3], 'release':arg[4], 'par':arg[5:] if len(arg)>5 else []})
+            elif shape == 'ahd':
+                form.update({'attack':arg[1], 'hold':arg[2], 'decay':arg[3]})
             elif shape == 'doubleslope':
                 form.update({'attack':arg[1], 'decay':arg[2], 'sustain':arg[3], 'par':arg[4] if len(arg)>4 else ''})
             elif shape == 'ss':
@@ -103,10 +105,9 @@ def synatize(syn_file = 'test.syn'):
                 form.update({'decay':arg[1], 'par':arg[2] if len(arg)>2 else ''})
             elif shape == 'expdecay' or shape == 'expdecayrepeat':
                 form.update({'decay':arg[1], 'par':arg[2] if len(arg)>2 else ''})
-            elif shape == 'ahd':
-                form.update({'attack':arg[1], 'hold':arg[2], 'decay':arg[3]})
+
             else:
-                print('ERROR! THIS ENVELOPE DOES NOT EXIST:', l, sep='\n')
+                print('ERROR! THIS ENVELOPE DOES NOT EXIST: '+shape, l, sep='\n')
                 quit()
             
             form_list.append(form)
@@ -134,15 +135,17 @@ def synatize(syn_file = 'test.syn'):
             elif op == 'overdrive':
                 form.update({'source':arg[1], 'gain':arg[2]})
             elif op == 'chorus':
-                form.update({'source':arg[1], 'number':arg[2], 'delay':arg[3]})
+                form.update({'source':arg[1], 'number':arg[2], 'step':arg[3], 'intensity':arg[4], 'rate':arg[5]})
             elif op == 'delay':
                 form.update({'source':arg[1], 'number':arg[2], 'delay':arg[3], 'decay':arg[4]})
             elif op == 'waveshape':
                 form.update({'source':arg[1], 'par':arg[2:8]})
             elif op == 'saturate':
-                form.update({'source':arg[1], 'gain':arg[2], 'mode':arg[3] if len(arg)>3 else 'default'})
+                form.update({'source':arg[1], 'gain':arg[2]})
+            elif op == 'lofi':
+                form.update({'source':arg[1], 'bits':arg[2]})
             else:
-                print('ERROR! THIS FORM DOES NOT EXIST:', l, sep='\n')
+                print('ERROR! THIS FORM DOES NOT EXIST: '+op, l, sep='\n')
                 quit()
                 
             form_list.append(form)
@@ -152,10 +155,12 @@ def synatize(syn_file = 'test.syn'):
     return form_list, main_list, drum_list
 
 
-def synatize_build(form_list, main_list):
+def synatize_build(form_list, main_list, actually_used_synths = None):
 
     def instance(ID, mod={}, force_int = False):
         
+        _return = ''
+
         form = next((f for f in form_list if f['ID']==ID), None)
         
         if mod:
@@ -193,22 +198,26 @@ def synatize_build(form_list, main_list):
             elif form['OP'] == 'pitchshift':
                 return instance(form['source'],{'freq':'{:.4f}'.format(pow(2,float(form['steps'])/12)) + '*' + param(form['source'],'freq')})
             elif form['OP'] == 'quantize':
-                return instance(form['source']).replace('_TIME','floor('+instance(form['quant']) + '*_TIME+.5)/' + instance(form['quant']))
+                return instance(form['source']).replace('_TIME','floor('+instance(form['quant']) + '*_TIME+.5)/' + instance(form['quant'])) \
+                                               .replace('_PROG','floor('+instance(form['quant']) + '*_PROG+.5)/' + instance(form['quant']))
             elif form['OP'] == 'overdrive':
                 return 'clip(' + instance(form['gain']) + '*' + instance(form['source']) + ')'
-            elif form['OP'] == 'chorus': #not finished, needs study
-                return '(' + newlineplus.join([instance(form['source']).replace('_TIME','(_TIME-'+'{:.1e}'.format(t*float(form['delay']))+')') for t in range(int(form['number']))]) + ')'
-            elif form['OP'] == 'delay': #not finished, needs study
-                return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['decay']),t)) + '*' + \
-                                               instance(form['source']).replace('_PROG','(_PROG-'+'{:.1e}'.format(t*float(form['delay']))+')') for t in range(int(form['number']))]) + ')'
+            elif form['OP'] == 'chorus':
+                return '(' + newlineplus.join([instance(form['source']).replace('_PROG','(_PROG-'+'{:.1e}'.format(i*float(form['step']))+'*(1.+'+instance(form['step'])+'*_sin('+instance(form['rate'])+'*_PROG)))') for i in range(int(form['number']))]) + ')'
+            elif form['OP'] == 'delay':
+                tvar = '_PROG' if not 'beat' in form['mode'] else '_BPROG'
+                return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['decay']),i)) + '*' + \
+                                               instance(form['source']).replace(tvar,'('+tvar+'-'+'{:.1e}'.format(i*float(form['delay']))+')') for i in range(int(form['number']))]) + ')'
             elif form['OP'] == 'waveshape':
                 print(form['par'])
                 return 'supershape(' + instance(form['source']) + ',' + ','.join(instance(form['par'][p]) for p in range(6)) + ')'
             elif form['OP'] == 'saturate':
-                if form['mode'] == 'crazy':
+                if 'crazy' in form['mode']:
                     return 's_crzy('+instance(form['gain']) + '*' + instance(form['source']) + ')'
                 else:
                     return 's_atan('+instance(form['gain']) + '*' + instance(form['source']) + ')'
+            elif form['OP'] == 'lofi':
+                return 'floor('+instance(form['bits'])+'*'+instance(form['source'])+'+.5)*'+'{:.1e}'.format(1/float(form['bits']))
             else:
                 return '1.'
 
@@ -226,9 +235,7 @@ def synatize_build(form_list, main_list):
                     pre = ''
                     if form['shape'] == 'squ': form['shape'] = 'psq'
 
-                
-                _return = ''
-                
+                                
                 if form['shape'] == 'sin':
                     if form['phase'] == '0':
                         _return = pre + '_sin(' + phi + ')'
@@ -237,7 +244,7 @@ def synatize_build(form_list, main_list):
       
                 elif form['shape'] == 'saw':
                     _return = pre + '(2.*fract(' + phi + '+' + instance(form['phase']) + ')-1.)'
-                
+
                 elif form['shape'] == 'squ':
                     if form['par'] == '0':
                         _return = pre + '_sq(' + phi + ')'
@@ -254,16 +261,21 @@ def synatize_build(form_list, main_list):
                         _return = pre + '_tri(' + phi + '+' + instance(form['phase']) + ')'
 
                 elif form['shape'] == 'macesq':
-                        keyF = '' if not 'follow' in form['par'] else 'F'
+                        keyF = '0' if not 'follow' in form['mode'] else '1'
                         form['par'][0] = str(int(float(form['par'][0])))
                         form['par'][1] = str(int(float(form['par'][1]))) 
                         print("LOLOL", form['par'])
-                        _return ='MACESQ' + keyF + '(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + ','.join(instance(form['par'][p], force_int=True) for p in range(0,2)) \
-                                                                                                                  + ',' + ','.join(instance(form['par'][p]) for p in range(2,9))+ ')'
+                        _return ='MACESQ(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + ','.join(instance(form['par'][p], force_int=True) for p in range(0,2)) \
+                                                                                                                  + ',' + ','.join(instance(form['par'][p]) for p in range(2,9))+ ',' + keyF + ')'
+                elif form['shape'] == 'fract':
+                        _return = pre + '(fract(' + phi + '+' + instance(form['phase']) + ')+' + instance(form['par'][0]) + ')'
 
                 else:
-                    print("ERROR! Some stupid shit occured when trying to parse:", form, sep='\n')
+                    print("ERROR! THIS OSC/LFO SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
                     quit()
+                    
+                if 'overdrive' in form:
+                    _return = 'clip(' + instance(form['overdrive']) + '*' + _return + ')'
                     
                 if 'scale' in form:
                     _return = instance(form['scale']) + '*' + _return
@@ -302,7 +314,7 @@ def synatize_build(form_list, main_list):
                         sq_RES = instance(form['par'][14])
                         sq_RESQ = instance(form['par'][15])
                         sq_DET = instance(form['par'][16])
-                        return 's_atan('+amp_env+'*MACESQ(_PROG,'+freq_env+','+sq_PHASE+','+sq_NMAX+',1,'+sq_MIX+','+sq_INR+','+sq_NDECAY+','+sq_RES+','+sq_RESQ+','+sq_DET+',0.) + '+click_amp+'*.5*step(_PROG,'+click_delay+')*_sin(_PROG*1100.*'+click_timbre+'*_saw(_PROG*800.*'+click_timbre+')) + '+click_amp+'*(1.-exp(-1000.*_PROG))*exp(-40.*_PROG)*_sin((400.-200.*_PROG)*_PROG*_sin(1.*'+freq_env+'*_PROG)))'
+                        return 's_atan('+amp_env+'*MACESQ(_PROG,'+freq_env+','+sq_PHASE+','+sq_NMAX+',1,'+sq_MIX+','+sq_INR+','+sq_NDECAY+','+sq_RES+','+sq_RESQ+','+sq_DET+',0.,1) + '+click_amp+'*.5*step(_PROG,'+click_delay+')*_sin(_PROG*1100.*'+click_timbre+'*_saw(_PROG*800.*'+click_timbre+')) + '+click_amp+'*(1.-exp(-1000.*_PROG))*exp(-40.*_PROG)*_sin((400.-200.*_PROG)*_PROG*_sin(1.*'+freq_env+'*_PROG)))'
                 
                 elif form['shape'] == 'snare':
                     freq_0 = instance(form['par'][0])
@@ -334,27 +346,35 @@ def synatize_build(form_list, main_list):
                     return 'vel*bitexplosion(_TIME, _BPROG, '+str(int(form['par'][0])) + ',' + ','.join(instance(form['par'][p]) for p in range(1,7)) + ')' 
 
         elif form['type']=='env':
+            tvar = '_BPROG' if 'beat' in form['mode'] else '_PROG'
+            Lvar = 'L' if 'beat' in form['mode'] else 'tL'
             if form['shape'] == 'adsr':
-                tvar = '_BPROG' if 'beat' in form['mode'] else '_PROG'
-                Lvar = 'L' if 'beat' in form['mode'] else 'tL'
-                return 'env_ADSR('+tvar+','+Lvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
+                _return = 'env_ADSR('+tvar+','+Lvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
             elif form['shape'] == 'adsrexp':
-                return 'env_ADSRexp(_PROG,tL,'+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
-            elif form['shape'] == 'doubleslope':
-                return 'doubleslope(_PROG, '+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+')'
-            elif form['shape'] == 'ss':
-                return 'smoothstep(0.,'+instance(form['attack'])+',_PROG)'
-            elif form['shape'] == 'ssdrop':
-                return 'theta('+'_PROG'+')*smoothstep('+instance(form['decay'])+',0.,_PROG)'
-            elif form['shape'] == 'expdecay':
-                return 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*_BPROG)'
-            elif form['shape'] == 'expdecayrepeat':
-                return 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*mod(_BPROG,'+instance(form['par'])+'))'
+                _return = 'env_ADSRexp('+tvar+','+Lvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
             elif form['shape'] == 'ahd':
-                return 'AHDslope(_PROG,'+instance(form['attack'])+','+instance(form['hold'])+','+instance(form['decay'])+')'
+                _return = 'env_AHD('+tvar+','+instance(form['attack'])+','+instance(form['hold'])+','+instance(form['decay'])+')'
+            elif form['shape'] == 'doubleslope':
+                _return = 'doubleslope('+tvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+')'
+            elif form['shape'] == 'ss':
+                _return = 'smoothstep(0.,'+instance(form['attack'])+','+tvar+')'
+            elif form['shape'] == 'ssdrop':
+                _return = 'theta('+'_PROG'+')*(1.-smoothstep(0.,'+instance(form['decay'])+','+tvar+'))'
+            elif form['shape'] == 'expdecay':
+                _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*_BPROG)'
+            elif form['shape'] == 'expdecayrepeat':
+                _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['decay'])+'*mod(_BPROG,'+instance(form['par'])+'))'
             else:
-                print("ERROR! Some stupid shit occured when trying to parse:", form, sep='\n')
+                print("ERROR! THIS ENVELOPE SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
                 quit()
+
+            if 'scale' in form:
+                _return = instance(form['scale']) + '*' + _return
+            
+            if 'shift' in form:
+                _return = '(' + instance(form['shift']) + '+(' + _return + '))'
+            
+            return _return
 
 
         elif form['type']=='gac':
@@ -366,7 +386,7 @@ def synatize_build(form_list, main_list):
                 return 'resolp'+form['source']+'(_PROG,f,tL,'+instance(form['par'][0])+','+instance(form['par'][1])+')'
 
         else:
-            print("ERROR! Some stupid shit occured when trying to parse:", form, sep='\n')
+            print("ERROR! THIS FORM TYPE DOES NOT EXIST: "+form['type'], form, sep='\n')
             quit()
 
     def param(ID, key):
@@ -391,18 +411,21 @@ def synatize_build(form_list, main_list):
                 syncode += instance(term) + (newlineplus if term != main_list[0]['terms'][-1] else ';')
            
         else:
+            print(main_list, actually_used_synths)
             syncount = 1
             drumcount = 1
             syncode = 'if(Bsyn == 0){}\n' + 4*' '
             for form_main in main_list:
                 if form_main['type']!='main': continue
-                syncode += 'else if(Bsyn == ' + str(syncount) + '){\n' + 6*' ' + 's = '
-                for term in form_main['terms']:
-                    syncode += instance(term) + (newlineplus if term != form_main['terms'][-1] else ';')
-                syncode += '}\n' + 4*' '
+                if actually_used_synths is None or form_main['ID'] in actually_used_synths:
+                    syncode += 'else if(Bsyn == ' + str(syncount) + '){\n' + 6*' ' + 's = '
+                    for term in form_main['terms']:
+                        syncode += instance(term) + (newlineplus if term != form_main['terms'][-1] else ';')
+                    syncode += '}\n' + 4*' '
                 syncount += 1
             
             syncode = syncode.replace('vel*','') # for now, disable this for the synths above (but not for the drums below)
+            syncode += '\n'+4*' '
             
             drumcount = 1
             for form_main in main_list:
@@ -429,7 +452,7 @@ def synatize_build(form_list, main_list):
             ff.close()
             filtercode += ffcode.replace('TEMPLATE',form['source']).replace('INSTANCE',instance(form['source'])).replace('vel*','').replace('_PROG','_TIME')
 
-    print("\nBUILD FILTER CODE:\n", filtercode, sep="")
+    #print("\nBUILD FILTER CODE:\n", filtercode, sep="")
 
     return syncode, filtercode
 
@@ -440,8 +463,8 @@ def arg_required(cmd, arg):
 
     if cmd == 'osc' or cmd == 'lfo':
         req += 1
-        if arg0 == 'squ' or arg0 == 'psq': req += 2
-        elif arg0 == 'macesq': req += 11
+        if arg0 == 'squ' or arg0 == 'psq' or arg0 == 'fract': req += 2
+        elif arg0 == 'macesq': req += 10
         
     elif cmd == 'drum':
         if arg0 == 'kick': req += 10
@@ -452,21 +475,18 @@ def arg_required(cmd, arg):
 
     elif cmd == 'env':
         if arg0 == 'adsr' or arg0 == 'adsrexp': req += 4
+        elif arg0 == 'ahd': req += 3
         elif arg0 == 'doubleslope': req += 3
         elif arg0 == 'ss' or arg0 == 'ssdrop': req += 1
-        elif arg0 == 'expdecay' or arg0 == 'expdecayrepeat': req += 1
-        elif arg0 == 'ahd': req += 3
+        elif arg0 == 'expdecay': req += 1
+        elif arg0 == 'expdecayrepeat': req += 2
         
     elif cmd == 'form':
-        if arg0 == 'mix': req += 1
-        elif arg0 == 'detune' \
-          or arg0 == 'pitchshift' \
-          or arg0 == 'quantize' \
-          or arg0 == 'overdrive' \
-          or arg0 == 'saturate': req += 2
+        req += 2
+        if arg0 == 'mix': req -= 1
         elif arg0 == 'chorus': req += 3
-        elif arg0 == 'delay': req += 4
-        elif arg0 == 'waveshape': req += 7
+        elif arg0 == 'delay': req += 2
+        elif arg0 == 'waveshape': req += 5
         
     elif cmd == 'filter':
         if arg0 == 'resolp': req += 3

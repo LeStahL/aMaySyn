@@ -135,6 +135,8 @@ class PatternWidget(Widget):
     active = BooleanProperty(False)
 
     drumkit = []
+    scale_h = 9
+    scale_v = 48
     
     def __init__(self, **kwargs):
         super(PatternWidget, self).__init__(**kwargs)
@@ -142,20 +144,29 @@ class PatternWidget(Widget):
     def updateDrumkit(self, drumkit):
         self.drumkit = drumkit
 
+    def updateScale(self, scale_h = None, scale_v = None, delta_h = 0, delta_v = 0):
+        if scale_h and scale_h > 0: self.scale_h = scale_h
+        if scale_v and scale_v > 0: self.scale_v = scale_v
+        if delta_h > 0: self.scale_h += delta_h
+        if delta_v > 0: self.scale_v += delta_v
+        # not accessible yet, but probably implemented :)
+
     claviature = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     def isKeyBlack(self, key): return '#' in self.claviature[key % 12]
 
     def drawPianoRoll(self, pattern = None, transpose = 0, isDrum = False):
         
+        def isKeyBlack(key): return self.isKeyBlack(key) if not isDrum else (key % 2 == 0)
+        
         pad_l = 10
         pad_r = 20
         pad_t = 5
         pad_b = 22
-        key_h = 9 if not isDrum else 25
+        key_h = self.scale_h * (1 if not isDrum else 3)
         key_w = 32
         font_size = 11
         bars = 4 * (0 if not pattern else pattern.length)
-        bar_w = 48
+        bar_w = self.scale_v
         bar_max = 1
         #for now: no length > 16 bars! TODO
 
@@ -171,6 +182,7 @@ class PatternWidget(Widget):
         if isDrum:
             offset_v = 0
             key = 0
+            transpose = 0
 
         self.canvas.clear()
         with self.canvas:
@@ -183,14 +195,14 @@ class PatternWidget(Widget):
             while draw_y + key_h <= self.top - pad_t:
                 draw_x = self.x + pad_l
                 
-                Color(*((1,1,1) if not self.isKeyBlack(key) else (.1,.1,.1)))
-                Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
+                Color(*((1,1,1) if not isKeyBlack(key) else (.1,.1,.1)))
+                Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not isKeyBlack(key))))
 
-                if pattern and pattern.notes and key == pattern.getNote().note_pitch - offset_v:
+                if pattern and pattern.notes and key == (pattern.getNote().note_pitch + transpose) % (len(self.drumkit) if isDrum else 100):
                     Color(.7,1,.3,.6)
-                    Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not self.isKeyBlack(key))))
+                    Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not isKeyBlack(key))))
 
-                Color(*((1,1,1) if self.isKeyBlack(key) else (.3,.3,.3)),1)
+                Color(*((1,1,1) if isKeyBlack(key) else (.3,.3,.3)),1)
                 if not isDrum:
                     label = CoreLabel(text = self.claviature[key % 12] + str(key//12), font_size = font_size, font_name = self.font_name)
                     label.refresh()
@@ -212,7 +224,7 @@ class PatternWidget(Widget):
                         Rectangle(size = label2.texture.size, pos = (draw_x+2, draw_y-2), texture = label2.texture)                
 
                 draw_x += 2 + key_w
-                Color(*((.1,.1,.1) if self.isKeyBlack(key) else (.1,.3,.2)))
+                Color(*((.1,.1,.1) if isKeyBlack(key) else (.1,.3,.2)))
                 Rectangle(pos = (draw_x, draw_y), size = (self.right - pad_r - draw_x, key_h))
               
                 draw_y += key_h+1

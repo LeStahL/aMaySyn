@@ -8,14 +8,14 @@ lfo lfo1 tri 0.5
 form l1 mix 0.7 0.5*lfo1
 env slowenv adsr 0.5 2. .5 .1
 osc FMsyn sin 0.5*f base .2
-form subc chorus subb 4 1e-2
+form subc chorus subb 4 1e-2 1e-2 20.
 env dec expdecay .03
 form maini mix baseD dec*0.15*FMsyn dec*.8*subc*l1
-form mainc chorus maini 10 .3
+form mainc chorus maini 10 .3 1e-2 20
 #main Someshit mainc
 
 form b2 mix base r0*baseQ
-MAIn Basss base*slowenv
+main Basss base*slowenv
 
 random f0 50 80 1
 random f1 100 150 1
@@ -25,10 +25,19 @@ maindrum BD1 BDbody
 drum BDbody2 kick2 50 200 0.12 0.015 0.1 0.15 0.4 0.03 1. 5 10 0.8 1 1 1 .1 .1
 maindrum BD2 3.*BDbody2
 
-drum shaker fmnoise 0.03 0.15 0.15 0.9 0.9
-maindrum SHK .7*shaker 
+drum BDbody3 kick2 60 150 0.2 0.01 0.3 0.1 1.5 0.05 5. 5 10 0.8 1 1 1 .1 0
+maindrum BD3 2.*BDbody3
+# it sucks. should be similar to this one: -- maybe just copy it
+# s = vel * 2.*clamp(smoothstep(0.,0.01,_t)*smoothstep(-0.1,0.2,0.3-_t)*.1*MACESQ(_t, (60. + 150.*smoothstep(-0.3,0.,-_t)), 0., 100, 1, 1.,1.,.1,16.,10.,0.,0.) + (.7 * (smoothstep(0.,0.01,_t) * smoothstep(-0.2, 0.2, 0.3 - _t)) * _sin(_t*(60. + 150.*smoothstep(-0.3,0.,-t))*.5)) + s_crzy(10.*(1.-exp(-1000.*_t))*exp(-30.*_t) * _sin((300.-300.*_t)*_t)) + s_atan(40.*(1.-exp(-1000.*_t))*exp(-80.*_t) * _sin((1200.-1000.*sin(1000.*_t*sin(30.*_t)))*_t)),-1.5,1.5);}
 
-drum explosion bitexplosion 1 1 1 1 1 1 1 
+drum shaker fmnoise 0.03 0.1 0.1 0.9 0.9
+maindrum SHK .2*shaker 
+
+#drum sumnois fmnoise 0.0 0.01 1. 1. 1.
+#filter lpnoise resolp sumnois 9000 .1
+#maindrum LP_NOISE lpnoise rel=.4
+
+drum explosion bitexplosion 1 2 2 1.5 2 1 1 
 maindrum EXPL explosion 
 
 osc somesaw1 saw f 0
@@ -45,7 +54,7 @@ gac G01 0 1. 2. -.5 3. 2. 2. -.25 mode=global
 form S01w waveshape S01 1. 0.01 0.7 0.1 0.6 0.8
 main WShape S01 -.1*G01*S01 .1*G01*S01w
 
-filter Fsaw resolp somesaw1 .1 .4
+filter Fsaw resolp somesaw1 200 .4
 main resolpsaw Fsaw
 
 env stringenv adsr 0.2 0.3 0.8 0.2
@@ -77,21 +86,19 @@ filter A1oscmixF resolp A1oscmixW 800*shortdec .1
 main PercBass shortenv*A1oscmixF*5.
 
 env A14_env adsr 2 0 .2 2 mode=beat
-env A14_fenv adsr 2 0 1 2 mode=beat
-form A14_fenv2 mix 600*A14_fenv "40.*sqrt(f)"
-osc A14_osc macesq f 0. 200 1 1 A14_fenv2 30 0 0.1 -.01 0 mode=follow
+env A14_fenv adsr 2 0 1 2 mode=beat scale=600 shift="40.*sqrt(f)"
+osc A14_osc macesq f 0. 200 1 1 A14_fenv 30 0 0.1 -.01 0
 form A14_oscA mix 0.5*A14_env*A14_osc
 form A14_oscAD overdrive A14_oscA 0.8
-main A14_Kuh A14_oscAD rel=2
+main A14_Kuh A14_env*A14_oscAD rel=2
 
 env A15_env adsr 3 0 0.2 2 mode=beat
-env A15_fenv adsr 2 0 1 2
-form A15_fenv2 mix 100*A14_fenv "20.*sqrt(f)"
-osc A15_osc1 macesq f 0 200 1 -1 A15_fenv2 50 "0.01-0.008*_sin(0.25*Bproc+.25)" 0. 0 0 mode=follow
-osc A15_osc2 macesq f 0 200 1 1 A15_fenv2 30 0 0.1 -.01 "0.1+0.06*_sin(0.25*_t)" mode=follow
+env A15_fenv adsr 2 0 1 2 scale=100 shift="20.*sqrt(f)"
+osc A15_osc1 macesq f 0 200 1 -1 A15_fenv 50 0 0 "0.01-0.008*_sin(0.25*Bproc+.25)" 0
+osc A15_osc2 macesq f 0 200 1 1 A15_fenv 30 0 0.1 -.01 "0.1+0.06*_sin(0.25*_t)"
 form A15_oscA mix 0.2*A15_osc1 0.3*A15_osc2
 form A15_oscAD overdrive A15_oscA 0.8
-main A15_Kuh A15_oscAD rel=2
+main A15_Kuh A15_env*A15_oscAD rel=2
 
 env A16_env adsr 1.5 2 .2 .8
 osc A16_osc1 saw f A16_lfo1
@@ -99,4 +106,72 @@ osc A16_osc2 saw f .25
 osc A16_osc3 saw f A16_lfo3
 lfo A16_lfo3 sin .5 scale=.2 shift=0 mode=time
 lfo A16_lfo1 sin 2 scale=.1 shift=.1 mode=time
-main A16_Supsaw 0.5*A16_osc1 A16_osc2 A16_osc3 rel=.8
+main A16_Supsaw 0.5*A16_env*A16_osc1 A16_env*A16_osc2 A16_env*A16_osc3 rel=.8
+
+env A17_env adsr 1.5 2 0.2 0.8
+env A17_fenv adsr 1.5 2.5 0.2 10 scale=100 shift=200
+osc A17_osc macesq f 0 200 1 -1 A17_fenv 20 0.3 3. 0.015 0
+main A17_pad? A17_env*A17_osc rel=.8
+
+osc A10_1 tri 2*f
+lfo A10_lfo1 sin 4 scale=.00001 shift=1
+osc A10_2 tri 0.999*2*A10_lfo1*f
+osc A10_3 saw 5.01*f scale=0.2
+osc A10_4 saw 14.01*f scale=0.2
+main A10_saws A10_1 A10_2 .2*A10_3 .2*A10_3
+
+lfo A13_lfo sin 0.21 scale=.5 shift=.2
+osc A13_osc2 sin 0.25*f
+osc A13_osc sin 4*f A13_lfo*A13_osc2
+main A13_whatev A13_osc
+
+env M8_env adsrexp 0.75 0.5 0.1 0.8 mode=beat
+env M8_fenv adsrexp 0.5 0.5 0.1 10 scale=4500 shift=500 mode=beat
+osc M8_osc macesq f 0 200 1 -1 M8_fenv 20 0 0 0.018 0
+#form M8_oscD detune M8_osc 1 .3 
+form M8_oscDQ quantize M8_osc 128
+form M8_oscDL lofi M8_oscDQ 8
+form M8_oscDLC chorus M8_oscDL 6 2e-3 1e-3 20
+main M8yStrng M8_env*M8_oscDL rel=0.8
+
+form bitdrop mix 1024 -512*Bproc
+osc M8bass_osc1 squ f 0 0
+osc M8bass_osc2 squ .97*f .3 .3
+form M8bass_osc mix M8bass_osc1 M8bass_osc2
+form M8bass_oscQ quantize M8bass_osc bitdrop
+main M8yBeast M8bass_oscQ
+
+lfo A31_envlfo sin 8. mode=beat overdrive=8
+osc A31_osc1 tri f
+osc A31_osc2 sin .5*f
+osc A31_osc3 saw 2.*f
+osc A31_osc4 tri f A31_lfo4
+osc A31_osc5 tri .999*f A31_lfo5
+lfo A31_lfo4 tri 0.5 scale=2e-4 shift=.01
+lfo A31_lfo5 tri 0.33 scale=1e-3 shift=.05
+form A31_mix mix .35*A31_osc1 .3*A31_osc2 .05*A31_osc3 .35*A31_osc4 .5*A31_osc5
+main M8yBuzz A31_envlfo*A31_mix
+
+env A32dec expdecay 15.
+form A32_mix chorus A31_mix 2 2e-4 2e-2 .125 mode=beat
+form A32_mixT pitchshift A32_mix 24
+form A32_mixD delay A32_mixT 3 1. .0001 mode=beat
+main M8yBuzz2 .5*A32dec*A32_mix A32dec*A32_mixD rel=.5
+
+lfo A24_envlfo fract 16 0 0 overdrive=2.5
+osc A24_osc1 saw .99*f
+osc A24_osc2 squ .5*f 0 0.2
+osc A24_osc3 sin .48*f .25
+form A24_mix mix 0.7*A24_envlfo*A24_osc1 0.7*A24_envlfo*A24_osc2 0.7*A24_envlfo*A24_osc3 -.35
+main A24_ILike A24_mix
+
+lfo A24_someenv fract -16 0 .5 scale=300 shift=200 overdrive=4
+env A24_someenv2 adsr 0 0.2 0.2 0.5
+form A24_dep mix 200. .3*f
+filter A24_lp resolp A24_mix A24_dep .3
+main M8_ILike2 A24_someenv*A24_someenv2*A24_lp rel=.01
+
+# macesq: mix= (-1 für saw, 0 für tri, sq für 1, HÄ? für 2)
+# macesaw(t, f, filterCO, filterQ, 0.010, 0.020, 0.015, 3.);
+# osc A16_osc1 macesq f 0 200 1 -1 filterCO filterQ filterRes filterResQ detune PW
+
