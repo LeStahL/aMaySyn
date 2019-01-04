@@ -3,19 +3,21 @@ float resolpTEMPLATE(float time, float f, float tL, float fa, float reso)
 {
     int maxTaps = 128;
     fa = sqrt(fa*Tsample);
+    
     float c = pow(0.5, (128.0-fa*128.0)  / 16.0);
-    float r = 1. - c*pow(0.5, (reso*128.0+24.0) / 16.0);
+    float r = 1.-c*pow(0.5, (reso*128.0+24.0) / 16.0);
     
     float v0 = 0.;
     float v1 = 0.;
+    float _TIME = time;
+    float orig = INSTANCE;
     
     for(int i = 0; i < maxTaps; i++)
     {
-          float _TIME = time - float(maxTaps-i)/Fsample;
-          //float Bprog = _TIME * BPS; //might need that
+          _TIME = time - float(maxTaps-i)/Fsample;
           float inp = INSTANCE;
           v0 = r*v0 - c*v1 + c*inp;
           v1 = r*v1 + c*v0;
     }
-    return v1;
+    return orig-v1;
 }

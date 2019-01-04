@@ -1,0 +1,18 @@
+float combTEMPLATE(float time, float f, float tL, float Fback, int Nback, float Ffwd, int Nfwd)
+{
+    int maxTaps = 16;
+    float sum = 0.;
+    float fac = 1.;
+    float x0 = 0.;
+    float x1 = 0.;
+    
+    for(int i = 0; i < maxTaps; i++)
+    {
+          float _TIME = time - float(i*Nback)*Tsample;
+          sum += fac*INSTANCE;
+          _TIME -= Nfwd * Tsample;
+          sum += fac*Ffwd*INSTANCE;
+          fac *= -Fback;
+    }
+    return sum;
+}

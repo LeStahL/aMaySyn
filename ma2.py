@@ -14,20 +14,27 @@ from kivy.uix.modalview import ModalView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
 from kivy.animation import Animation
-
 from itertools import accumulate
 from functools import partial
 from numpy import clip
 from math import sin, exp, pi
+from datetime import *
 import csv
 import operator
-import os, sys
+import os, sys, subprocess
 import pyperclip
+import pygame
 
 from ma2_track import *
 from ma2_pattern import *
 from ma2_widgets import *
-from ma2_synatize import synatize, synatize_build, GLfloat
+from ma2_synatize import synatize, synatize_build
+from SFXGLWidget import *
+
+#from PyQt5.QtCore import QByteArray, QBuffer, QIODevice
+#from PyQt5.QtMultimedia import QAudioFormat
+
+GLfloat = lambda f: str(int(f))  + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
 
 Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
@@ -55,6 +62,8 @@ class Ma2Widget(Widget):
     B_offset = 0.;
     
     btnTitle = ObjectProperty()
+    
+    debugOutput = False
     
     #updateAll = True # ah, fuck it. always update everythig. TODO improve performance... somehow.
     
@@ -92,10 +101,9 @@ class Ma2Widget(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         
         k = keycode[1]
-        #print(k)
         
         if   k == 'escape':                     App.get_running_app().stop() 
-        elif k == 'f8':                         self.printDebug()
+        elif k == 'f8':                         self.toggleDebugOutput()
         elif k == 'tab':                        self.switchActive()
 
         # THE MOST IMPORTANT KEY!
@@ -229,6 +237,9 @@ class Ma2Widget(Widget):
         #       prompt for new song title before loading/saving (doesn't work at the moment because the BG app doesn't wait for the input)
 
         self.update()
+
+        if self.debugOutput: print(k, modifiers)
+
         return True
         
     def update(self, dt = 0):
@@ -531,6 +542,7 @@ class Ma2Widget(Widget):
         seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
         seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
         seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
+        seqcode = '' + 'float trk_norm[' + nT + '] = float[' + nT + '](' #+ ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float trk_norm[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_rel[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
         seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
@@ -558,6 +570,8 @@ class Ma2Widget(Widget):
         
         print()
         print(seqcode)
+    
+#        self.compileShader(glslcode)
     
 ###################### HANDLE BUTTONS #######################
 
@@ -597,7 +611,12 @@ class Ma2Widget(Widget):
         for i in range(8):
             self.addTrack(name = 'Track ' + str(i+2))
         
-    def printDebug(self):
+    def toggleDebugOutput(self):
+        self.debugOutput = not self.debugOutput
+        self.printTracks()
+        self.printPatterns()
+        
+    def printTracks(self):
         for t in self.tracks:
             print(t.name, len(t.modules))
             for m in t.modules:
@@ -616,6 +635,79 @@ class Ma2Widget(Widget):
     def handleEditCurve(self, *args):
         self._keyboard_request()
         self.update()        
+
+    def compileShader(self, shader):
+        self.audiooutput = None
+   
+        self.playing = False
+        self.elapsed = 0.
+        
+        self.frametime = 1000./30.
+                
+        starttime = datetime.datetime.now()
+        self.fps = 0.
+        
+        self.defaultshader = '''vec2 mainSound( float time )
+{
+    // A 440 Hz wave that attenuates quickly overt time
+    return vec2( sin(6.2831*440.0*time)*exp(-3.0*time) );
+}'''
+        self.prefix = '''#version 130
+
+uniform float iBlockOffset;
+uniform float iSampleRate;\n\n'''
+        self.suffix = '''void main()
+{
+   float t = iBlockOffset + ((gl_FragCoord.x-0.5) + (gl_FragCoord.y-0.5)*512.0)/iSampleRate;
+   vec2 y = mainSound( t );
+   vec2 v  = floor((0.5+0.5*y)*65536.0);
+   vec2 vl = mod(v,256.0)/255.0;
+   vec2 vh = floor(v/256.0)/255.0;
+   gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
+}'''
+
+        self.music = None
+
+        glwidget = SFXGLWidget(self)
+        
+        #test
+        shader = self.defaultshader
+        
+        self.log = glwidget.newShader(self.prefix + shader + self.suffix)
+        self.music = glwidget.music
+        self.omusic = glwidget.omusic
+        del glwidget
+        
+        if self.music == None :
+            return
+        
+        data = self.omusic
+        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=4096)
+        pygame.init()
+        pygame.mixer.init()
+        pygame.mixer.Sound.play(pygame.mixer.Sound(buffer=data))
+
+        #self.bytearray = QByteArray(self.music)
+
+        #self.audiobuffer = QBuffer(self.bytearray)
+        #self.audiobuffer.open(QIODevice.ReadOnly)
+
+        #self.audioformat = QAudioFormat()
+        #self.audioformat.setSampleRate(44100)
+        #self.audioformat.setChannelCount(2)
+        #self.audioformat.setSampleSize(32)
+        #self.audioformat.setCodec("audio/pcm")
+        #self.audioformat.setByteOrder(QAudioFormat.LittleEndian)
+        #self.audioformat.setSampleType(QAudioFormat.Float)
+
+        #self.audiooutput = QAudioOutput(self.audioformat)
+        #self.audiooutput.stop()
+        #self.audiooutput.start(self.audiobuffer)
+
+        endtime = datetime.datetime.now()
+        el = endtime - starttime
+
+        print("Execution time", str(el.total_seconds()) + 's')
 
 class InputPrompt(ModalView):
     
@@ -699,4 +791,3 @@ class Ma2App(App):
 
 if __name__ == '__main__':
     Ma2App().run()
-

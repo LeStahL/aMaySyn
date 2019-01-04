@@ -446,11 +446,10 @@ def synatize_build(form_list, main_list, actually_used_synths = None):
     filter_list = [f for f in form_list if f['type']=='filter']
     filtercode = '' 
     for form in filter_list:
-        if form['shape']=='resolp':
-            ff = open("framework.resolptemplate")
-            ffcode = ff.read()
-            ff.close()
-            filtercode += ffcode.replace('TEMPLATE',form['source']).replace('INSTANCE',instance(form['source'])).replace('vel*','').replace('_PROG','_TIME')
+        ff = open("framework."+form['shape']+"template")
+        ffcode = ff.read()
+        ff.close()
+        filtercode += ffcode.replace('TEMPLATE',form['source']).replace('INSTANCE',instance(form['source'])).replace('vel*','').replace('_PROG','_TIME').replace('_BPROG','_TIME*SPB')
 
     #print("\nBUILD FILTER CODE:\n", filtercode, sep="")
 
@@ -489,7 +488,9 @@ def arg_required(cmd, arg):
         elif arg0 == 'waveshape': req += 5
         
     elif cmd == 'filter':
-        if arg0 == 'resolp': req += 3
+        req += 1
+        if arg0 == 'resolp' or arg0 == 'resohp': req += 2
+        elif arg0 == 'comb': req += 4
         
     elif cmd == 'random':
         req += 1
