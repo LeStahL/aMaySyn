@@ -11,8 +11,8 @@ float resolpTEMPLATE(float time, float f, float tL, float fa, float reso)
     
     for(int i = 0; i < maxTaps; i++)
     {
-          float _TIME = time - float(maxTaps-i)/Fsample;
-          //float Bprog = _TIME * BPS; //might need that
+          float _TIME = time - float(maxTaps-i)*Tsample;
+          //float Bprog = _TIME * BPS; //do I need that?
           float inp = INSTANCE;
           v0 = r*v0 - c*v1 + c*inp;
           v1 = r*v1 + c*v0;

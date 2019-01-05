@@ -382,8 +382,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None):
             return 'GAC('+tvar+',' + ','.join([instance(form['par'][p]) for p in range(8)]) + ')'
 
         elif form['type']=='filter':
-            if form['shape']=='resolp':
-                return 'resolp'+form['source']+'(_PROG,f,tL,'+instance(form['par'][0])+','+instance(form['par'][1])+')'
+            return form['shape']+form['source']+'(_PROG,f,tL,'+','.join(instance(form['par'][p]) for p in range(len(form['par'])))+')'
 
         else:
             print("ERROR! THIS FORM TYPE DOES NOT EXIST: "+form['type'], form, sep='\n')
@@ -489,7 +488,7 @@ def arg_required(cmd, arg):
         
     elif cmd == 'filter':
         req += 1
-        if arg0 == 'resolp' or arg0 == 'resohp': req += 2
+        if arg0 == 'resolp' or arg0 == 'resohp' or arg0 == 'allpass': req += 2
         elif arg0 == 'comb': req += 4
         
     elif cmd == 'random':
