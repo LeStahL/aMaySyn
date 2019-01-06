@@ -1,16 +1,15 @@
-float allpassTEMPLATE(float time, float f, float tL, float gain, int Ndelay)
+float allpassTEMPLATE(float time, float f, float tL, float gain, float Ndelay)
 {
-    float threshold = 1e-3;
-
     float _TIME = time;
     float sum = -gain*INSTANCE;
-    float fac = 1-gain*gain;
+    float fac = 1.-gain*gain;
 
-    int imax = 1 + int((log(threshold)-log(fac))/log(gain));
+    int imax = 1 + int((log(filterthreshold)-log(fac))/log(gain));
+    float Tdelay = Ndelay*Tsample;
     
     for(int i = 0; i < imax; i++)
     {
-        _TIME -= time - float(Ndelay)*Tsample;
+        _TIME -= Tdelay;
         sum += fac*INSTANCE;
         fac *= gain;
     }

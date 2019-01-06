@@ -30,10 +30,11 @@ class Track():
     def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
     def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else 0
 
-    def getSynthName(self):               return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else ''
-    def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] == '_' and self.current_synth != -1 else self.current_synth
-
+    def getSynthName(self):               return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else '__None'
+    def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] not in ['I','D'] and self.current_synth != -1 else self.current_synth
+    def getSynthType(self):               return self.getSynthName()[0]
     def getNorm(self):                    return self.par_norm
+    def isEmpty(self):                    return (self.modules == [])
 
     def addModule(self, mod_on, pattern, transpose = 0, select = True):
         self.modules.append(Module(mod_on, pattern, transpose))
@@ -117,14 +118,27 @@ class Track():
 
     def prepareForPatternDeletion(self, pattern_to_delete):
         patterns = App.get_running_app().root.patterns
+        offset = 0
         for m in self.modules:
-            print('KILL', m.pattern, pattern_to_delete, patterns)
+            m.mod_on += offset
             if m.pattern == pattern_to_delete:
                 m.pattern = patterns[patterns.index(m.pattern)-1]
+                offset += m.pattern.length - pattern_to_delete.length
 
-    def switchSynth(self, inc):
+    def switchSynth(self, inc, debug = False):
         if self.synths:
-            self.current_synth = (self.current_synth + inc) % len(self.synths)
+            #make sure that only empty tracks can be assigned the special synths
+            if not self.isEmpty() and not debug:
+                if self.synths[self.current_synth][0] in ['I','_']:
+                    isynths = [s for s in self.synths if s[0] in ['I','_']]
+                    current_isynth = isynths.index(self.synths[self.current_synth])
+                    current_isynth = (current_isynth + inc) % len(isynths)
+                    self.current_synth = self.synths.index(isynths[current_isynth])
+                else:
+                    print("Can't switch synth if track is not empty, and not a synth track. Synth type: " + self.synths[self.current_synth][0])
+            
+            else:
+                self.current_synth = (self.current_synth + inc) % len(self.synths)
 
     def updateSynths(self, synths):
         old_synth = self.getSynthName()

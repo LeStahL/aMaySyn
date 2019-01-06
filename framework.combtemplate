@@ -1,18 +1,19 @@
-float combTEMPLATE(float time, float f, float tL, float Fback, int Nback, float Ffwd, int Nfwd)
+float combTEMPLATE(float time, float f, float tL, float IIR_gain, float IIR_N, float FIR_gain, float FIR_N)
 {
-    int maxTaps = 16;
+    int imax = int(log(filterthreshold)/log(IIR_gain));
     float sum = 0.;
     float fac = 1.;
-    float x0 = 0.;
-    float x1 = 0.;
     
-    for(int i = 0; i < maxTaps; i++)
+    float Tback = IIR_N*Tsample;
+    float Tfwd = FIR_N*Tsample;
+    
+    for(int i = 0; i < imax; i++)
     {
-          float _TIME = time - float(i*Nback)*Tsample;
-          sum += fac*INSTANCE;
-          _TIME -= Nfwd * Tsample;
-          sum += fac*Ffwd*INSTANCE;
-          fac *= -Fback;
+        float _TIME = time - float(i)*Tback;
+          sum += fac * INSTANCE;
+          _TIME -= Tfwd;
+          sum += fac * FIR_gain * INSTANCE;
+          fac *= -IIR_gain;
     }
     return sum;
 }

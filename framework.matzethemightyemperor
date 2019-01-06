@@ -23,7 +23,9 @@ const float BPS = BPM/60.;
 const float SPB = 60./BPM;
 
 const float Fsample = 44100.; // I think?
-const float Tsample = 2.267573696e-5;
+const float Tsample = 1./Fsample;
+
+const float filterthreshold = 1e-3;
 
 float doubleslope(float t, float a, float d, float s)
 {
@@ -127,7 +129,7 @@ float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, floa
     return atan(snd * env);
 }
 
-float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
+float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn, float Brel)
 {
     float Bprog = B-Bon;
     float Bproc = Bprog/(Boff-Bon);
@@ -135,9 +137,9 @@ float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn)
     float tL = SPB*L;
     float _t = SPB*(B-Bon);
     float f = freqC1(note);
-	float vel = 1.;
+	float vel = 1.; //implement later
 
-    float env = theta(B-Bon) * theta(Boff-B);
+    float env = theta(B-Bon) * (1. - smoothstep(Boff, Boff+Brel, B));
 	float s = _sin(t*f);
 
 	//SYNCODE
@@ -195,9 +197,7 @@ float mainSynth(float time)
             for(int _note = _noteL; _note <= _noteU; _note++)
             {
                 Bon    = note_on[(ptn_sep[ptn]+_note)];
-                Boff   = note_off[(ptn_sep[ptn]+_note)] + trk_rel[trk];
-
-                float anticlick = 1.-exp(-1000.*(B-Bon)); //multiply this elsewhere?
+                Boff   = note_off[(ptn_sep[ptn]+_note)];
 
                 if(trk_syn[trk] == drum_index)
                 {
@@ -206,21 +206,20 @@ float mainSynth(float time)
 
                     //0 is for sidechaining - am I doing this right?
                     if(Bdrum == 0)
-                        r_sidechain = anticlick - .999 * theta(B-Bon) * smoothstep(Boff,Bon,B);
+                        r_sidechain = (1. - theta(B-Bon) * exp(-1000.*(B-Bon))) * smoothstep(Bon,Boff,B);
                     else
-                        d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum);
+                        d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum, trk_rel[trk]);
                 }
                 else
                 {
                     r += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff,
-                                                   note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[trk_sep[trk]+_mod], trk_syn[trk]);
+                                                   note_pitch[(ptn_sep[ptn]+_note)] + mod_transp[trk_sep[trk]+_mod], trk_syn[trk], trk_rel[trk]);
                 }
             }
         }
     }
 
     return s_atan(s_atan(r_sidechain * r + d));
-//    return sign(snd) * sqrt(abs(snd)); // eine von Matzes "besseren" Ideen
 }
 
 vec2 mainSound(float t)

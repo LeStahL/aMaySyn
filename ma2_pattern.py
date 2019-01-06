@@ -7,13 +7,22 @@ import random
 
 class Pattern():
     
-    def __init__(self, name = 'NJU', length = 1):
+    def __init__(self, name = 'NJU', length = 1, synth_type = '_', max_note = 0):
         self.name = name
         self.notes = []
         self.length = length if length and length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
         self.current_note = 0
         self.current_gap = 0
         self.randomizeColor()
+        self.setTypeParam(synth_type = synth_type, max_note = max_note if max_note > 0 else 88)
+
+    def setTypeParam(self, synth_type = None, max_note = None):
+        if synth_type:
+            self.synth_type = synth_type
+        if max_note:
+            self.max_note = max_note
+            for n in self.notes:
+                n.note_pitch = n.note_pitch % max_note
 
     # helpers...
     def getNote(self, offset=0):    return self.notes[(self.current_note + offset) % len(self.notes)] if self.notes else None
@@ -33,13 +42,13 @@ class Pattern():
             append = False
         if clone: select = False
         
-        note = Note(note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch, note.note_vel)
+        note = Note(note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch % self.max_note, note.note_vel)
         note.tag()
         
         if note.note_off > self.length: return
         
         self.notes.append(note)
-        self.notes.sort(key = lambda n: n.note_on)
+        self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
         self.current_note = self.getFirstTaggedNote()
         self.untagAllNotes()
         # cloning: since we have polyphonic mode now, we can not just assign the right gap - have to do it via space/backspace - will be changed to polyphonic cloning
@@ -70,11 +79,11 @@ class Pattern():
                 
             copy_pos += copy_span 
             
-        self.notes.sort(key = lambda n: n.note_on)
+        self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
         self.current_note = self.getFirstTaggedNote()
         self.untagAllNotes()
 
-    def delNote(self, is_drumtrack = False):
+    def delNote(self):
         if self.notes:
             old_note = self.current_note
             old_pitch = self.notes[old_note].note_pitch
@@ -84,11 +93,11 @@ class Pattern():
             if self.current_note > 0:
                 self.current_note = min(self.current_note-1, len(self.notes)-1)
 
-            if is_drumtrack:
+            if self.synth_type == 'D':
                 for n in self.notes[old_note:] + self.notes[0:old_note-1]:
                     if n.note_pitch == old_pitch:
                         n.tag()
-                        self.notes.sort(key = lambda n: n.note_on)
+                        self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
                         self.current_note = self.getFirstTaggedNote()
                         self.untagAllNotes()
                         break
@@ -117,13 +126,14 @@ class Pattern():
         
     def shiftNote(self, inc):
         if self.notes:
-            self.getNote().note_pitch = max(0, min(88, self.getNote().note_pitch + inc)) # TODO find out whether 88 is way too high..
+            self.getNote().note_pitch = (self.getNote().note_pitch + inc) % self.max_note
+            print(self.getNote().note_pitch, self.max_note)
 
-    def shiftAllNotes(self, inc, is_drumtrack = False, drumkit_length = 1):
-        notes = self.notes if not is_drumtrack else [n for n in self.notes if n.note_pitch % drumkit_length == self.getNote().note_pitch % drumkit_length]
-        for n in notes:
-            n.note_pitch = max(0, min(88, n.note_pitch + inc))
-        self.printNoteList()
+    def shiftAllNotes(self, inc):
+        notes = self.notes if not self.synth_type == 'D' else [n for n in self.notes if n.note_pitch == self.getNote().note_pitch]
+        if notes:
+            for n in notes:
+                n.note_pitch = (n.note_pitch + inc) % self.max_note
 
     def stretchNote(self, inc):
         # here I had lots of possibilities .. is inc > or < 0? but these where on the monophonic synth. Let's rethink polyphonic!
@@ -139,13 +149,13 @@ class Pattern():
                 if self.getNote().note_len <= inc:
                     self.getNote().note_len *= 2
                 else:
-                    self.getNote().note_len = max(0, min(self.length - self.getNote().note_on, self.getNote().note_len + inc)) # TODO find out whether 88 is way too high..
+                    self.getNote().note_len = max(0, min(self.length - self.getNote().note_on, self.getNote().note_len + inc))
             
             self.getNote().note_off = self.getNote().note_on + self.getNote().note_len
     
     def moveNote(self, inc):
         # same as with stretch: rethink for special Käses?
-        if self.notes and inc > 0:
+        if self.notes:
                 if abs(self.getNote().note_len) < abs(inc): inc = abs(inc)/inc * self.getNote().note_len
 
         self.getNote().tag()
@@ -157,10 +167,10 @@ class Pattern():
             self.getNote().moveNoteOff(self.length)
             
         else:
-            self.getNote().note_on = max(0, min(self.length - self.getNote().note_len, self.getNote().note_on + inc)) # TODO find out whether 88 is way too high..
+            self.getNote().note_on = max(0, min(self.length - self.getNote().note_len, self.getNote().note_on + inc))
             self.getNote().note_off = self.getNote().note_on + self.getNote().note_len
 
-        self.notes.sort(key = lambda n: n.note_on)
+        self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
         self.current_note = self.getFirstTaggedNote()
         self.untagAllNotes()
 

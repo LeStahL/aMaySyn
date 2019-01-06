@@ -1,19 +1,3 @@
-random r0 0.1 0.2 2
-osc base sin .5*f 0
-form baseD detune base 0.01
-form subb pitchshift base +16
-form baseQ quantize base 256
-form f2 mix 0.5 2*f 0*base
-lfo lfo1 tri 0.5
-form l1 mix 0.7 0.5*lfo1
-env slowenv adsr 0.5 2. .5 .1
-osc FMsyn sin 0.5*f base .2
-form subc chorus subb 4 1e-2 1e-2 20.
-env dec expdecay .03
-form maini mix baseD dec*0.15*FMsyn dec*.8*subc*l1
-form mainc chorus maini 10 .3 1e-2 20
-#main Someshit mainc
-
 form b2 mix base r0*baseQ
 main Basss base*slowenv
 
@@ -57,6 +41,18 @@ main WShape S01 -.1*G01*S01 .1*G01*S01w
 filter Fsaw resolp somesaw1 200 .4
 main resolpsaw Fsaw
 
+#filter Fsaw2 allpass somesaw1 .8 3
+lfo stutter2 squ 8 .125 0
+form stuttersaw1 mix stutter2*somesaw1
+filter Fsaw2 comb stuttersaw1 .5*.5*.5 3 "pow(.9,5.)" 5
+main combsaw Fsaw2
+
+form stuttersaw12 pitchshift stuttersaw1 12
+filter Fsaw3 reverb stuttersaw12 0.1 0.00297 0.00371 0.00411 0.00437 0.3 0.00017 0.0005
+main revsaw Fsaw3 rel=1.3
+
+main justsaw somesaw1
+
 env stringenv adsr 0.2 0.3 0.8 0.2
 lfo stringvib sin 5.
 form fvib mix f 0.3*stringvib*stringenv
@@ -67,12 +63,16 @@ filter Fstr resolp saw2D 300*stringfilter 0.
 main stryngth1 stringenv*Fstr
 
 drum hut fmnoise 0 0.05 0 .3 2
-lfo acclfo squ 4. 0 0 mode=beat,global
-form acc mix .6 .25*acclfo
-maindrum HAT .4*acc*hut
+lfo acclfo squ 4. 0 0 mode=beat,global shift=.6 scale=.25
+maindrum HAT .4*acclfo*hut
 
 drum snr snare 6000 800 350 0.01 0.01 0.25 0.3 0.1 .7 0.05 0.3 0.3 1.6
 maindrum SNR snr
+
+filter snrrev reverb snr 0.15 0.000297 0.000371 0.000411 0.000437 0.2 0.000017 0.00005
+maindrum RVRBSNER snrrev rel=1
+
+#maindrum empty 0
 
 osc A1osc3 tri .5*f
 osc A1osc2 saw 2*f .4*A1osc3

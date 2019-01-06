@@ -26,7 +26,10 @@ class TrackWidget(Widget):
 
     marker_list = {}
 
-    def drawTrackList(self, tracklist = [], current_track = None):
+    def drawTrackList(self, parent):
+
+        tracklist = parent.tracks
+        current_track = parent.current_track
 
         pad_l = 10
         pad_r = 20
@@ -47,6 +50,9 @@ class TrackWidget(Widget):
         self.canvas.clear()
         with self.canvas:
             
+            Color(*parent.mainBackgroundColor())
+            Rectangle(pos = self.pos, size = self.size)
+
             if self.active:
                 Color(1.,0.,1,.5)
                 Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 7], width = 1.5)
@@ -135,8 +141,9 @@ class PatternWidget(Widget):
     active = BooleanProperty(False)
 
     drumkit = []
-    scale_h = 9
-    scale_v = 48
+    scale_h = 1
+    scale_v = 1 
+    # TODO: before automatic scrolling: prompt to enter offset_h, offset_v, scale_h, scale_v; AND also cut off everything not on screen
     
     def __init__(self, **kwargs):
         super(PatternWidget, self).__init__(**kwargs)
@@ -144,34 +151,37 @@ class PatternWidget(Widget):
     def updateDrumkit(self, drumkit):
         self.drumkit = drumkit
 
-    def updateScale(self, scale_h = None, scale_v = None, delta_h = 0, delta_v = 0):
-        if scale_h and scale_h > 0: self.scale_h = scale_h
+    def updateScale(self, scale_v = None, scale_h = None, delta_h = 0, delta_v = 0):
         if scale_v and scale_v > 0: self.scale_v = scale_v
-        if delta_h > 0: self.scale_h += delta_h
-        if delta_v > 0: self.scale_v += delta_v
+        if scale_h and scale_h > 0: self.scale_h = scale_h
+        if delta_h > 0: self.scale_v += delta_h
+        if delta_v > 0: self.scale_h += delta_v
         # not accessible yet, but probably implemented :)
 
     claviature = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     def isKeyBlack(self, key): return '#' in self.claviature[key % 12]
 
-    def drawPianoRoll(self, pattern = None, transpose = 0, isDrum = False):
-        
+    def drawPianoRoll(self, parent):
+
+        pattern = parent.getPattern()
+        transpose = parent.getModuleTranspose()
+        isDrum = parent.isDrumTrack()
+                
         def isKeyBlack(key): return self.isKeyBlack(key) if not isDrum else (key % 2 == 0)
         
         pad_l = 10
         pad_r = 20
         pad_t = 5
         pad_b = 22
-        key_h = self.scale_h * (1 if not isDrum else 3)
-        key_w = 32
-        font_size = 11
+        key_h = 9 * self.scale_v * (1 if not isDrum else 3)
+        key_w = 32 * self.scale_h
+        font_size = 11 * self.scale_v
         bars = 4 * (0 if not pattern else pattern.length)
-        bar_w = self.scale_v
-        bar_max = 1
+        bar_w = 48 * self.scale_h
         #for now: no length > 16 bars! TODO
 
-            #all the note_visible functions!
-            #function to clearly calculate position of note TODO, draw current note, draw grid TODO but this time, respect pattern length!
+        #all the note_visible functions!
+        #function to clearly calculate position of note TODO, draw current note, draw grid TODO but this time, respect pattern length!
 
         offset_v = 12
         offset_h = 0
@@ -186,6 +196,9 @@ class PatternWidget(Widget):
 
         self.canvas.clear()
         with self.canvas:
+            
+            Color(*parent.mainBackgroundColor())
+            Rectangle(pos = self.pos, size = self.size)
             
             if self.active:
                 Color(1.,0.,1,.5)

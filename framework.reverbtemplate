@@ -1,0 +1,57 @@
+float reverbTEMPLATE_IIR(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4)
+{
+    int imax = int(log(filterthreshold)/log(IIRgain));
+    float delay[4] = float[4](IIRdel1, IIRdel2, IIRdel3, IIRdel4);
+    
+    float sum = 0.;
+    
+    // 4 IIR comb filters
+    for(int d=0; d<4; d++)
+    {
+        float fac = 1.;
+        
+        for(int i=0; i<imax; i++)
+        {
+            float _TIME = time - float(i)*delay[d]; //todo: add some noise
+                                                sum += fac*INSTANCE;
+                                                fac *= -IIRgain;
+        }
+    }
+            return .25*sum;
+}
+
+float reverbTEMPLATE_AP1(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1)
+{
+    // first allpass delay line
+    float _TIME = time;
+    float sum = -APgain * reverbTEMPLATE_IIR(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4);
+    float fac = 1. - APgain * APgain;
+    
+    int imax = 1 + int((log(filterthreshold)-log(fac))/log(APgain));
+    
+    for(int i=0; i<imax; i++)
+    {
+        _TIME -= APdel1;
+        sum += fac * reverbTEMPLATE_IIR(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4);
+        fac *= APgain;
+    }
+        return sum;        
+}
+
+float reverbTEMPLATE(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1, float APdel2)
+{   // // based on this Schroeder Reverb from Paul Wittschen: http://www.paulwittschen.com/files/schroeder_paper.pdf
+    // second allpass delay line
+    float _TIME = time;
+    float sum = -APgain * reverbTEMPLATE_AP1(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
+    float fac = 1. - APgain * APgain;
+
+    int imax = 1 + int((log(filterthreshold)-log(fac))/log(APgain));
+
+    for(int i=0; i<imax; i++)
+    {
+        _TIME -= APdel2;
+        sum += fac * reverbTEMPLATE_AP1(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
+        fac *= APgain;
+    }
+    return sum;        
+}
