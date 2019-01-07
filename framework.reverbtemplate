@@ -6,18 +6,18 @@ float reverbTEMPLATE_IIR(float time, float f, float tL, float IIRgain, float IIR
     float sum = 0.;
     
     // 4 IIR comb filters
-    for(int d=0; d<4; d++)
+    for(int d=0; d<8; d++)
     {
         float fac = 1.;
         
         for(int i=0; i<imax; i++)
         {
-            float _TIME = time - float(i)*delay[d]; //todo: add some noise
-                                                sum += fac*INSTANCE;
-                                                fac *= -IIRgain;
+            float _TIME = time - float(i)*delay[d] * (.8 + .4*pseudorandom(sum));
+            sum += fac*INSTANCE;
+            fac *= -IIRgain;
         }
     }
-            return .25*sum;
+    return .25*sum;
 }
 
 float reverbTEMPLATE_AP1(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1)
@@ -31,15 +31,16 @@ float reverbTEMPLATE_AP1(float time, float f, float tL, float IIRgain, float IIR
     
     for(int i=0; i<imax; i++)
     {
-        _TIME -= APdel1;
+        _TIME -= APdel1 * (.9 + 0.2*pseudorandom(time));
         sum += fac * reverbTEMPLATE_IIR(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4);
-        fac *= APgain;
+        fac *= APgain * (1. + 0.01*pseudorandom(_TIME));
     }
-        return sum;        
+    return sum;        
 }
 
 float reverbTEMPLATE(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1, float APdel2)
 {   // // based on this Schroeder Reverb from Paul Wittschen: http://www.paulwittschen.com/files/schroeder_paper.pdf
+    // todo: add some noise...
     // second allpass delay line
     float _TIME = time;
     float sum = -APgain * reverbTEMPLATE_AP1(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
@@ -49,9 +50,9 @@ float reverbTEMPLATE(float time, float f, float tL, float IIRgain, float IIRdel1
 
     for(int i=0; i<imax; i++)
     {
-        _TIME -= APdel2;
+        _TIME -= APdel2 * (.9 + 0.2*pseudorandom(time));
         sum += fac * reverbTEMPLATE_AP1(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
-        fac *= APgain;
+        fac *= APgain * (1. + 0.01*pseudorandom(_TIME));
     }
     return sum;        
 }

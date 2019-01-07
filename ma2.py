@@ -596,8 +596,10 @@ class Ma2Widget(Widget):
         gf.close()
 
         self.loadSynths()
-        actually_used_synths = [t.getSynthName()[2:] for t in self.tracks]
-        syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths)
+        actually_used_synths = set(t.getSynthName()[2:] for t in self.tracks)
+        actually_used_drums = set(n.note_pitch for p in self.patterns if p.synth_type == 'D' for n in p.notes)
+        
+        syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
 
         # get release times
         syn_rel = []
@@ -670,7 +672,7 @@ class Ma2Widget(Widget):
                 print(f, 'line', func_list[f], '/', f_iter-f_from, 'chars')
 
         chars_before = len(code)
-        for e in expendable: code = code.replace(e, '// ...')
+        for e in expendable: code = code.replace(e + '\n', '')
         chars_after = len(code)
 
         print('total purge of', chars_before-chars_after, 'chars.')

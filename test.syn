@@ -48,8 +48,10 @@ filter Fsaw2 comb stuttersaw1 .5*.5*.5 3 "pow(.9,5.)" 5
 main combsaw Fsaw2
 
 form stuttersaw12 pitchshift stuttersaw1 12
-filter Fsaw3 reverb stuttersaw12 0.1 0.00297 0.00371 0.00411 0.00437 0.3 0.00017 0.0005
-main revsaw Fsaw3 rel=1.3
+env short expdecay 8
+form stuttersaw12e mix short*stuttersaw12
+filter Fsaw3 reverb stuttersaw12e 0.1 0.00297 0.00371 0.00411 0.00437 0.3 0.00017 0.0005
+main revsaw Fsaw3 rel=1.3 relpower=.005
 
 main justsaw somesaw1
 

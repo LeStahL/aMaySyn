@@ -155,7 +155,7 @@ def synatize(syn_file = 'test.syn'):
     return form_list, main_list, drum_list
 
 
-def synatize_build(form_list, main_list, actually_used_synths = None):
+def synatize_build(form_list, main_list, actually_used_synths = None, actually_used_drums = None):
 
     def instance(ID, mod={}, force_int = False):
         
@@ -428,6 +428,8 @@ def synatize_build(form_list, main_list, actually_used_synths = None):
                     syncode += 'else if(Bsyn == ' + str(syncount) + '){\n' + 6*' ' + 's = '
                     for term in form_main['terms']:
                         syncode += instance(term) + (newlineplus if term != form_main['terms'][-1] else ';')
+                    if 'relpower' in form_main:
+                        syncode += 'env = theta(B-Bon)*pow(1.-smoothstep(Boff, Boff+Brel, B),'+form_main['relpower']+');'
                     syncode += '}\n' + 4*' '
                 syncount += 1
             
@@ -437,10 +439,11 @@ def synatize_build(form_list, main_list, actually_used_synths = None):
             drumcount = 1
             for form_main in main_list:
                 if form_main['type']!='maindrum': continue
-                syncode += 'else if(Bsyn == -' + str(drumcount) + '){\n' + 6*' ' + 's = '
-                for term in form_main['terms']:
-                    syncode += instance(term) + (newlineplus if term != form_main['terms'][-1] else ';')
-                syncode += '}\n' + 4*' '
+                if actually_used_drums is None or drumcount in actually_used_drums:
+                    syncode += 'else if(Bsyn == -' + str(drumcount) + '){\n' + 6*' ' + 's = '
+                    for term in form_main['terms']:
+                        syncode += instance(term) + (newlineplus if term != form_main['terms'][-1] else ';')
+                    syncode += '}\n' + 4*' '
                 drumcount += 1
 
         syncode = syncode.replace('_TIME','t').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
@@ -458,8 +461,6 @@ def synatize_build(form_list, main_list, actually_used_synths = None):
         ff.close()
         filtercode += ffcode.replace('TEMPLATE',form['ID']).replace('INSTANCE',instance(form['source'])).replace('vel*','').replace('_PROG','_TIME') \
                             .replace('_BPROG','Bprog').replace('Bprog','_TIME*SPB')
-
-    #print("\nBUILD FILTER CODE:\n", filtercode, sep="")
 
     return syncode, filtercode
 
