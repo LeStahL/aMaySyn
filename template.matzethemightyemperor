@@ -38,6 +38,37 @@ float env_AHD(float t, float a, float h, float d)
     return t<a ? t/a : t<a+h ? 1. : t < a+h+d ? 1.+(1.-t)*(a+h)/d : 0.;
 }
 
+float blackmannoise(float t, float ton, float M)
+{
+    t -= ton;
+    float s = pseudorandom(t);
+    float facM = 2.*PI/M;
+    float w, n;
+    for(float m=1.; m<=M; m+=1.)
+    {        
+        n = m -.5*M;
+        w = .42 - .5 * cos(n*facM) - .08 * cos(2.*n*facM);
+        s -= w*pseudorandom(t-m*Tsample);
+    }
+    return s;
+}
+
+float rednoise(float time, float seed, float r) // this function is hardcore low! avoid it for large (time-seed)!
+{   // e.g. r = .9 is some low frequency noise
+	s = pseudorandom(seed);
+    int N = int((time-seed) * Fsample);
+    float r = .9;
+    float r2 = sqrt(1.-r*r);
+    for(int i=1; i<N; i++)
+    {
+        s = r*s + r2*pseudorandom(seed+float(i)*Tsample);
+    }
+    return s;
+    // thinking... might be enough to do this:
+    // float r3 = exp(-N*log(r));
+    // return r3*pseudorandom(seed) + sqrt(1.-r3*r3)*pseudorandom(time);
+}
+
 float env_ADSR(float x, float L, float A, float D, float S, float R)
 {
     float att = x/A;
@@ -51,7 +82,7 @@ float env_ADSRexp(float x, float L, float A, float D, float S, float R)
     float att = pow(x/A,8.);
     float dec = S + (1.-S) * exp(-(x-A)/D);
     float rel = (x <= L-R) ? 1. : pow((L-x)/R,4.);
-    return (x < A ? att : dec) * rel;    
+    return (x < A ? att : dec) * rel;
 }
 
 float s_atan(float a) { return 2./PI * atan(a); }
@@ -113,6 +144,12 @@ float MACESQ(float t, float f, float phase, int NMAX, int NINC, float MIX, float
 }
 
 //FILTERCODE
+
+float karplusstrong(float time, float f) // work in progress...
+{
+    float u = f * f * (3.0 - 2.0 * f ); // custom cubic curve
+    return mix(pseudorandom(time), pseudorandom(time+1.), u);
+}
 
 float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decvar)
 {
@@ -207,7 +244,7 @@ float mainSynth(float time)
 
                     //0 is for sidechaining - am I doing this right?
                     if(Bdrum == 0)
-                        r_sidechain = (1. - theta(B-Bon) * exp(-1000.*(B-Bon))) * smoothstep(Bon,Boff,B);
+                        r_sidechain = 1. - smoothstep(Bon,Bon+1e-4,B) + smoothstep(Bon,Boff,B);
                     else
                         d += trk_norm[trk] * AMAYSYN(time, B, Bon, Boff, Bvel, -Bdrum, trk_rel[trk]);
                 }

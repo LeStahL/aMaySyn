@@ -19,7 +19,7 @@ from functools import partial
 from numpy import clip
 from math import sin, exp, pi
 from datetime import *
-import pygame
+import pygame, threading
 import csv, re
 import operator
 import os, sys, subprocess
@@ -122,7 +122,12 @@ class Ma2Widget(Widget):
 
         elif k == 'f11':                        self.editCurve()
 
-        if 'ctrl' in modifiers:
+        elif k == 'f12':                        pygame.mixer.stop()
+
+        if 'shift' in modifiers and 'ctrl' in modifiers:
+            if k == 'b':                        self.buildGLSL(compileGL = True)
+
+        elif 'ctrl' in modifiers:
             if k == 'n':                        self.clearSong()
             elif k == 'l':                      self.loadCSV_prompt()
             elif k == 's':                      self.saveCSV_prompt()
@@ -176,7 +181,7 @@ class Ma2Widget(Widget):
                 
                 elif k == 'f6':                 self.renameTrack()
                 elif k == 'f7':                 self.changeTrackParameters()
-                elif k == 'f12':                self.printPatterns()
+                elif k == 'f9':                 self.printPatterns()
 
         if(self.thePtnWidget.active) and self.getPattern():
             if 'shift' in modifiers and 'ctrl' in modifiers:
@@ -230,7 +235,7 @@ class Ma2Widget(Widget):
                 elif k == 'backspace':          self.getPattern().setGap(dec = True)
 
                 elif k == 'f6':                 self.renamePattern()
-                elif k == 'f12':                self.getPattern().printNoteList()
+                elif k == 'f9':                 self.getPattern().printNoteList()
 
         # MISSING:
         #       moveAllNotes()
@@ -573,7 +578,7 @@ class Ma2Widget(Widget):
             out_tmp.write(self.title)
             out_tmp.close()
 
-    def buildGLSL(self):
+    def buildGLSL(self, compileGL = False):
         filename = self.title + '.glsl'
 
         # ignore empty tracks
@@ -591,7 +596,7 @@ class Ma2Widget(Widget):
         nP1 = str(len(self.patterns) + 1)
         nN  = str(pattern_sep[-1])
 
-        gf = open("framework.matzethemightyemperor")
+        gf = open("template.matzethemightyemperor")
         glslcode = gf.read()
         gf.close()
 
@@ -643,7 +648,8 @@ class Ma2Widget(Widget):
         print()
         print(seqcode)
     
-#        self.compileShader(glslcode)
+        if compileGL:
+            self.compileShader(glslcode)
 
 
     def purgeExpendables(self, code):
@@ -748,77 +754,57 @@ class Ma2Widget(Widget):
         self.update()        
 
     def compileShader(self, shader):
-        self.audiooutput = None
-   
-        self.playing = False
-        self.elapsed = 0.
-        
-        self.frametime = 1000./30.
-                
-        starttime = datetime.datetime.now()
-        self.fps = 0.
-        
         self.defaultshader = '''vec2 mainSound( float time )
 {
     // A 440 Hz wave that attenuates quickly overt time
-    return vec2( sin(6.2831*440.0*time)*exp(-3.0*time) );
+    return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) );
 }'''
         self.prefix = '''#version 130
 
+uniform float iTexSize;
 uniform float iBlockOffset;
 uniform float iSampleRate;\n\n'''
         self.suffix = '''void main()
 {
-   float t = iBlockOffset + ((gl_FragCoord.x-0.5) + (gl_FragCoord.y-0.5)*512.0)/iSampleRate;
+   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
    vec2 y = mainSound( t );
-   vec2 v  = floor((0.5+0.5*y)*65536.0);
+   vec2 v  = floor((0.5+0.5*y)*65535.0);
    vec2 vl = mod(v,256.0)/255.0;
    vec2 vh = floor(v/256.0)/255.0;
    gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
 }'''
-
         self.music = None
 
-        glwidget = SFXGLWidget(self)
-        
-        #test
-        shader = self.defaultshader
-        
-        self.log = glwidget.newShader(self.prefix + shader + self.suffix)
+        #shader = self.defaultshader #test
+
+        self.callSFXLGLWidget(self.prefix + shader + self.suffix)
+         
+        self.update()
+
+    def callSFXLGLWidget(self, shader):
+        starttime = datetime.datetime.now()
+
+        glwidget = SFXGLWidget(self)                 
+        self.log = glwidget.newShader(shader)
+        print(self.log)
         self.music = glwidget.music
-        self.omusic = glwidget.omusic
         del glwidget
-        
+
         if self.music == None :
+            print('music is empty.')
             return
-        
-        data = self.omusic
-        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=4096)
+ 
+        pygame.mixer.pre_init(frequency=int(44100), size=-16, channels=2, buffer=4096)
         pygame.init()
         pygame.mixer.init()
-        pygame.mixer.Sound.play(pygame.mixer.Sound(buffer=data))
-
-        #self.bytearray = QByteArray(self.music)
-
-        #self.audiobuffer = QBuffer(self.bytearray)
-        #self.audiobuffer.open(QIODevice.ReadOnly)
-
-        #self.audioformat = QAudioFormat()
-        #self.audioformat.setSampleRate(44100)
-        #self.audioformat.setChannelCount(2)
-        #self.audioformat.setSampleSize(32)
-        #self.audioformat.setCodec("audio/pcm")
-        #self.audioformat.setByteOrder(QAudioFormat.LittleEndian)
-        #self.audioformat.setSampleType(QAudioFormat.Float)
-
-        #self.audiooutput = QAudioOutput(self.audioformat)
-        #self.audiooutput.stop()
-        #self.audiooutput.start(self.audiobuffer)
-
+        pygame.mixer.stop()
+        pygame.mixer.Sound(buffer=self.music).play()
+        
         endtime = datetime.datetime.now()
         el = endtime - starttime
 
         print("Execution time", str(el.total_seconds()) + 's')
+        
 
 class InputPrompt(ModalView):
     

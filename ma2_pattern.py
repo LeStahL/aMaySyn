@@ -127,7 +127,6 @@ class Pattern():
     def shiftNote(self, inc):
         if self.notes:
             self.getNote().note_pitch = (self.getNote().note_pitch + inc) % self.max_note
-            print(self.getNote().note_pitch, self.max_note)
 
     def shiftAllNotes(self, inc):
         notes = self.notes if not self.synth_type == 'D' else [n for n in self.notes if n.note_pitch == self.getNote().note_pitch]

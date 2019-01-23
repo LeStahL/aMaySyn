@@ -72,6 +72,7 @@ def synatize(syn_file = 'test.syn'):
             continue
 
         if cmd == 'main' or cmd == 'maindrum':
+            arg = '+'.join(arg).split('+')
             main_list.append({'ID':cid, 'type':cmd, 'amount':len(line)-2, 'terms':arg, **sargs})
 
         elif cmd == 'const':
@@ -125,6 +126,7 @@ def synatize(syn_file = 'test.syn'):
             form = {'ID':cid, 'type':cmd, 'OP':op, **sargs}
 
             if op == 'mix':
+                arg = '+'.join(arg).split('+')
                 form.update({'amount':len(arg), 'terms':arg[1:]})
             elif op == 'detune':
                 form.update({'source':arg[1], 'amount':arg[2:]})
@@ -273,6 +275,9 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                                                                                                                       + ',' + ','.join(instance(form['par'][p]) for p in range(2,9))+ ',' + keyF + ')'
                     elif form['shape'] == 'fract':
                             _return = pre + '(fract(' + phi + '+' + instance(form['phase']) + ')+' + instance(form['par'][0]) + ')'
+                            
+                    elif form['shape'] == 'guitar':
+                            _return = 'karplusstrong(_PROG,'+instance(form['freq'])+')'
 
                     else:
                         print("ERROR! THIS OSC/LFO SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
@@ -456,7 +461,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
     filter_list = [f for f in form_list if f['type']=='filter']
     filtercode = '' 
     for form in filter_list:
-        ff = open("framework."+form['shape']+"template")
+        ff = open("template."+form['shape'])
         ffcode = ff.read()
         ff.close()
         filtercode += ffcode.replace('TEMPLATE',form['ID']).replace('INSTANCE',instance(form['source'])).replace('vel*','').replace('_PROG','_TIME') \
@@ -498,7 +503,7 @@ def arg_required(cmd, arg):
         
     elif cmd == 'filter':
         req += 1
-        if arg0 == 'resolp' or arg0 == 'resohp' or arg0 == 'allpass': req += 2
+        if arg0 == 'resolp' or arg0 == 'resohp' or arg0 == 'allpass' or arg0 == 'bandpass': req += 2
         elif arg0 == 'comb': req += 4
         elif arg0 == 'reverb': req += 8
         

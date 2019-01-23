@@ -1,0 +1,28 @@
+float bandpassTEMPLATE(float time, float f, float tL, float fcenter, float bw, float M)
+{
+    float y = 0.;
+    
+    float facM = 2.*PI/M;
+    float facL = 2.*PI*Tsample * (fcenter - bw);
+    float facH = 2.*PI*Tsample * (fcenter + bw);
+    
+    if(facL < 0.) facL = 0.;
+    if(facH > PI) facH = PI;
+    
+    float _TIME, mm, w, h;
+    
+    M--;
+    for(float m=1.; m<=M; m++)
+    {
+        mm = m - .5*M;
+        w = .42 - .5 * cos(mm*facM) - .08 * cos(2.*mm*facM);
+        h = 1./(PI*mm) * (sin(mm*facH) - sin(mm*facL));
+        
+        _TIME = time - m*Tsample;
+        y += w*h*INSTANCE;
+    }
+    
+    return s_atan(M*M*y); // I DO NOT CARE ANYMORE
+}
+float bandpassTEMPLATE(float time, float f, float tL, float fcenter, float bw) { return bandpassTEMPLATE(time, f, tL, fcenter, bw, 32.); }
+
