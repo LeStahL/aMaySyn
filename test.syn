@@ -1,43 +1,43 @@
 ########### SYNTHS ###########
 
 osc fm1op2fb
-osc fm1op2 freq=.999*f phase=.35*fm1op2fb
-lfo fm1fb shape=saw freq=2 mode=global,beat
-osc fm1op1 phase=fm1fb*fm1op2
-osc fm1sub1 shape=sin freq=.5*f
+osc fm1op2   freq=.999*f phase=.35*fm1op2fb
+lfo fm1fb    shape=saw freq=2 mode=global,beat
+osc fm1op1   phase=fm1fb*fm1op2
+osc fm1sub1  shape=sin freq=.5*f
 
-osc fm1sub2 freq=.501*f
-env quickattack attack=0.01 hold=1 decay=1 sustain=0
-main FM1 src=quickattack*fm1op1+quickattack*0.4*fm1sub1+quickattack*0.4*fm1sub2 release=.1
+osc  fm1sub2     freq=.501*f
+env  quickattack attack=0.01 hold=1 decay=1 sustain=0
+main FM1         src=quickattack*fm1op1+quickattack*0.4*fm1sub1+quickattack*0.4*fm1sub2 release=.1
 
-osc somesaw1 shape=saw
+osc  somesaw1  shape=saw
 form somesawD1 detune src=somesaw1 amount=0.01,0.033,0.04
-osc somesaw2 shape=saw freq=.5*f phase=0.01
+osc  somesaw2  shape=saw freq=.5*f phase=0.01
 form somesawD2 op=detune src=somesaw2 amount=0.05,-0.03,-0.02
-form somesaw mix src=somesawD1+.6*somesawD2
-env stutter shape=expdecayrepeat exponent=16. beats=.125
-env slowdec shape=expdecay exponent=1.5
-main Supersaw src=stutter*slowdec*somesaw
+form somesaw   mix src=somesawD1+.6*somesawD2
+env  stutter   shape=expdecayrepeat exponent=16. beats=.125
+env  slowdec   shape=expdecay exponent=1.5
+main Supersaw  src=stutter*slowdec*somesaw
 
-osc S01 shape=sin freq=f
-gac G01 offset=0 const=1. lin=2. quad=-.5 sin=3. sin_coeff=2. exp=2. exp_coeff=-.25 mode=global
-form S01w op=waveshape src=S01 amount=1. a=0.01 b=0.7 c=0.1 d=0.6 e=0.8
+osc  S01    shape=sin freq=f
+gac  G01    offset=0 const=1. lin=2. quad=-.5 sin=3. sin_coeff=2. exp=2. exp_coeff=-.25 mode=global
+form S01w   op=waveshape src=S01 amount=1. a=0.01 b=0.7 c=0.1 d=0.6 e=0.8
 main WShape src=S01-.1*G01*S01+.1*G01*S01w
 
-filter Fsaw shape=resolp src=somesaw1 cutoff=200 reso=.4
-main resolpsaw src=Fsaw
+filter Fsaw      shape=resolp src=somesaw1 cutoff=200 res=.4
+main   resolpsaw src=Fsaw
 
-#filter Fsaw2 shape=allpass src=somesaw1 gain=.8 ndelay=3
-lfo stutter2 shape=squ freq=8 phase=.125
-form stuttersaw1 op=mix src=stutter2*somesaw1
-filter Fsaw2 shape=comb src=stuttersaw1 iir_gain=.5*.5*.5 iir_n=3 fir_gain="pow(.9,5.)" fir_n=5
-main combsaw src=Fsaw2
+#filter Fsaw2       shape=allpass src=somesaw1 gain=.8 ndelay=3
+lfo    stutter2    shape=squ freq=8 phase=.125
+form   stuttersaw1 op=mix src=stutter2*somesaw1
+filter Fsaw2       shape=comb src=stuttersaw1 iir_gain=.5*.5*.5 iir_n=3 fir_gain="pow(.9,5.)" fir_n=5
+main   combsaw     src=Fsaw2
 
-form stuttersaw12 op=pitchshift src=stuttersaw1 steps=12
-env short shape=expdecay exponent=8
-form stuttersaw12e mix src=short*stuttersaw12
-filter Fsaw3 shape=reverb src=stuttersaw12e iir_gain=0.1 iir_delay1=0.00297 iir_delay2=0.00371 iir_delay3=0.00411 iir_delay4=0.00437 ap_gain=0.3 ap_delay1=0.00017 ap_delay2=0.0005
-main revsaw src=Fsaw3 release=1.3 relpower=.005
+form   stuttersaw12  op=pitchshift src=stuttersaw1 steps=12
+env    short         shape=expdecay exponent=8
+form   stuttersaw12e mix src=short*stuttersaw12
+filter Fsaw3         shape=reverb src=stuttersaw12e iir_gain=0.1 iir_delay1=0.00297 iir_delay2=0.00371 iir_delay3=0.00411 iir_delay4=0.00437 ap_gain=0.3 ap_delay1=0.00017 ap_delay2=0.0005
+main   revsaw        src=Fsaw3 release=1.3 relpower=.005
 
 # not implemented for now (karplus-strong-guitar)
 #osc ksguitar guitar f
@@ -45,46 +45,46 @@ main revsaw src=Fsaw3 release=1.3 relpower=.005
 
 main justsaw src=somesaw1
 
-lfo sweep shape=sin freq=.25 scale=1500 shift=2000 mode=global
+lfo    sweep  shape=sin freq=.25 scale=1500 shift=2000 mode=global
 filter BPsaw1 shape=bandpass src=somesaw1 center=sweep bandwidth=10 N=100
-main BPsaw src=BPsaw1
+main   BPsaw  src=BPsaw1
 
-env stringenv attack=0.2 decay=0.3 sustain=0.8 release=0.2
-lfo stringvib shape=sin freq=5.
-form fvib mix src=f+0.3*stringvib*stringenv
-osc saw2 shape=saw freq=fvib
-form saw2D op=detune src=saw2 amount=0.01, 0.011, -0.02
-env stringfilter attack=0.5 decay=0.5 sustain=0.4 release=0. mode=beat
-filter Fstr shape=resolp src=saw2D cutoff=300*stringfilter
-main stryngth1 src=stringenv*Fstr release=0.2
+env    stringenv    attack=0.2 decay=0.3 sustain=0.8 release=0.2
+lfo    stringvib    shape=sin freq=5.
+form   fvib         mix src=f+0.3*stringvib*stringenv
+osc    saw2         shape=saw freq=fvib
+form   saw2D        op=detune src=saw2 amount=0.01, 0.011, -0.02
+env    stringfilter attack=0.5 decay=0.5 sustain=0.4 release=0. mode=beat
+filter Fstr         shape=resolp src=saw2D cutoff=300*stringfilter
+main   stryngth1    src=stringenv*Fstr release=0.2
 
-### OTHER SYNTHS ###
+osc    A1osc3    shape=tri freq=.5*f
+osc    A1osc2    shape=saw freq=2*f phase=.4*A1osc3
+osc    A1osc1    shape=squ freq=.25*f phase=0.25 pw=0.2*A1osc2
+form   A1osc1d   detune src=A1osc1 amount=0.004
+env    shortenv  attack=0.0 hold=0.2 decay=0.2 sustain=0
+form   A1oscmix  mix src=A1osc1d+0.8*A1osc2
+form   A1oscmixW waveshape src=A1oscmix amount=A1osc2 a=0.1 b=.3 c=0.3 d=0.8 e=0.8
+env    shortdec  attack=0.0001 hold=0.0001 decay=0.4 sustain=0
+filter A1oscmixF shape=resolp src=A1oscmixW cutoff=800*shortdec res=.1
+main   PercBass  src=shortenv*A1oscmixF*5.
+
+env A14_env    attack=2 decay=0 sustain=.2 release=2 mode=beat
+env A14_fenv   attack=2 decay=0 sustain=1 release=2 mode=beat scale=600 shift="40.*sqrt(f)"
+osc A14_osc    shape=madd freq=f nmax=200 ninc=1 mix=1 cutoff=A14_fenv filterQ=30 res=0 resQ=0.1 detune=-.01
+form A14_oscA  mix src=0.5*A14_env*A14_osc
+form A14_oscAD overdrive src=A14_oscA gain=1.4
+main A14_Kuh   src=A14_env*A14_oscAD release=2
+
+env  A15_env   attack=3 decay=0 sustain=0.2 release=2 mode=beat
+env  A15_fenv  attack=2 decay=0 sustain=1 release=2 scale=100 shift="20.*sqrt(f)"
+osc  A15_osc1  shape=madd freq=f phase=0 nmax=200 ninc=1 mix=-1 cutoff=A15_fenv filterQ=50 res=0 detune="0.01-0.008*_sin(0.25*Bproc+.25)" pw=0
+osc  A15_osc2  shape=madd freq=f phase=0 nmax=200 ninc=1 mix=1  cutoff=A15_fenv filterQ=30 res=0 detune=-.01 pw="0.1+0.06*_sin(0.25*_t)"
+form A15_oscA  mix src=0.2*A15_osc1+0.3*A15_osc2
+form A15_oscAD overdrive src=A15_oscA gain=1.4
+main A15_Kuh   src=A15_env*A15_oscAD release=2
+
 !
-osc A1osc3 tri .5*f
-osc A1osc2 saw 2*f .4*A1osc3
-osc A1osc1 squ .25*f 0.25 0.2*A1osc2
-form A1osc1d detune A1osc1 0.004
-env shortenv attack=0.0 hold=0.2 decay=0.2 sustain=0
-form A1oscmix mix A1osc1d 0.8*A1osc2
-form A1oscmixW waveshape A1oscmix A1osc2 0.1 .3 0.3 0.8 0.8
-env shortdec attack=0.0001 hold=0.0001 decay=0.4 sustain=0
-filter A1oscmixF resolp A1oscmixW 800*shortdec .1
-main PercBass shortenv*A1oscmixF*5.
-
-env A14_env adsr 2 0 .2 2 mode=beat
-env A14_fenv adsr 2 0 1 2 mode=beat scale=600 shift="40.*sqrt(f)"
-osc A14_osc macesq f 0. 200 1 1 A14_fenv 30 0 0.1 -.01 0
-form A14_oscA mix 0.5*A14_env*A14_osc
-form A14_oscAD overdrive A14_oscA 0.8
-main A14_Kuh A14_env*A14_oscAD release=2
-
-env A15_env adsr 3 0 0.2 2 mode=beat
-env A15_fenv adsr 2 0 1 2 scale=100 shift="20.*sqrt(f)"
-osc A15_osc1 macesq f 0 200 1 -1 A15_fenv 50 0 0 "0.01-0.008*_sin(0.25*Bproc+.25)" 0
-osc A15_osc2 macesq f 0 200 1 1 A15_fenv 30 0 0.1 -.01 "0.1+0.06*_sin(0.25*_t)"
-form A15_oscA mix 0.2*A15_osc1 0.3*A15_osc2
-form A15_oscAD overdrive A15_oscA 0.8
-main A15_Kuh A15_env*A15_oscAD release=2
 
 env A16_env adsr 1.5 2 .2 .8
 osc A16_osc1 saw f A16_lfo1
@@ -96,7 +96,7 @@ main A16_Supsaw 0.5*A16_env*A16_osc1 A16_env*A16_osc2 A16_env*A16_osc3 release=.
 
 env A17_env adsr 1.5 2 0.2 0.8
 env A17_fenv adsr 1.5 2.5 0.2 10 scale=100 shift=200
-osc A17_osc macesq f 0 200 1 -1 A17_fenv 20 0.3 3. 0.015 0
+osc A17_osc madd f 0 200 1 -1 A17_fenv 20 0.3 3. 0.015 0
 main A17_pad? A17_env*A17_osc release=.8
 
 osc A10_1 tri 2*f
@@ -113,7 +113,7 @@ main A13_whatev A13_osc
 
 env M8_env adsrexp 0.75 0.5 0.1 0.8 mode=beat
 env M8_fenv adsrexp 0.5 0.5 0.1 10 scale=4500 shift=500 mode=beat
-osc M8_osc macesq f 0 200 1 -1 M8_fenv 20 0 0 0.018 0
+osc M8_osc madd f 0 200 1 -1 M8_fenv 20 0 0 0.018 0
 #form M8_oscD detune M8_osc 1 .3 
 form M8_oscDQ quantize M8_osc 128
 form M8_oscDL lofi M8_oscDQ 8
@@ -157,9 +157,9 @@ form A24_dep mix 200. .3*f
 filter A24_lp resolp A24_mix A24_dep .3
 main M8_ILike2 A24_someenv*A24_someenv2*A24_lp release=.01
 
-# macesq: mix= (-1 für saw, 0 für tri, sq für 1, HÄ? für 2)
+# madd: mix= (-1 für saw, 0 für tri, sq für 1, HÄ? für 2)
 # macesaw(t, f, filterCO, filterQ, 0.010, 0.020, 0.015, 3.);
-# osc A16_osc1 macesq f 0 200 1 -1 filterCO filterQ filterRes filterResQ detune PW
+# osc A16_osc1 madd f 0 200 1 -1 filterCO filterQ filterRes filterResQ detune PW
 
 
 ########### DRUMS ###########

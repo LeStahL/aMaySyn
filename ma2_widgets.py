@@ -115,7 +115,7 @@ class TrackWidget(Widget):
                 Color(.6,.8,.8)
                 label = CoreLabel(text = str(i), font_size = 12, font_name = self.font_name)
                 label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x-label.texture.width/2, draw_y), texture = label.texture)
+                Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y), texture = label.texture)
                 
                 draw_x += beat_w
             
@@ -194,6 +194,7 @@ class PatternWidget(Widget):
             key = 0
             transpose = 0
 
+
         self.canvas.clear()
         with self.canvas:
             
@@ -253,7 +254,7 @@ class PatternWidget(Widget):
             Color(.6,.8,.8)
             label = CoreLabel(text = "0.00", font_size = 12, font_name = self.font_name)
             label.refresh()
-            Rectangle(size = label.texture.size, pos = (draw_x-label.texture.width/2, draw_y - label.texture.height), texture = label.texture)
+            Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y - label.height), texture = label.texture)
             for b in range(int(bars)):
                 Color(0.05,0,0.05,0.8)
                 Line(points = [draw_x, draw_y, draw_x, draw_y + draw_h], width = 1.5 if b % 4 == 0 else 1)
@@ -266,7 +267,7 @@ class PatternWidget(Widget):
                 Color(.6,.8,.8)
                 label = CoreLabel(text = "%.2f" % (.25*(b+1)), font_size = 12, font_name = self.font_name)
                 label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x-label.texture.width/2, draw_y - label.texture.height), texture = label.texture)
+                Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y - label.height), texture = label.texture)
 
             Color(0,0,0)
             Line(points = [draw_x, draw_y, draw_x, draw_y + draw_h], width = 1.5)
@@ -276,6 +277,13 @@ class PatternWidget(Widget):
 
             ### NOTES ###
             if pattern:
+                
+                showVelocities = False
+                for n in pattern.notes:
+                    if n.note_vel != 100:
+                        showVelocities = True
+                        break
+
                 for n in pattern.notes:
                     Color(*pattern.color,.55) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER (TODO)
                     draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * n.note_on
@@ -290,6 +298,18 @@ class PatternWidget(Widget):
                             Color(1,1,1,.4)
                             Rectangle(pos = (draw_x + 4 * bar_w * n.note_len - 1, draw_y), size = (4 * bar_w * pattern.current_gap, key_h / 4))
 
+                    if showVelocities:
+                        mixcolor = lambda t1,t2: tuple((v1+v2)/2 for v1,v2 in zip(t1,t2))
+                        Color(*(mixcolor((0,0,0),pattern.color) if n == pattern.getNote() else mixcolor((1,1,1),pattern.color)))
+                        label = CoreLabel(text = str(n.note_vel), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
+                        label.refresh()
+                        Rectangle(size = label.texture.size, pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height + 1), texture = label.texture)
+
+            ### NUMBERINPUT ###
+            Color(1,0,1,.9)
+            label = CoreLabel(text = parent.numberInput, font_size = 12, font_name = self.font_name)
+            label.refresh()
+            Rectangle(size = label.texture.size, pos = (self.x + self.width - pad_r - label.width, self.y + pad_b - label.height), texture = label.texture)
 
 class CurveWidget(Widget):
 

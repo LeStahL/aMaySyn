@@ -1,3 +1,6 @@
+import os
+#os.environ['KIVY_NO_CONSOLELOG'] = '1'
+
 import kivy
 kivy.require('1.10.0') # replace with your current kivy version !
 
@@ -19,10 +22,10 @@ from functools import partial
 from numpy import clip
 from math import sin, exp, pi
 from datetime import *
-import pygame, threading
+import pygame
 import csv, re
 import operator
-import os, sys, subprocess
+import sys
 import pyperclip
 
 from ma2_track import *
@@ -31,13 +34,12 @@ from ma2_widgets import *
 from ma2_synatize import synatize, synatize_build
 from SFXGLWidget import *
 
-#from PyQt5.QtCore import QByteArray, QBuffer, QIODevice
-#from PyQt5.QtMultimedia import QAudioFormat
 
 GLfloat = lambda f: str(int(f))  + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
 
 Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
+#Config.set('kivy', 'log_level', 'warning')
 
 def_synths = ['D_Drums', 'G_GFX', '__None']
 def_drumkit = ['SideChn']
@@ -67,6 +69,8 @@ class Ma2Widget(Widget):
     btnTitle = ObjectProperty()
     
     debugMode = False
+    numberInputMode = False
+    numberInput = ''
     
     #updateAll = True # ah, fuck it. always update everythig. TODO improve performance... somehow.
     
@@ -104,7 +108,7 @@ class Ma2Widget(Widget):
         self._keyboard.unbind(on_key_down = self._on_keyboard_down)
         self._keyboard = None
         
-    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+    def _on_keyboard_down(self, keyboard, keycode, keytext, modifiers):
         
         k = keycode[1]
         
@@ -234,8 +238,13 @@ class Ma2Widget(Widget):
                 elif k == 'spacebar':           self.getPattern().setGap(inc = True)
                 elif k == 'backspace':          self.getPattern().setGap(dec = True)
 
+                elif k == 'v':                  self.getPattern().getNote().setVelocity(self.numberInput)
+
                 elif k == 'f6':                 self.renamePattern()
                 elif k == 'f9':                 self.getPattern().printNoteList()
+            
+            if keytext.isdigit():               self.setNumberInput(keytext)
+            else:                               self.setNumberInput('')
 
         # MISSING:
         #       moveAllNotes()
@@ -247,7 +256,7 @@ class Ma2Widget(Widget):
         self.update()
 
         if self.debugMode:
-            print('DEBUG -- KEY:', k, modifiers)
+            print('DEBUG -- KEY:', k, keytext, modifiers)
             self.printDebug()
 
         return True
@@ -409,7 +418,15 @@ class Ma2Widget(Widget):
 
         self.renameSong()
         self.loadSynths(update = True)
-        
+
+    def setNumberInput(self, key):
+        if key.isdigit():
+            if not self.numberInputMode: self.numberInput = ''
+            self.numberInputMode = True
+            self.numberInput += key
+        else:
+            self.numberInputMode = False
+
     def setupInit(self):
         if '-debug' in sys.argv: self.toggleDebugMode()
         
@@ -447,13 +464,13 @@ class Ma2Widget(Widget):
         
         self.synatize_form_list, self.synatize_main_list, drumkit = synatize(filename)
         
-        synths = ['I_' + m['ID'] for m in self.synatize_main_list if m['type']=='main']
+        synths = ['I_' + m['id'] for m in self.synatize_main_list if m['type']=='main']
         synths.extend(def_synths)
         
         drumkit = def_drumkit + drumkit
         self.thePtnWidget.updateDrumkit(drumkit)
 
-        print(synths, drumkit)
+        print('LOAD:', synths, drumkit)
         
         if update:
             for t in self.tracks: t.updateSynths(synths)
@@ -660,7 +677,7 @@ class Ma2Widget(Widget):
                 func_list.update({func_head[0]:i})
 
         expendable = []
-        print("The following functions will be purged")
+        self.printIfDebug("The following functions will be purged")
         for f in func_list.keys():
             if code.count(f) == 1:
                 f_from = code.find('float '+f)
@@ -675,13 +692,13 @@ class Ma2Widget(Widget):
                     if n_open > 0 and n_closed == n_open: break
 
                 expendable.append(code[f_from:f_iter])
-                print(f, 'line', func_list[f], '/', f_iter-f_from, 'chars')
+                self.printIfDebug(f, 'line', func_list[f], '/', f_iter-f_from, 'chars')
 
         chars_before = len(code)
         for e in expendable: code = code.replace(e + '\n', '')
         chars_after = len(code)
 
-        print('total purge of', chars_before-chars_after, 'chars.')
+        print('// total purge of', chars_before-chars_after, 'chars.')
         
         return code
     
@@ -726,6 +743,10 @@ class Ma2Widget(Widget):
     def toggleDebugMode(self):
         self.debugMode = not self.debugMode
         print('DEBUG MODE IS', 'ON' if self.debugMode else 'OFF')
+        
+    def printIfDebug(self, *messages):
+        if self.debugMode:
+            print(*messages)
         
     def printDebug(self):
         print('DEBUG -- TRACKS:')        

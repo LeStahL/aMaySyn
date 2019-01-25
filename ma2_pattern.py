@@ -223,3 +223,9 @@ class Note():
 
     def tag(self):
         self.tagged = True
+
+    def setVelocity(self, vel_str = '100'):
+        try:
+            self.note_vel = min(int(vel_str), 999)
+        except:
+            pass

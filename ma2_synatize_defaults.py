@@ -2,18 +2,27 @@
 
 def set_remaining_defaults(cid, cmd, form):
             
-    requirements = []
+    requirements = ['id', 'type', 'mode']
     defaults = {}
     
-    if cmd == 'random': # TODO: TREAT DIFFERENTLY
+    if cmd == 'main':
+        requirements.append('src')
+        defaults.update({'release':'0', 'relpower':'1'})
+    
+    elif cmd == 'random': # TODO: TREAT DIFFERENTLY
         defaults.update({'min':'0', 'max':'1', 'digits':'3'})
 
     elif cmd == 'osc' or cmd == 'lfo':
         defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0'})
 
+        if cmd == 'osc':
+            defaults.update({'shift':'0', 'scale':'1'})            
+        elif cmd == 'lfo':
+            defaults.update({'shift':'0.5', 'scale':'0.5'})
+
         try:
-            if form['shape'] == 'macesq':
-                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'filterQ':'3', 'res':'0', 'resQ': '3', 'detune':'1e-3'})
+            if form['shape'] == 'madd':
+                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'filterq':'3', 'res':'0', 'resq': '3', 'detune':'1e-3'})
                 # TODO: calibrate filterQ (and rename)
                 # TODO: calibrate (resQ)
             elif form['shape'] == 'fm':
@@ -45,7 +54,7 @@ def set_remaining_defaults(cid, cmd, form):
             pass
 
     elif cmd == 'env':
-        defaults.update({'shape':'ahdsr', 'attack':'1e-4', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0'})
+        defaults.update({'shape':'ahdsr', 'attack':'1e-4', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0', 'scale':'1', 'shift':'0'})
         #TODO: calibrate attack and decay
         
         try:
@@ -60,7 +69,7 @@ def set_remaining_defaults(cid, cmd, form):
 
         try:
             if form['shape'] == 'resolp' or form['shape'] == 'resohp':
-                defaults.update({'cutoff':'200', 'reso':'0'})
+                defaults.update({'cutoff':'200', 'res':'0'})
                 #TODO: calibrate "cutoff"! - and this isn't really cutoff! - find that thing out.
             elif form['shape'] == 'allpass':
                 defaults.update({'gain':'.9', 'ndelay':'1'})
