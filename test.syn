@@ -1,103 +1,73 @@
-osc fm1op2fb sin f
-osc fm1op2 sin .999*f .35*fm1op2fb
-lfo fm1fb saw 2 mode=global,beat
-osc fm1op1 sin f fm1fb*fm1op2
-osc fm1sub1 sin .5*f
+########### SYNTHS ###########
 
-osc fm1sub2 sin .501*f
-env quickattack ahd 0.01 1 1
-main FM1 env*fm1op1 env*0.4*fm1sub1 env*0.4*fm1sub2 rel=.1
+osc fm1op2fb
+osc fm1op2 freq=.999*f phase=.35*fm1op2fb
+lfo fm1fb shape=saw freq=2 mode=global,beat
+osc fm1op1 phase=fm1fb*fm1op2
+osc fm1sub1 shape=sin freq=.5*f
 
-random f0 50 80 1
-random f1 100 150 1
-drum BDbody kick f0 f1 0.1 0.1 0.1 0.3 1.2 .05 .8 10 
-maindrum BD1 BDbody
+osc fm1sub2 freq=.501*f
+env quickattack attack=0.01 hold=1 decay=1 sustain=0
+main FM1 src=quickattack*fm1op1+quickattack*0.4*fm1sub1+quickattack*0.4*fm1sub2 release=.1
 
-drum BDbody2 kick2 50 200 0.12 0.015 0.1 0.15 0.4 0.03 1. 5 10 0.8 1 1 1 .1 .1
-maindrum BD2 3.*BDbody2
+osc somesaw1 shape=saw
+form somesawD1 detune src=somesaw1 amount=0.01,0.033,0.04
+osc somesaw2 shape=saw freq=.5*f phase=0.01
+form somesawD2 op=detune src=somesaw2 amount=0.05,-0.03,-0.02
+form somesaw mix src=somesawD1+.6*somesawD2
+env stutter shape=expdecayrepeat exponent=16. beats=.125
+env slowdec shape=expdecay exponent=1.5
+main Supersaw src=stutter*slowdec*somesaw
 
-drum BDbody3 kick2 60 150 0.2 0.01 0.3 0.1 1.5 0.05 5. 5 10 0.8 1 1 1 .1 0
-maindrum BD3 2.*BDbody3
-# it sucks. should be similar to this one: -- maybe just copy it
-# s = vel * 2.*clamp(smoothstep(0.,0.01,_t)*smoothstep(-0.1,0.2,0.3-_t)*.1*MACESQ(_t, (60. + 150.*smoothstep(-0.3,0.,-_t)), 0., 100, 1, 1.,1.,.1,16.,10.,0.,0.) + (.7 * (smoothstep(0.,0.01,_t) * smoothstep(-0.2, 0.2, 0.3 - _t)) * _sin(_t*(60. + 150.*smoothstep(-0.3,0.,-t))*.5)) + s_crzy(10.*(1.-exp(-1000.*_t))*exp(-30.*_t) * _sin((300.-300.*_t)*_t)) + s_atan(40.*(1.-exp(-1000.*_t))*exp(-80.*_t) * _sin((1200.-1000.*sin(1000.*_t*sin(30.*_t)))*_t)),-1.5,1.5);}
+osc S01 shape=sin freq=f
+gac G01 offset=0 const=1. lin=2. quad=-.5 sin=3. sin_coeff=2. exp=2. exp_coeff=-.25 mode=global
+form S01w op=waveshape src=S01 amount=1. a=0.01 b=0.7 c=0.1 d=0.6 e=0.8
+main WShape src=S01-.1*G01*S01+.1*G01*S01w
 
-drum shaker fmnoise 0.03 0.1 0.1 0.9 0.9
-maindrum SHK .2*shaker 
+filter Fsaw shape=resolp src=somesaw1 cutoff=200 reso=.4
+main resolpsaw src=Fsaw
 
-#drum sumnois fmnoise 0.0 0.01 1. 1. 1.
-#filter lpnoise resolp sumnois 9000 .1
-#maindrum LP_NOISE lpnoise rel=.4
+#filter Fsaw2 shape=allpass src=somesaw1 gain=.8 ndelay=3
+lfo stutter2 shape=squ freq=8 phase=.125
+form stuttersaw1 op=mix src=stutter2*somesaw1
+filter Fsaw2 shape=comb src=stuttersaw1 iir_gain=.5*.5*.5 iir_n=3 fir_gain="pow(.9,5.)" fir_n=5
+main combsaw src=Fsaw2
 
-drum explosion bitexplosion 1 2 2 1.5 2 1 1 
-maindrum EXPL explosion 
+form stuttersaw12 op=pitchshift src=stuttersaw1 steps=12
+env short shape=expdecay exponent=8
+form stuttersaw12e mix src=short*stuttersaw12
+filter Fsaw3 shape=reverb src=stuttersaw12e iir_gain=0.1 iir_delay1=0.00297 iir_delay2=0.00371 iir_delay3=0.00411 iir_delay4=0.00437 ap_gain=0.3 ap_delay1=0.00017 ap_delay2=0.0005
+main revsaw src=Fsaw3 release=1.3 relpower=.005
 
-osc somesaw1 saw f 0
-form somesawD1 detune somesaw1 0.01 0.033 0.04
-osc somesaw2 saw .5*f 0.01
-form somesawD2 detune somesaw2 0.05 -0.03 -0.02
-form somesaw mix somesawD1 .6*somesawD2
-env stutter expdecayrepeat 16. .125
-env slowdec expdecay 1.5
-main Supersaw stutter*slowdec*somesaw
-
-osc S01 sin f 0
-gac G01 0 1. 2. -.5 3. 2. 2. -.25 mode=global
-form S01w waveshape S01 1. 0.01 0.7 0.1 0.6 0.8
-main WShape S01 -.1*G01*S01 .1*G01*S01w
-
-filter Fsaw resolp somesaw1 200 .4
-main resolpsaw Fsaw
-
-#filter Fsaw2 allpass somesaw1 .8 3
-lfo stutter2 squ 8 .125 0
-form stuttersaw1 mix stutter2*somesaw1
-filter Fsaw2 comb stuttersaw1 .5*.5*.5 3 "pow(.9,5.)" 5
-main combsaw Fsaw2
-
-form stuttersaw12 pitchshift stuttersaw1 12
-env short expdecay 8
-form stuttersaw12e mix short*stuttersaw12
-filter Fsaw3 reverb stuttersaw12e 0.1 0.00297 0.00371 0.00411 0.00437 0.3 0.00017 0.0005
-main revsaw Fsaw3 rel=1.3 relpower=.005
-
+# not implemented for now (karplus-strong-guitar)
 #osc ksguitar guitar f
 #main KStrong ksguitar
 
-main justsaw somesaw1
+main justsaw src=somesaw1
 
-lfo sweep sin .25 scale=1500 shift=2000 mode=global
-filter BPsaw1 bandpass somesaw1 sweep 10 100
-main BPsaw BPsaw1
+lfo sweep shape=sin freq=.25 scale=1500 shift=2000 mode=global
+filter BPsaw1 shape=bandpass src=somesaw1 center=sweep bandwidth=10 N=100
+main BPsaw src=BPsaw1
 
-env stringenv adsr 0.2 0.3 0.8 0.2
-lfo stringvib sin 5.
-form fvib mix f 0.3*stringvib*stringenv
-osc saw2 saw fvib 0
-form saw2D detune saw2 0.01 0.011 -0.02
-env stringfilter adsr 0.5 0.5 0.4 0. mode=beat
-filter Fstr resolp saw2D 300*stringfilter 0.
-main stryngth1 stringenv*Fstr
+env stringenv attack=0.2 decay=0.3 sustain=0.8 release=0.2
+lfo stringvib shape=sin freq=5.
+form fvib mix src=f+0.3*stringvib*stringenv
+osc saw2 shape=saw freq=fvib
+form saw2D op=detune src=saw2 amount=0.01, 0.011, -0.02
+env stringfilter attack=0.5 decay=0.5 sustain=0.4 release=0. mode=beat
+filter Fstr shape=resolp src=saw2D cutoff=300*stringfilter
+main stryngth1 src=stringenv*Fstr release=0.2
 
-drum hut fmnoise 0 0.05 0 .3 2
-lfo acclfo squ 4. 0 0 mode=beat,global shift=.6 scale=.25
-maindrum HAT .4*acclfo*hut
-
-drum snr snare 6000 800 350 0.01 0.01 0.25 0.3 0.1 .7 0.05 0.3 0.3 1.6
-maindrum SNR snr
-
-filter snrrev reverb snr 0.15 0.000297 0.000371 0.000411 0.000437 0.2 0.000017 0.00005
-maindrum RVRBSNER snrrev rel=1
-
-#maindrum empty 0
-
+### OTHER SYNTHS ###
+!
 osc A1osc3 tri .5*f
 osc A1osc2 saw 2*f .4*A1osc3
 osc A1osc1 squ .25*f 0.25 0.2*A1osc2
 form A1osc1d detune A1osc1 0.004
-env shortenv ahd 0.0 0.2 0.2
+env shortenv attack=0.0 hold=0.2 decay=0.2 sustain=0
 form A1oscmix mix A1osc1d 0.8*A1osc2
 form A1oscmixW waveshape A1oscmix A1osc2 0.1 .3 0.3 0.8 0.8
-env shortdec ahd 0.0001 0.0001 0.4
+env shortdec attack=0.0001 hold=0.0001 decay=0.4 sustain=0
 filter A1oscmixF resolp A1oscmixW 800*shortdec .1
 main PercBass shortenv*A1oscmixF*5.
 
@@ -106,7 +76,7 @@ env A14_fenv adsr 2 0 1 2 mode=beat scale=600 shift="40.*sqrt(f)"
 osc A14_osc macesq f 0. 200 1 1 A14_fenv 30 0 0.1 -.01 0
 form A14_oscA mix 0.5*A14_env*A14_osc
 form A14_oscAD overdrive A14_oscA 0.8
-main A14_Kuh A14_env*A14_oscAD rel=2
+main A14_Kuh A14_env*A14_oscAD release=2
 
 env A15_env adsr 3 0 0.2 2 mode=beat
 env A15_fenv adsr 2 0 1 2 scale=100 shift="20.*sqrt(f)"
@@ -114,7 +84,7 @@ osc A15_osc1 macesq f 0 200 1 -1 A15_fenv 50 0 0 "0.01-0.008*_sin(0.25*Bproc+.25
 osc A15_osc2 macesq f 0 200 1 1 A15_fenv 30 0 0.1 -.01 "0.1+0.06*_sin(0.25*_t)"
 form A15_oscA mix 0.2*A15_osc1 0.3*A15_osc2
 form A15_oscAD overdrive A15_oscA 0.8
-main A15_Kuh A15_env*A15_oscAD rel=2
+main A15_Kuh A15_env*A15_oscAD release=2
 
 env A16_env adsr 1.5 2 .2 .8
 osc A16_osc1 saw f A16_lfo1
@@ -122,12 +92,12 @@ osc A16_osc2 saw f .25
 osc A16_osc3 saw f A16_lfo3
 lfo A16_lfo3 sin .5 scale=.2 shift=0 mode=time
 lfo A16_lfo1 sin 2 scale=.1 shift=.1 mode=time
-main A16_Supsaw 0.5*A16_env*A16_osc1 A16_env*A16_osc2 A16_env*A16_osc3 rel=.8
+main A16_Supsaw 0.5*A16_env*A16_osc1 A16_env*A16_osc2 A16_env*A16_osc3 release=.8
 
 env A17_env adsr 1.5 2 0.2 0.8
 env A17_fenv adsr 1.5 2.5 0.2 10 scale=100 shift=200
 osc A17_osc macesq f 0 200 1 -1 A17_fenv 20 0.3 3. 0.015 0
-main A17_pad? A17_env*A17_osc rel=.8
+main A17_pad? A17_env*A17_osc release=.8
 
 osc A10_1 tri 2*f
 lfo A10_lfo1 sin 4 scale=.00001 shift=1
@@ -148,7 +118,7 @@ osc M8_osc macesq f 0 200 1 -1 M8_fenv 20 0 0 0.018 0
 form M8_oscDQ quantize M8_osc 128
 form M8_oscDL lofi M8_oscDQ 8
 form M8_oscDLC chorus M8_oscDL 6 2e-3 1e-3 20
-main M8yStrng M8_env*M8_oscDL rel=0.8
+main M8yStrng M8_env*M8_oscDL release=0.8
 
 form bitdrop mix 1024 -512*Bproc
 osc M8bass_osc1 squ f 0 0
@@ -168,11 +138,11 @@ lfo A31_lfo5 tri 0.33 scale=1e-3 shift=.05
 form A31_mix mix .35*A31_osc1 .3*A31_osc2 .05*A31_osc3 .35*A31_osc4 .5*A31_osc5
 main M8yBuzz A31_envlfo*A31_mix
 
-env A32dec expdecay 15.
+env A32dec expdecay exponent=15.
 form A32_mix chorus A31_mix 2 2e-4 2e-2 .125 mode=beat
 form A32_mixT pitchshift A32_mix 24
 form A32_mixD delay A32_mixT 3 1. .0001 mode=beat
-main M8yBuzz2 .5*A32dec*A32_mix A32dec*A32_mixD rel=.5
+main M8yBuzz2 .5*A32dec*A32_mix A32dec*A32_mixD release=.5
 
 lfo A24_envlfo fract 16 0 0 overdrive=2.5
 osc A24_osc1 saw .99*f
@@ -185,9 +155,46 @@ lfo A24_someenv fract -16 0 .5 scale=300 shift=200 overdrive=4
 env A24_someenv2 adsr 0 0.2 0.2 0.5
 form A24_dep mix 200. .3*f
 filter A24_lp resolp A24_mix A24_dep .3
-main M8_ILike2 A24_someenv*A24_someenv2*A24_lp rel=.01
+main M8_ILike2 A24_someenv*A24_someenv2*A24_lp release=.01
 
 # macesq: mix= (-1 für saw, 0 für tri, sq für 1, HÄ? für 2)
 # macesaw(t, f, filterCO, filterQ, 0.010, 0.020, 0.015, 3.);
 # osc A16_osc1 macesq f 0 200 1 -1 filterCO filterQ filterRes filterResQ detune PW
 
+
+########### DRUMS ###########
+
+random f0 min=50 max=80 digits=1
+random f1 min=100 max=150 digits=1
+drum BDbody kick f0 f1 0.1 0.1 0.1 0.3 1.2 .05 .8 10 
+maindrum BD1 BDbody
+
+drum BDbody2 kick2 50 200 0.12 0.015 0.1 0.15 0.4 0.03 1. 5 10 0.8 1 1 1 .1 .1
+maindrum BD2 3.*BDbody2
+
+drum BDbody3 kick2 60 150 0.2 0.01 0.3 0.1 1.5 0.05 5. 5 10 0.8 1 1 1 .1 0
+maindrum BD3 2.*BDbody3
+# it sucks. should be similar to this one: -- maybe just copy it
+# s = vel * 2.*clamp(smoothstep(0.,0.01,_t)*smoothstep(-0.1,0.2,0.3-_t)*.1*MACESQ(_t, (60. + 150.*smoothstep(-0.3,0.,-_t)), 0., 100, 1, 1.,1.,.1,16.,10.,0.,0.) + (.7 * (smoothstep(0.,0.01,_t) * smoothstep(-0.2, 0.2, 0.3 - _t)) * _sin(_t*(60. + 150.*smoothstep(-0.3,0.,-t))*.5)) + s_crzy(10.*(1.-exp(-1000.*_t))*exp(-30.*_t) * _sin((300.-300.*_t)*_t)) + s_atan(40.*(1.-exp(-1000.*_t))*exp(-80.*_t) * _sin((1200.-1000.*sin(1000.*_t*sin(30.*_t)))*_t)),-1.5,1.5);}
+
+drum shaker fmnoise 0.03 0.1 0.1 0.9 0.9
+maindrum SHK .2*shaker 
+
+#drum sumnois fmnoise 0.0 0.01 1. 1. 1.
+#filter lpnoise resolp sumnois 9000 .1
+#maindrum LP_NOISE lpnoise release=.4
+
+drum explosion bitexplosion 1 2 2 1.5 2 1 1 
+maindrum EXPL explosion 
+
+drum hut fmnoise 0 0.05 0 .3 2
+lfo acclfo squ 4. 0 0 mode=beat,global shift=.6 scale=.25
+maindrum HAT .4*acclfo*hut
+
+drum snr snare 6000 800 350 0.01 0.01 0.25 0.3 0.1 .7 0.05 0.3 0.3 1.6
+maindrum SNR snr
+
+filter snrrev reverb snr 0.15 0.000297 0.000371 0.000411 0.000437 0.2 0.000017 0.00005
+maindrum RVRBSNER snrrev release=1
+
+#maindrum empty 0

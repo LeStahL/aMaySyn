@@ -610,8 +610,8 @@ class Ma2Widget(Widget):
         syn_rel = []
         max_drum_rel = 0
         for m in self.synatize_main_list:
-            if m['type'] == 'main': syn_rel.append((float(m['rel']) if 'rel' in m else 0))
-            elif m['type'] == 'maindrum': max_drum_rel = max(max_drum_rel, (float(m['rel']) if 'rel' in m else 0))
+            if m['type'] == 'main': syn_rel.append((float(m['release']) if 'release' in m else 0))
+            elif m['type'] == 'maindrum': max_drum_rel = max(max_drum_rel, (float(m['release']) if 'release' in m else 0))
         syn_rel.append(max_drum_rel)
         max_rel = max(syn_rel)
 

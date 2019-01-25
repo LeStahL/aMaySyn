@@ -24,5 +24,3 @@ float bandpassTEMPLATE(float time, float f, float tL, float fcenter, float bw, f
     
     return s_atan(M*M*y); // I DO NOT CARE ANYMORE
 }
-float bandpassTEMPLATE(float time, float f, float tL, float fcenter, float bw) { return bandpassTEMPLATE(time, f, tL, fcenter, bw, 32.); }
-

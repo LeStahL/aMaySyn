@@ -82,8 +82,10 @@ class SFXGLWidget():
 
         status = glGetShaderiv(self.shader, GL_COMPILE_STATUS)
         if status != GL_TRUE :
-            log = glGetShaderInfoLog(self.shader)
-            return log.decode('utf-8')
+            log = glGetShaderInfoLog(self.shader).decode('utf-8')
+            badline = int(log.split('(')[0].split(':')[1])
+            print(source.split('\n')[badline-1])
+            return log
         
         self.program = glCreateProgram()
         glAttachShader(self.program, self.shader)
