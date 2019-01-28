@@ -1,7 +1,7 @@
 uniform float iBlockOffset;
 uniform float iSampleRate;
 uniform float iVolume;
-uniform int iTexS;
+uniform int iTexSize;
 uniform sampler2D iSequence;
 uniform float iSequenceWidth;
 
