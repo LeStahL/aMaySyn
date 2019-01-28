@@ -196,7 +196,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                         if form['phase'] == '0':
                             _return = '_sin(' + phi + ')'
                         else:
-                            _return = '_sin(' + phi + ',' + instance(form['phase']) + ')'
+                            _return = '_sin_(' + phi + ',' + instance(form['phase']) + ')'
           
                     elif form['shape'] == 'saw':
                         _return = '(2.*fract(' + phi + '+' + instance(form['phase']) + ')-1.)'
@@ -205,13 +205,13 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                         if form['pw'] == '0':
                             _return = '_sq(' + phi + ')'
                         else:
-                            _return = '_sq(' + phi + ',' + instance(form['pw']) + ')'
+                            _return = '_sq_(' + phi + ',' + instance(form['pw']) + ')'
 
                     elif form['shape'] == 'psq':
                         if form['pw'] == '0':
                             _return = '_psq(' + phi + ')'
                         else:
-                            _return = '_psq(' + phi + ',' + instance(form['pw']) + ')'
+                            _return = '_psq_(' + phi + ',' + instance(form['pw']) + ')'
 
                     elif form['shape'] == 'tri':
                             _return = '_tri(' + phi + '+' + instance(form['phase']) + ')'

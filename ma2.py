@@ -877,7 +877,17 @@ class Ma2Widget(Widget):
         if not shader:
             shader = '''vec2 mainSound( float time ){ return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) ); }''' #assign for test purposes
         
-        full_shader = '#version 130\n uniform float iTexSize;\n uniform float iBlockOffset;\n uniform float iSampleRate;\n\n' + shader
+        full_shader = '#version 130\n uniform float iTexSize;\n uniform float iBlockOffset;\n uniform float iSampleRate;\n\n' + shader + '''
+
+void main()
+{
+   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
+   vec2 y = mainSound( t );
+   vec2 v  = floor((0.5+0.5*y)*65535.0);
+   vec2 vl = mod(v,256.0)/255.0;
+   vec2 vh = floor(v/256.0)/255.0;
+   gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
+}'''
 
         self.music = None
 

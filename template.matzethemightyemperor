@@ -2,16 +2,16 @@
 float clip(float a) { return clamp(a,-1.,1.); }
 float theta(float x) { return smoothstep(0., 0.01, x); }
 float _sin(float a) { return sin(2. * PI * mod(a,1.)); }
-float _sin(float a, float p) { return sin(2. * PI * mod(a,1.) + p); }
+float _sin_(float a, float p) { return sin(2. * PI * mod(a,1.) + p); }
 float _unisin(float a,float b) { return (.5*_sin(a) + .5*_sin((1.+b)*a)); }
 float _sq(float a) { return sign(2.*fract(a) - 1.); }
-float _sq(float a,float pwm) { return sign(2.*fract(a) - 1. + pwm); }
+float _sq_(float a,float pwm) { return sign(2.*fract(a) - 1. + pwm); }
 float _psq(float a) { return clip(50.*_sin(a)); }
-float _psq(float a, float pwm) { return clip(50.*(_sin(a) - pwm)); } 
+float _psq_(float a, float pwm) { return clip(50.*(_sin(a) - pwm)); } 
 float _tri(float a) { return (4.*abs(fract(a)-.5) - 1.); }
 float _saw(float a) { return (2.*fract(a) - 1.); }
-float quant(float a,float div,float invdiv) { return floor(div*a+.5)*invdiv; }
-float quanti(float a,float div) { return floor(div*a+.5)/div; }
+//float quant_(float a,float div,float invdiv) { return floor(div*a+.5)*invdiv; }
+//float quant(float a,float div) { return floor(div*a+.5)/div; }
 float freqC1(float note){ return 32.7 * pow(2.,note/12.); }
 float minus1hochN(int n) { return (1. - 2.*float(n % 2)); }
 float minus1hochNminus1halbe(int n) { return round(sin(.5*PI*float(n))); }
@@ -320,14 +320,4 @@ vec2 mainSound(float t)
     float stereo_delay = 2e-4;
       
     return vec2(mainSynth(t), mainSynth(t-stereo_delay));
-}
-
-void main()
-{
-   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
-   vec2 y = mainSound( t );
-   vec2 v  = floor((0.5+0.5*y)*65535.0);
-   vec2 vl = mod(v,256.0)/255.0;
-   vec2 vh = floor(v/256.0)/255.0;
-   gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
 }
