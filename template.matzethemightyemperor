@@ -204,7 +204,7 @@ float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, floa
     return atan(snd * env);
 }
 
-float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn, float Bvel, float Brel)
+float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn, float vel, float Brel)
 {
     float Bprog = B-Bon;
     float Bproc = Bprog/(Boff-Bon);
@@ -282,7 +282,7 @@ float mainSynth(float time)
             int plen = ptn_sep(ptn+1) - psep;
             
             int _noteU = plen-1;
-            for(int i=0; i<plen-1; i++) if(B < note_on(psep + i + 1) + trk_rel(trk)) {_noteU = i; break;}
+            for(int i=0; i<plen-1; i++) if(B < note_on(psep + i + 1)) {_noteU = i; break;}
 
             int _noteL = plen-1;
             for(int i=0; i<plen-1; i++) if(B <= note_off(psep + i ) + trk_rel(trk)) {_noteL = i; break;}
@@ -294,10 +294,12 @@ float mainSynth(float time)
 
                 if(trk_syn(trk) == drum_index)
                 {
-                    int Bdrum = int(mod(note_pitch(psep + _note), drum_synths));
+                    int Bdrum = int(note_pitch(psep + _note)); //int(mod(note_pitch(psep + _note), drum_synths));
 
                     if(Bdrum == 0) // "sidechaining"
+                    {
                         r_sidechain = 1. - smoothstep(Bon,Bon+1e-4,B) + smoothstep(Bon,Boff,B);
+                    }
                     else
                         d += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, mod_transp(tsep + _mod),
                                                      -Bdrum, note_vel(psep + _note), trk_rel(trk));
@@ -320,4 +322,14 @@ vec2 mainSound(float t)
     float stereo_delay = 2e-4;
       
     return vec2(mainSynth(t), mainSynth(t-stereo_delay));
+}
+
+void main()
+{
+   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
+   vec2 y = mainSound( t );
+   vec2 v  = floor((0.5+0.5*y)*65535.0);
+   vec2 vl = mod(v,256.0)/255.0;
+   vec2 vh = floor(v/256.0)/255.0;
+   gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
 }

@@ -405,7 +405,7 @@ class Ma2Widget(Widget):
             for t in self.tracks: t.prepareForPatternDeletion(self.getPattern())
             del self.patterns[self.patterns.index(pattern_to_delete)]
 
-    def clearSong(self):
+    def clearSong(self, no_renaming = False):
         del self.tracks[:]
         del self.patterns[:]
         self.tracks = [Track(synths = ['__None'], name = 'NJU TREK')]
@@ -416,7 +416,7 @@ class Ma2Widget(Widget):
         self.current_module = None
         self.current_note = None
 
-        self.renameSong()
+        if not no_renaming: self.renameSong()
         self.loadSynths(update = True)
 
     def setNumberInput(self, key):
@@ -512,12 +512,10 @@ class Ma2Widget(Widget):
                 
         if not os.path.isfile(filename):
             if backup: return
-            print(filename,'not around, trying to load test.may')
-            filename = 'test.may'
-            if not os.path.isfile(filename):
-                print('test.may not around, doing nothing.')
-                return
-        
+            print(filename,'not around, start new track of that name')
+            self.clearSong(no_renaming = True)
+            return
+                    
         self.loadSynths()
         print("... synths were reloaded. now read", filename)
 
@@ -646,7 +644,8 @@ class Ma2Widget(Widget):
         defcode += '#define NPTN ' + nP + '\n'
         defcode += '#define NNOT ' + nN + '\n'
         
-        seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off + max_rel) + ';\n' + 4*' '
+        #TODO: solve question - do I want max_mod_off here (perfect looping) or max_mod_off+max_rel (can listen to whole release decaying..)??
+        seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
         seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
         seqcode += 'float drum_synths = ' + GLfloat(len(drumkit)) + ';\n' + 4*' '
         if self.B_offset!=0: seqcode += 'time += '+'{:.4f}'.format(self.B_offset/self.BPM*60)+';\n' + 4*' '
@@ -877,17 +876,7 @@ class Ma2Widget(Widget):
         if not shader:
             shader = '''vec2 mainSound( float time ){ return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) ); }''' #assign for test purposes
         
-        full_shader = '#version 130\n uniform float iTexSize;\n uniform float iBlockOffset;\n uniform float iSampleRate;\n\n' + shader + '''
-
-void main()
-{
-   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
-   vec2 y = mainSound( t );
-   vec2 v  = floor((0.5+0.5*y)*65535.0);
-   vec2 vl = mod(v,256.0)/255.0;
-   vec2 vh = floor(v/256.0)/255.0;
-   gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
-}'''
+        full_shader = '#version 130\n uniform float iTexSize;\n uniform float iBlockOffset;\n uniform float iSampleRate;\n\n' + shader
 
         self.music = None
 

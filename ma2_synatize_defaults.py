@@ -5,15 +5,15 @@ def set_remaining_defaults(cid, cmd, form):
     requirements = ['id', 'type', 'mode']
     defaults = {}
     
-    if cmd == 'main':
+    if cmd in ['main', 'maindrum']:
         requirements.append('src')
         defaults.update({'release':'0', 'relpower':'1'})
-    
+   
     elif cmd == 'random': # TODO: TREAT DIFFERENTLY
         defaults.update({'min':'0', 'max':'1', 'digits':'3'})
 
     elif cmd == 'osc' or cmd == 'lfo':
-        defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0'})
+        defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0', 'overdrive':'0'})
 
         if cmd == 'osc':
             defaults.update({'shift':'0', 'scale':'1'})            
@@ -26,7 +26,7 @@ def set_remaining_defaults(cid, cmd, form):
                 # TODO: calibrate q (and rename)
                 # TODO: calibrate (resQ)
             elif form['shape'] == 'fm':
-                defaults.update({'lv1':'1', 'lv2':'0', 'lv3':'0', 'lv4':'0', 'fr1':'1', 'fr2':'1', 'fr3':'1', 'fr4':'1', 'fb1':'0', 'fb2':'0', 'fb3':'0', 'fb4':'0', 'algo':'0'})
+                defaults.update({'lv1':'1', 'lv2':'0', 'lv3':'0', 'lv4':'0', 'fr1':'1', 'fr2':'1', 'fr3':'1', 'fr4':'1', 'fb1':'0', 'fb2':'0', 'fb3':'0', 'fb4':'0', 'algo':'0', 'parscale':'1'})
                 
         except:
             pass
@@ -35,20 +35,20 @@ def set_remaining_defaults(cid, cmd, form):
         defaults.update({'shape':'fmnoise'})
         
         try:
+            if form['shape'] in ['kick', 'kick2']: # TODO CALIBRATE
+                defaults.update({'freq_start':'150', 'freq_end':'60', 'freq_decay':'.2', 'attack':'.01', 'hold':'.3', 'decay':'.1', 'click_amp':'1.5', 'click_delay':'.05', 'click_timbre':'5.'})
+            
             if form['shape'] == 'fmnoise':
                 defaults.update({'attack':'1e-3', 'decay':'.1', 'sustain':'.1', 'timbre1':'1', 'timbre2':'1'})
-            if form['shape'] == 'kick' or form['shape'] == 'kick2': # TODO CALIBRATE
-                defaults.update({'freq_start':'150', 'freq_end':'60', 'freq_decay':'.2', 'attack':'.01', 'hold':'.3', 'decay':'.1', 'click_amp':'1.5', 'click_delay':'.05', 'click_timbre':'5.'})
-            if form['shape'] == 'kick': 
-                defaults.update({'overdrive':'1.2'})
+            elif form['shape'] == 'kick': 
+                defaults.update({'overdrive':'.2'})
             elif form['shape'] == 'kick2': # TODO: CALIBRATE (might need resonance? idk)
-                defaults.update({'sq_phase':'5', 'sq_nmax':'10', 'sq_mix':'.8', 'sq_inr':'1', 'sq_ndecay':'1', 'sq_res':'1', 'sq_resQ':'1', 'sq_detune':'0'})
+                defaults.update({'sq_phase':'5', 'sq_nmax':'10', 'sq_mix':'.8', 'sq_inr':'1', 'sq_ndecay':'1', 'sq_res':'1', 'sq_resq':'1', 'sq_detune':'0'})
             elif form['shape'] == 'snare': # TODO: CALIBRATE
                 defaults.update({'freq0':'6000', 'freq1':'800', 'freq2':'350', 'freqdecay0':'.01', 'freqdecay1':'.01', 'decay':'.25', 'sustain':'.3', 'release':'.1', \
-                                 'noise_amount':'.7', 'noise_attack':'.05', 'noise_decay':'.3', 'noise_sustain':'.3', 'overdrive':'1.6'})
+                                 'noise_amount':'.7', 'noise_attack':'.05', 'noise_decay':'.3', 'noise_sustain':'.3', 'overdrive':'0.6'})
             elif form['shape'] == 'bitexplosion':
-                defaults.update({'nvar':'0', 'freqvar':'2', 'twostepvar':'2', 'var1':'1', 'var2':'1', 'var3':'1', 'decay':'1'})
-                #TODO: whatever this is going to be... calibrate some day.
+                defaults.update({'nvar':'0', 'freqvar':'1', 'twostepvar':'1', 'var1':'1', 'var2':'1', 'var3':'1', 'decay':'1'})
                 
         except:
             pass
@@ -68,11 +68,13 @@ def set_remaining_defaults(cid, cmd, form):
         requirements.extend(['shape', 'src'])
 
         try:
-            if form['shape'] == 'resolp' or form['shape'] == 'resohp':
+            if form['shape'] in ['resolp', 'resohp']:
                 defaults.update({'cutoff':'200', 'res':'0'})
                 #TODO: calibrate "cutoff"! - and this isn't really cutoff! - find that thing out.
             elif form['shape'] == 'allpass':
                 defaults.update({'gain':'.9', 'ndelay':'1'})
+            elif form['shape'] in ['avghp', 'avglp']:
+                defaults.update({'N':'2'})
             elif form['shape'] == 'bandpass':
                 defaults.update({'center':'500', 'bandwidth':'100', 'n':'32'}) # TODO: this is still not working right. fix, if possible.
             elif form['shape'] == 'comb':
@@ -97,7 +99,7 @@ def set_remaining_defaults(cid, cmd, form):
                 defaults.update({'steps':'12'})
                 
             elif form['op'] == 'quantize':
-                defaults.update({'quant':'32'})
+                defaults.update({'bits':'32'})
                 
             elif form['op'] == 'overdrive':
                 defaults.update({'gain':'1.33'})

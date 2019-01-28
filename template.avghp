@@ -1,0 +1,15 @@
+float avghpTEMPLATE(float time, float f, float tL, float N)
+{    
+    int iN = int(N);
+
+    float _TIME = time;
+    float orig = INSTANCE;
+    
+    float avg = 0.;    
+    for(int i = 0; i < iN; i++)
+    {
+          _TIME = time - float(i)*Tsample;
+          avg += INSTANCE / N;
+    }
+    return orig - avg;
+}

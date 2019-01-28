@@ -133,6 +133,8 @@ class Pattern():
         if notes:
             for n in notes:
                 n.note_pitch = (n.note_pitch + inc) % self.max_note
+                #idea: for drum patterns - skip those drums ('notes') that already have something in there
+                #TODO: different kind of drum editor! completely grid-based!!
 
     def stretchNote(self, inc):
         # here I had lots of possibilities .. is inc > or < 0? but these where on the monophonic synth. Let's rethink polyphonic!
