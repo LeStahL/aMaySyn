@@ -19,10 +19,11 @@ from kivy.uix.textinput import TextInput
 from kivy.animation import Animation
 from itertools import accumulate
 from functools import partial
-from numpy import clip
+from struct import pack, unpack
+from numpy import clip, ceil, sqrt
 from math import sin, exp, pi
 from datetime import *
-import pygame
+import pygame, wave
 import csv, re
 import operator
 import sys
@@ -33,7 +34,6 @@ from ma2_pattern import *
 from ma2_widgets import *
 from ma2_synatize import synatize, synatize_build
 from SFXGLWidget import *
-
 
 GLfloat = lambda f: str(int(f))  + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
 
@@ -601,73 +601,172 @@ class Ma2Widget(Widget):
         # ignore empty tracks
         tracks = [t for t in self.tracks if t.modules]
 
+        actually_used_patterns = [m.pattern for t in tracks for m in t.modules]
+        patterns = [p for p in self.patterns if p in actually_used_patterns]
+
         track_sep = [0] + list(accumulate([len(t.modules) for t in tracks]))
-        pattern_sep = [0] + list(accumulate([len(p.notes) for p in self.patterns]))
+        pattern_sep = [0] + list(accumulate([len(p.notes) for p in patterns]))
         
         max_mod_off = max(t.getLastModuleOff() for t in tracks)
 
         nT  = str(len(tracks))
         nT1 = str(len(tracks) + 1)
         nM  = str(track_sep[-1])
-        nP  = str(len(self.patterns))
-        nP1 = str(len(self.patterns) + 1)
+        nP  = str(len(patterns))
+        nP1 = str(len(patterns) + 1)
         nN  = str(pattern_sep[-1])
-
+        
         gf = open("template.matzethemightyemperor")
         glslcode = gf.read()
         gf.close()
 
         self.loadSynths()
         actually_used_synths = set(t.getSynthName()[2:] for t in self.tracks)
-        actually_used_drums = set(n.note_pitch for p in self.patterns if p.synth_type == 'D' for n in p.notes)
+        actually_used_drums = set(n.note_pitch for p in patterns if p.synth_type == 'D' for n in p.notes)
         
         syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
 
         # get release times
         syn_rel = []
+        max_rel = 0
         max_drum_rel = 0
+        print(self.synatize_main_list)
         for m in self.synatize_main_list:
-            if m['type'] == 'main': syn_rel.append((float(m['release']) if 'release' in m else 0))
-            elif m['type'] == 'maindrum': max_drum_rel = max(max_drum_rel, (float(m['release']) if 'release' in m else 0))
-        syn_rel.append(max_drum_rel)
-        max_rel = max(syn_rel)
+            if m['type'] == 'main':
+                syn_rel.append((float(m['release']) if 'release' in m else 0))
+                if m['id'] in actually_used_synths:
+                    max_rel = max(max_rel, syn_rel[-1])
+            elif m['type'] == 'maindrum':
+                max_drum_rel = max(max_drum_rel, (float(m['release']) if 'release' in m else 0))
 
-        seqcode =  'int NO_trks = ' + nT + ';\n' + 4*' '
-        seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
-        seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
-        seqcode += 'float trk_norm[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
-        seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_rel[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
-        seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
-        seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
-        seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '
-        seqcode += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.transpose) for t in tracks for m in t.modules) + ');\n' + 4*' '
-        seqcode += 'float max_mod_off = ' + GLfloat(max_mod_off+max_rel) + ';\n' + 4*' '
+        syn_rel.append(max_drum_rel)
+
+        defcode  = '#define NTRK ' + nT + '\n'
+        defcode += '#define NMOD ' + nM + '\n'
+        defcode += '#define NPTN ' + nP + '\n'
+        defcode += '#define NNOT ' + nN + '\n'
+        
+        seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off + max_rel) + ';\n' + 4*' '
         seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
         seqcode += 'float drum_synths = ' + GLfloat(len(drumkit)) + ';\n' + 4*' '
-        seqcode += 'int NO_ptns = ' + nP + ';\n' + 4*' '
-        seqcode += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n' + 4*' '
-        seqcode += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_on) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
-        seqcode += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_off) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
-        seqcode += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
-        seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
-
         if self.B_offset!=0: seqcode += 'time += '+'{:.4f}'.format(self.B_offset/self.BPM*60)+';\n' + 4*' '
 
-        glslcode = glslcode.replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("const float BPM = 80.;","const float BPM = "+GLfloat(self.BPM)+";").replace("//FILTERCODE",filtercode)
+        print("START TEXTURE")
         
+        fmt = '@e'
+        tex = b''
+        #seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
+        for s in track_sep:
+            tex += pack(fmt, float(s))
+        #seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
+        for t in tracks:
+            tex += pack(fmt, float(t.getSynthIndex()+1))
+        #seqcode += 'float trk_norm[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
+        for t in tracks:
+            tex += pack(fmt, float(t.getNorm()))
+        #seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_rel[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
+        for t in tracks:
+            tex += pack(fmt, float(syn_rel[t.getSynthIndex()]))
+        #seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        for t in tracks:
+            for m in t.modules:
+                tex += pack(fmt, float(m.mod_on))
+        #seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        for t in tracks:
+            for m in t.modules:
+                tex += pack(fmt, float(m.getModuleOff()))
+        #seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        for t in tracks:
+            for m in t.modules:
+                tex += pack(fmt, float(patterns.index(m.pattern))) # this could use some purge-non-used-patterns beforehand...
+        #seqcode += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.transpose) for t in tracks for m in t.modules) + ');\n' + 4*' '
+        for t in tracks:
+            for m in t.modules:
+                tex += pack(fmt, float(m.transpose))
+        #seqcode += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n' + 4*' '
+        for s in pattern_sep:
+            tex += pack(fmt, float(s))
+        #seqcode += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_on) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
+        for p in patterns:
+            for n in p.notes:
+                tex += pack(fmt, float(n.note_on))
+        #seqcode += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_off) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
+        for p in patterns:
+            for n in p.notes:
+                tex += pack(fmt, float(n.note_off))
+        #seqcode += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
+        for p in patterns:
+            for n in p.notes:
+                tex += pack(fmt, float(n.note_pitch))
+        #seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
+        for p in patterns:
+            for n in p.notes:
+                tex += pack(fmt, float(n.note_vel * .01))
+                
+        texlength = int(len(tex))
+        while ((texlength % 4) != 0):
+            tex += bytes(10)
+            texlength += 1
+
+        texs = str(int(ceil(sqrt(float(texlength)/4.))))
+
+        # Generate output header file
+        array = []
+        arrayf = []
+        for i in range(int(ceil(texlength/2))):
+            array += [ unpack('@H', tex[2*i:2*i+2]) ][0] 
+            arrayf += [ unpack(fmt, tex[2*i:2*i+2]) ][0]
+
+        text = "// Generated by tx210 / aMaySyn (c) 2018 NR4&QM/Team210\n\n#ifndef SEQUENCE_H\n#define SEQUENCE_H\n\n"
+        text += "// Data:\n//"
+        for val in arrayf:
+            text += ' ' + str(val) + ','
+        text += '\n'
+        text += "const unsigned short sequence_texture[{:d}]".format(int(ceil(texlength/2)))+" = {"
+        for val in array[:-1]:
+            text += str(val) + ',' 
+        text += str(array[-1]) + '};\n'
+        text += "const int sequence_texture_size = " + str(texs) + ";"
+        text += '\n#endif\n'
+
+        # Write to file
+        with open("sequence.h", "wt") as f:
+            f.write(text)
+            f.close()
+
+        print("TEXTURE FILE WRITTEN (sequence.h)")
+
+        glslcode = glslcode.replace("//DEFCODE",defcode).replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode)\
+                           .replace("//BPMCODE","const float BPM = "+GLfloat(self.BPM)+";").replace("//FILTERCODE",filtercode)
+
+        glslcode = self.purgeExpendables(glslcode)
+
+        with open("template.textureheader") as f:
+            texheadcode = f.read()
+            f.close()
+
+        glslcode_frag = '#version 130\n' + glslcode.replace("//TEXTUREHEADER", texheadcode)
+
+        with open("sfx.frag", "w") as out_file:
+            out_file.write(glslcode_frag)
+            
+        print("GLSL CODE WRITTEN (sfx.frag) -- NR4-compatible fragment shader")
+
+        # "for shadertoy" version
+        tex_n = str(int(ceil(texlength/2)))
+        texcode = 'const float sequence_texture[' + tex_n + '] = float[' + tex_n + '](' + ','.join(map(GLfloat, arrayf)) + ');\n'
+
+        glslcode = glslcode.replace("//TEXCODE",texcode).replace('//TEXTUREHEADER', 'float rfloat(int off){return sequence_texture[off];}\n')
+
         with open(filename, "w") as out_file:
             out_file.write(glslcode)
 
-        glslcode = self.purgeExpendables(glslcode)
-        
+        print("GLSL CODE WRITTEN (" + filename + ") - QM-compatible standalone fragment shader")
+
         pyperclip.copy(glslcode)
         
-        print()
-        print(seqcode)
-    
         if compileGL:
             self.compileShader(glslcode)
-
 
     def purgeExpendables(self, code):
         func_list = {}
@@ -774,39 +873,18 @@ class Ma2Widget(Widget):
         self._keyboard_request()
         self.update()        
 
-    def compileShader(self, shader):
-        self.defaultshader = '''vec2 mainSound( float time )
-{
-    // A 440 Hz wave that attenuates quickly overt time
-    return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) );
-}'''
-        self.prefix = '''#version 130
+    def compileShader(self, shader, render_to_file = False):
+        if not shader:
+            shader = '''vec2 mainSound( float time ){ return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) ); }''' #assign for test purposes
+        
+        full_shader = '#version 130\n uniform float iTexSize;\n uniform float iBlockOffset;\n uniform float iSampleRate;\n\n' + shader
 
-uniform float iTexSize;
-uniform float iBlockOffset;
-uniform float iSampleRate;\n\n'''
-        self.suffix = '''void main()
-{
-   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
-   vec2 y = mainSound( t );
-   vec2 v  = floor((0.5+0.5*y)*65535.0);
-   vec2 vl = mod(v,256.0)/255.0;
-   vec2 vh = floor(v/256.0)/255.0;
-   gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
-}'''
         self.music = None
 
-        #shader = self.defaultshader #test
-
-        self.callSFXLGLWidget(self.prefix + shader + self.suffix)
-         
-        self.update()
-
-    def callSFXLGLWidget(self, shader):
         starttime = datetime.datetime.now()
 
         glwidget = SFXGLWidget(self)                 
-        self.log = glwidget.newShader(shader)
+        self.log = glwidget.newShader(full_shader)
         print(self.log)
         self.music = glwidget.music
         del glwidget
@@ -825,7 +903,16 @@ uniform float iSampleRate;\n\n'''
         el = endtime - starttime
 
         print("Execution time", str(el.total_seconds()) + 's')
-        
+
+        if render_to_file:
+            sfile = wave.open('file.wav','w')
+            sfile.setframerate(44100)
+            sfile.setnchannels(2)
+            sfile.setsampwidth(2)
+            sfile.writeframesraw(self.music)
+            sfile.close()        
+
+        self.update()
 
 class InputPrompt(ModalView):
     

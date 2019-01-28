@@ -28,7 +28,7 @@ class Track():
     def getFirstModule(self):             return self.modules[0]  if len(self.modules) > 0 else None
     def getFirstModuleOn(self):           return self.getFirstModule().mod_on if self.getFirstModule() else None
     def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
-    def getLastModuleOff(self):           return (self.getLastModule().mod_on + self.getLastModule().pattern.length) if self.getLastModule() else 0
+    def getLastModuleOff(self):           return self.getLastModule().getModuleOff() if self.getLastModule() else 0
 
     def getSynthName(self):               return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else '__None'
     def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] not in ['I','D'] and self.current_synth != -1 else self.current_synth

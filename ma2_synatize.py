@@ -221,7 +221,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                             inst_nmax = instance(str(int(float(form['nmax']))), force_int=True)
                             inst_ninc = instance(str(int(float(form['ninc']))), force_int=True)
                             _return ='MADD(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + inst_nmax + ',' + inst_ninc + ',' \
-                                             + ','.join(instance(form[p]) for p in ['mix', 'cutoff', 'filterq', 'res', 'resQ', 'detune'])+ ',' + keyF + ')'
+                                             + ','.join(instance(form[p]) for p in ['mix', 'cutoff', 'q', 'res', 'resq', 'detune'])+ ',' + keyF + ')'
                                          
                     elif form['shape'] == 'fract':
                             _return = 'fract(' + phi + '+' + instance(form['phase']) + ')'
@@ -303,10 +303,10 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
             elif form['type']=='env':
                 tvar = '_BPROG' if 'beat' in form['mode'] else '_PROG'
                 Lvar = 'L' if 'beat' in form['mode'] else 'tL'
-                if form['shape'] == 'ahdsr':
-                    _return = 'env_AHDSR('+tvar+','+Lvar+','+instance(form['attack'])+',0.,'+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
-                elif form['shape'] == 'ahdsrexp':
-                    _return = 'env_AHDSRexp('+tvar+','+Lvar+','+instance(form['attack'])+',0.,'+instance(form['decay'])+','+instance(form['sustain'])+','+instance(form['release'])+')'
+                if form['shape'] == 'ahdsr' or form['shape'] == 'adsr':
+                    _return = 'env_AHDSR('+tvar+','+Lvar+','+','.join(instance(form[p]) for p in ['attack', 'hold', 'decay', 'sustain', 'release'])+')'
+                elif form['shape'] == 'ahdsrexp' or form['shape'] == 'adsrexp':
+                    _return = 'env_AHDSRexp('+tvar+','+Lvar+','+','.join(instance(form[p]) for p in ['attack', 'hold', 'decay', 'sustain', 'release'])+')'
                 elif form['shape'] == 'doubleslope':
                     _return = 'doubleslope('+tvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+')'
                 elif form['shape'] == 'ss':
@@ -338,7 +338,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
             elif form['type']=='filter':
                 pars = []
                 if form['shape'] == 'resolp' or form['shape'] == 'resohp':
-                    pars = ['cutoff', 'reso']
+                    pars = ['cutoff', 'res']
                 elif form['shape'] == 'allpass':
                     pars = ['gain', 'ndelay']
                 elif form['shape'] == 'bandpass':

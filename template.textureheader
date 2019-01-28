@@ -1,0 +1,30 @@
+uniform float iBlockOffset;
+uniform float iSampleRate;
+uniform float iVolume;
+uniform int iTexS;
+uniform sampler2D iSequence;
+uniform float iSequenceWidth;
+
+// Read short value from texture at index off
+float rshort(float off)
+{
+    float hilo = mod(off, 2.);
+    off *= .5;
+    vec2 ind = (vec2(mod(off, iSequenceWidth), floor(off/iSequenceWidth))+.05)/iSequenceWidth;
+    vec4 block = texture(iSequence, ind);
+    vec2 data = mix(block.rg, block.ba, hilo);
+    return round(dot(vec2(255., 65280.), data));
+}
+
+// Read float value from texture at index off
+float rfloat(int off)
+{
+    float d = rshort(float(off));
+    float sign = floor(d/32768.),
+        exponent = floor(d/1024.-sign*32.),
+        significand = d-sign*32768.-exponent*1024.;
+
+    if(exponent == 0.)
+         return mix(1., -1., sign) * 5.960464477539063e-08 * significand;
+    return mix(1., -1., sign) * (1. + significand * 9.765625e-4) * pow(2.,exponent-15.);
+}

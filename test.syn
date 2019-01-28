@@ -84,26 +84,32 @@ form A15_oscA  mix src=0.2*A15_osc1+0.3*A15_osc2
 form A15_oscAD overdrive src=A15_oscA gain=1.4
 main A15_Kuh   src=A15_env*A15_oscAD release=2
 
+env A16_env     attack=1.5 decay=2 sustain=.2 release=.8
+osc A16_osc1    shape=saw freq=f phase=A16_lfo1
+osc A16_osc2    shape=saw freq=f phase=.25
+osc A16_osc3    shape=saw freq=f phase=A16_lfo3
+lfo A16_lfo3    shape=sin freq=.5 scale=.2 shift=0 mode=time
+lfo A16_lfo1    shape=sin freq=2 scale=.1 shift=.1 mode=time
+main A16_Supsaw src=0.5*A16_env*A16_osc1+A16_env*A16_osc2+A16_env*A16_osc3 release=.8
+
+env A17_env attack=1.5 decay=2 sustain=0.2 release=0.8
+env A17_fenv attack=1.5 decay=2.5 sustain=0.2 release=10 scale=100 shift=200
+osc A17_osc shape=madd freq=f nmax=200 ninc=1 mix=-1 cutoff=A17_fenv q=20 res=0.3 resq=3. detune=0.015 pw=0
+main A17_pad? src=A17_env*A17_osc release=.8
+
+
+
+drum explosion shape=bitexplosion nvar=1 freqvar=2 twostepvar=2 var1=1.5 var2=2 var3=1 decay=1 
+maindrum EXPL src=explosion release=.5
+
+
 !
 
-env A16_env adsr 1.5 2 .2 .8
-osc A16_osc1 saw f A16_lfo1
-osc A16_osc2 saw f .25
-osc A16_osc3 saw f A16_lfo3
-lfo A16_lfo3 sin .5 scale=.2 shift=0 mode=time
-lfo A16_lfo1 sin 2 scale=.1 shift=.1 mode=time
-main A16_Supsaw 0.5*A16_env*A16_osc1 A16_env*A16_osc2 A16_env*A16_osc3 release=.8
-
-env A17_env adsr 1.5 2 0.2 0.8
-env A17_fenv adsr 1.5 2.5 0.2 10 scale=100 shift=200
-osc A17_osc madd f 0 200 1 -1 A17_fenv 20 0.3 3. 0.015 0
-main A17_pad? A17_env*A17_osc release=.8
-
-osc A10_1 tri 2*f
-lfo A10_lfo1 sin 4 scale=.00001 shift=1
-osc A10_2 tri 0.999*2*A10_lfo1*f
-osc A10_3 saw 5.01*f scale=0.2
-osc A10_4 saw 14.01*f scale=0.2
+osc A10_1 shape=tri freq=2*f
+lfo A10_lfo1 shape=sin freq=4 scale=.00001 shift=1
+osc A10_2 shape=tri freq=0.999*2*A10_lfo1*f
+osc A10_3 shape=saw freq=5.01*f scale=0.2
+osc A10_4 shape=saw freq=14.01*f scale=0.2
 main A10_saws A10_1 A10_2 .2*A10_3 .2*A10_3
 
 lfo A13_lfo sin 0.21 scale=.5 shift=.2
@@ -183,9 +189,6 @@ maindrum SHK .2*shaker
 #drum sumnois fmnoise 0.0 0.01 1. 1. 1.
 #filter lpnoise resolp sumnois 9000 .1
 #maindrum LP_NOISE lpnoise release=.4
-
-drum explosion bitexplosion 1 2 2 1.5 2 1 1 
-maindrum EXPL explosion 
 
 drum hut fmnoise 0 0.05 0 .3 2
 lfo acclfo squ 4. 0 0 mode=beat,global shift=.6 scale=.25

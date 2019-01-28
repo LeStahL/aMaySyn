@@ -22,8 +22,8 @@ def set_remaining_defaults(cid, cmd, form):
 
         try:
             if form['shape'] == 'madd':
-                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'filterq':'3', 'res':'0', 'resq': '3', 'detune':'1e-3'})
-                # TODO: calibrate filterQ (and rename)
+                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'q':'3', 'res':'0', 'resq': '3', 'detune':'1e-3'})
+                # TODO: calibrate q (and rename)
                 # TODO: calibrate (resQ)
             elif form['shape'] == 'fm':
                 defaults.update({'lv1':'1', 'lv2':'0', 'lv3':'0', 'lv4':'0', 'fr1':'1', 'fr2':'1', 'fr3':'1', 'fr4':'1', 'fb1':'0', 'fb2':'0', 'fb3':'0', 'fb4':'0', 'algo':'0'})
