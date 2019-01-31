@@ -1,7 +1,7 @@
 float bandpassTEMPLATE(float time, float f, float tL, float fcenter, float bw, float M)
 {
     float y = 0.;
-    
+        
     float facM = 2.*PI/M;
     float facL = 2.*PI*Tsample * (fcenter - bw);
     float facH = 2.*PI*Tsample * (fcenter + bw);

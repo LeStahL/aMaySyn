@@ -298,7 +298,8 @@ float mainSynth(float time)
 
                     if(Bdrum == 0) // "sidechaining"
                     {
-                        r_sidechain = 1. - smoothstep(Bon,Bon+1e-4,B) + smoothstep(Bon,Boff,B);
+                        float Bproc = (B-Bon)/(Boff-Bon);
+                        r_sidechain = min(r_sidechain, 1. - smoothstep(Bon,Bon+1e-4,B) + pow(Bproc,10.));
                     }
                     else
                         d += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, mod_transp(tsep + _mod),
@@ -313,7 +314,7 @@ float mainSynth(float time)
         }
     }
 
-    return s_atan(s_atan(r_sidechain * r + d));
+    return s_atan(r_sidechain * r + d);
 }
 
 vec2 mainSound(float t)

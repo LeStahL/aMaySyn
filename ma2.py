@@ -139,6 +139,9 @@ class Ma2Widget(Widget):
             elif k == 'u':                      self.saveCSV(backup = True)
             elif k == 'z':                      self.loadCSV(backup = True)
 
+        elif 'shift' in modifiers:
+            pass
+
         else:
             if k == 'a':                        self.getTrack().switchSynth(-1, debug = self.debugMode)
             elif k == 's':                      self.getTrack().switchSynth(+1, debug = self.debugMode)
@@ -189,10 +192,7 @@ class Ma2Widget(Widget):
 
         if(self.thePtnWidget.active) and self.getPattern():
             if 'shift' in modifiers and 'ctrl' in modifiers:
-                if   k == 'left':               self.getPattern().moveNote(-1/32)
-                elif k == 'right':              self.getPattern().moveNote(+1/32)
-
-                elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step, scale = True)
+                if   k == 'pageup':             self.getPattern().stretchPattern(+inc_step, scale = True)
                 elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step, scale = True)
 
             elif 'shift' in modifiers:
@@ -647,7 +647,6 @@ class Ma2Widget(Widget):
         #TODO: solve question - do I want max_mod_off here (perfect looping) or max_mod_off+max_rel (can listen to whole release decaying..)??
         seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
         seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
-        seqcode += 'float drum_synths = ' + GLfloat(len(drumkit)) + ';\n' + 4*' '
         if self.B_offset!=0: seqcode += 'time += '+'{:.4f}'.format(self.B_offset/self.BPM*60)+';\n' + 4*' '
 
         print("START TEXTURE")
