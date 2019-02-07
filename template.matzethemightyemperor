@@ -265,50 +265,48 @@ float mainSynth(float time)
     for(int trk = 0; trk < NTRK; trk++)
     {
         int tsep = trk_sep(trk);
-        int tlen = trk_sep(trk+1) - tsep;
+        int tsep1 = trk_sep(trk+1);
 
-        int _modU = tlen-1;
-        for(int i=0; i<tlen-1; i++) if(BT < mod_on(tsep + i)) {_modU = i; break;}
+        int _modU = tsep1 - 1;
+        for(int i=tsep; i<tsep1-1; i++) if(BT < mod_on(i)) {_modU = i; break;}
                
-        int _modL = tlen-1;
-        for(int i=0; i<tlen-1; i++) if(BT < mod_off(tsep + i) + trk_rel(trk)) {_modL = i; break;}
+        int _modL = tsep - 1;
+        for(int i=tsep; i<tsep1-1; i++) if(BT < mod_off(i) + trk_rel(trk)) {_modL = i; break;}
        
         for(int _mod = _modL; _mod <= _modU; _mod++)
         {
-            float B = BT - mod_on(tsep + _mod);
+            float B = BT - mod_on(_mod);
 
-            int ptn = mod_ptn(tsep + _mod);
+            int ptn = mod_ptn(_mod);
             int psep = ptn_sep(ptn);
-            int plen = ptn_sep(ptn+1) - psep;
-            
-            int _noteU = plen-1;
-            for(int i=0; i<plen-1; i++) if(B < note_on(psep + i + 1)) {_noteU = i; break;}
+            int psep1 = ptn_sep(ptn+1);
+                         
+            int _noteU = psep1 - 1;
+            for(int i=psep; i<psep1-1; i++) if(B < note_on(i + 1)) {_noteU = i; break;}
 
-            int _noteL = plen-1;
-            for(int i=0; i<plen-1; i++) if(B <= note_off(psep + i ) + trk_rel(trk)) {_noteL = i; break;}
+            int _noteL = psep1 - 1;
+            for(int i=psep; i<psep1-1; i++) if(B <= note_off(i ) + trk_rel(trk)) {_noteL = i; break;}
            
             for(int _note = _noteL; _note <= _noteU; _note++)
             {
-                Bon    = note_on(psep + _note);
-                Boff   = note_off(psep + _note);
+                Bon  = note_on(_note);
+                Boff = note_off(_note);
 
                 if(trk_syn(trk) == drum_index)
                 {
-                    int Bdrum = int(note_pitch(psep + _note)); //int(mod(note_pitch(psep + _note), drum_synths));
+                    int Bdrum = int(note_pitch(_note));
 
                     if(Bdrum == 0) // "sidechaining"
                     {
                         float Bproc = (B-Bon)/(Boff-Bon);
-                        r_sidechain = min(r_sidechain, 1. - smoothstep(Bon,Bon+1e-4,B) + pow(Bproc,10.));
+                        r_sidechain = min(r_sidechain, 1. - smoothstep(Bon,Bon+1e-4,B) + pow(Bproc,8.));
                     }
                     else
-                        d += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, mod_transp(tsep + _mod),
-                                                     -Bdrum, note_vel(psep + _note), trk_rel(trk));
+                        d += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, mod_transp(_mod), -Bdrum, note_vel(_note), trk_rel(trk));
                 }
                 else
                 {
-                    r += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, note_pitch(psep+_note) + mod_transp(tsep+_mod),
-                                                 trk_syn(trk), note_vel(psep + _note), trk_rel(trk));
+                    r += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, note_pitch(_note) + mod_transp(_mod), trk_syn(trk), note_vel(_note), trk_rel(trk));
                 }
             }
         }

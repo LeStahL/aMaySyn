@@ -395,42 +395,36 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
         syncode = "s = 0.; //some annoying weirdo forgot to define the main form!"
 
     else:
-        if len(main_list)==1:
-            syncode = "s = "
-            for term in main_list[0]['src']:
-                syncode += instance(term) + (newlineplus if term != main_list[0]['src'][-1] else ';')
-           
-        else:
-            #print('BUILDING MAIN LIST:', main_list, actually_used_synths)
-            syncount = 1
-            drumcount = 1
-            syncode = 'if(Bsyn == 0){}\n' + 4*' '
-            for form_main in main_list:
-                if form_main['type']!='main': continue
-                sources = form_main['src'].split(',')
-                if actually_used_synths is None or form_main['id'] in actually_used_synths:
-                    syncode += 'else if(Bsyn == ' + str(syncount) + '){\n' + 6*' ' + 's = '
-                    for term in sources:
-                        syncode += instance(term) + (newlineplus if term != sources[-1] else ';')
-                    if 'relpower' in form_main and form_main['relpower'] != '1':
-                        syncode += '\nenv = theta(B-Bon)*pow(1.-smoothstep(Boff, Boff+Brel, B),'+form_main['relpower']+');'
-                    syncode += newlineclosingbrace
-                syncount += 1
-            
-            syncode += '\n'+4*' '
-            
-            drumcount = 1
-            for form_main in main_list:
-                if form_main['type']!='maindrum': continue
-                sources = form_main['src'].split(',')
-                if actually_used_drums is None or drumcount in actually_used_drums:
-                    syncode += 'else if(Bsyn == -' + str(drumcount) + '){\n' + 6*' ' + 's = '
-                    if 'amp' in form_main and form_main['amp'] != '1': #in case you want e.g. velocity scaling for filtered drums... not pretty, but could work.
-                        s += instance(form['amp']) + '*'
-                    for term in sources:
-                        syncode += instance(term) + (newlineplus if term != sources[-1] else ';')
-                    syncode += newlineclosingbrace
-                drumcount += 1
+        #print('BUILDING MAIN LIST:', main_list, actually_used_synths)
+        syncount = 1
+        drumcount = 1
+        syncode = 'if(Bsyn == 0){}\n' + 4*' '
+        for form_main in main_list:
+            if form_main['type']!='main': continue
+            sources = form_main['src'].split(',')
+            if actually_used_synths is None or form_main['id'] in actually_used_synths:
+                syncode += 'else if(Bsyn == ' + str(syncount) + '){\n' + 6*' ' + 's = '
+                for term in sources:
+                    syncode += instance(term) + (newlineplus if term != sources[-1] else ';')
+                if 'relpower' in form_main and form_main['relpower'] != '1':
+                    syncode += '\nenv = theta(B-Bon)*pow(1.-smoothstep(Boff, Boff+Brel, B),'+form_main['relpower']+');'
+                syncode += newlineclosingbrace
+            syncount += 1
+        
+        syncode += '\n'+4*' '
+        
+        drumcount = 1
+        for form_main in main_list:
+            if form_main['type']!='maindrum': continue
+            sources = form_main['src'].split(',')
+            if actually_used_drums is None or drumcount in actually_used_drums:
+                syncode += 'else if(Bsyn == -' + str(drumcount) + '){\n' + 6*' ' + 's = '
+                if 'amp' in form_main and form_main['amp'] != '1': #in case you want e.g. velocity scaling for filtered drums... not pretty, but could work.
+                    s += instance(form['amp']) + '*'
+                for term in sources:
+                    syncode += instance(term) + (newlineplus if term != sources[-1] else ';')
+                syncode += newlineclosingbrace
+            drumcount += 1
 
         syncode = syncode.replace('_TIME','t').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
 
