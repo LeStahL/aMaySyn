@@ -34,6 +34,7 @@ from ma2_track import *
 from ma2_pattern import *
 from ma2_widgets import *
 from ma2_synatize import synatize, synatize_build
+from ma2_keys import interpretKeypress, doesActionChangeState
 from SFXGLWidget import *
 
 GLfloat = lambda f: str(int(f))  + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
@@ -134,153 +135,111 @@ class Ma2Widget(Widget):
 
         k = keycode[1]
 
-        if   k == 'escape':                     App.get_running_app().stop()
-        elif k == 'f8':                         self.toggleDebugMode()
-        elif k == 'tab':                        self.switchActive()
+        if   k == 'numpadenter': k = 'enter'
+        elif k == 'numpadadd': k = '+'
+        elif k == 'numpadsubstract': k = '-'
+        elif k == 'numpadmul': k = '*'
+        elif k == 'numpaddivide': k = '/'
+        
+        if 'shift' in modifiers: k = 'shift ' + k
+        if 'ctrl' in modifiers: k = 'ctrl ' + k
 
-        # THE MOST IMPORTANT KEY!
-        elif k == 'f1':                         self.reRandomizeColors()
+        action = interpretKeypress(k, self.theTrkWidget.active, self.thePtnWidget.active)
 
-        elif k == 'f2':                         self.renameSong()                                           ; self.stateChanged = True
-        elif k == 'f3':                         self.changeSongParameters()                                 ; self.stateChanged = True
+        if action:
+            self.stateChanged = doesActionChangeState(action)
 
-        elif k == 'f5':                         self.loadSynths(update = True)
+        inc_step = 1 if 'alt' not in modifiers else .25 # for precision work, press 'alt'
 
-        elif k == 'f11':                        self.editCurve()                                            ; self.stateChanged = True
+        if   action == 'EXIT':                          App.get_running_app().stop()
+        elif action == 'DEBUG TOGGLE':                  self.toggleDebugMode()
+        elif action == 'PANEL SWITCH':                  self.switchActive()
+        elif action == 'COLORS RANDOMIZE':              self.reRandomizeColors()  # MOST IMPORTANT FEATURE!
+        elif action == 'SONG RENAME':                   self.renameSong()                     
+        elif action == 'SONG CHANGE PARAMETERS':        self.changeSongParameters()           
+        elif action == 'SYNTH RELOAD':                  self.loadSynths(update = True)
+        elif action == 'CURVE EDIT':                    self.editCurve()                      
+        elif action == 'MUTE':                          pygame.mixer.stop()           
+        elif action == 'SONG COMPILE':                  self.buildGLSL(compileGL = True)
+        elif action == 'SONG CLEAR':                    self.clearSong()                                   
+        elif action == 'SONG LOAD':                     self.loadCSV_prompt()                                
+        elif action == 'SONG SAVE':                     self.saveCSV_prompt()
+        elif action == 'SONG TRANSLATE':                self.buildGLSL()
+        elif action == 'UNDO':                          self.stepUndoStack(-1)
+        elif action == 'REDO':                          self.stepUndoStack(+1)
+        elif action == 'SYNTH SELECT NEXT':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
+        elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(+1, debug = self.MODE_debug)  
+        elif action == 'PATTERN SELECT NEXT':           self.getTrack().switchModulePattern(self.getPattern(+1))  
+        elif action == 'PATTERN SELECT LAST':           self.getTrack().switchModulePattern(self.getPattern(-1))  
 
-        elif k == 'f12':                        pygame.mixer.stop()
-
-        if 'shift' in modifiers and 'ctrl' in modifiers:
-            if k == 'b':                        self.buildGLSL(compileGL = True)
-
-        elif 'ctrl' in modifiers:
-            if k == 'n':                        self.clearSong()                                            ; self.stateChanged = True
-            elif k == 'l':                      self.loadCSV_prompt()                                       ; self.stateChanged = True
-            elif k == 's':                      self.saveCSV_prompt()
-            elif k == 'b':                      self.buildGLSL()
-
-            elif k == 'z':                      self.stepUndoStack(-1)
-            elif k == 'y':                      self.stepUndoStack(+1)
-
-        elif 'shift' in modifiers:
-            pass
-
-        else:
-            if k == 'a':                        self.getTrack().switchSynth(-1, debug = self.MODE_debug)    ; self.stateChanged = True
-            elif k == 's':                      self.getTrack().switchSynth(+1, debug = self.MODE_debug)    ; self.stateChanged = True
-
-            elif k == 'pagedown':               self.getTrack().switchModulePattern(self.getPattern(+1))    ; self.stateChanged = True
-            elif k == 'pageup':                 self.getTrack().switchModulePattern(self.getPattern(-1))    ; self.stateChanged = True
-
-        # for precision work, press 'alt'
-        inc_step = 1 if 'alt' not in modifiers else .25
 
         if(self.theTrkWidget.active):
-            if 'shift' in modifiers and 'ctrl' in modifiers:
-                if   k == 'left':               self.getTrack().moveAllModules(-inc_step)                   ; self.stateChanged = True
-                elif k == 'right':              self.getTrack().moveAllModules(+inc_step)                   ; self.stateChanged = True
+            if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)     
+            elif action == 'TRACK SHIFT RIGHT':         self.getTrack().moveAllModules(+inc_step)     
+            elif action == 'MOD TRANSPOSE UP':          self.getTrack().transposeModule(+1)                
+            elif action == 'MOD TRANSPOSE DOWN':        self.getTrack().transposeModule(-1)                
+            elif action == 'MOD SHIFT LEFT':            self.getTrack().moveModule(-inc_step)              
+            elif action == 'MOD SHIFT RIGHT':           self.getTrack().moveModule(+inc_step)              
+            elif action == 'MOD SHIFT HOME':            self.getTrack().moveModule(0, move_home = True)    
+            elif action == 'MOD SHIFT END':             self.getTrack().moveModule(0, move_end = True)     
+            elif action == 'TRACK ADD NEW':             self.addTrack()                                    
+            elif action == 'TRACK DELETE':              self.delTrack()                                        
+            elif action == 'MOD SELECT LEFT':           self.getTrack().switchModule(-1)              
+            elif action == 'MOD SELECT RIGHT':          self.getTrack().switchModule(+1)              
+            elif action == 'MOD SELECT LAST':           self.getTrack().switchModule(0, to = -1)      
+            elif action == 'MOD SELECT FIRST':          self.getTrack().switchModule(0, to = +0)      
+            elif action == 'TRACK SELECT LAST':         self.switchTrack(-1)                                     
+            elif action == 'TRACK SELECT NEXT':         self.switchTrack(+1)                                     
+            elif action == 'MOD ADD NEW':               self.addModuleWithNewPattern(self.getTrack().getLastModuleOff)
+            elif action == 'MOD ADD CLONE':             self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), transpose = self.getModuleTranspose())
+            elif action == 'MOD DELETE':                self.getTrack().delModule()
+            elif action == 'TRACK RENAME':              self.renameTrack()
+            elif action == 'TRACK CHANGE PARAMETERS':   self.changeTrackParameters()
+            elif action == 'DEBUG PRINT PATTERNS':      self.printPatterns()
             
-            elif 'shift' in modifiers:
-                if   k == 'up':                 self.getTrack().transposeModule(+1)                         ; self.stateChanged = True
-                elif k == 'down':               self.getTrack().transposeModule(-1)                         ; self.stateChanged = True
-                elif k == 'left':               self.getTrack().moveModule(-inc_step)                       ; self.stateChanged = True
-                elif k == 'right':              self.getTrack().moveModule(+inc_step)                       ; self.stateChanged = True
-                elif k == 'home':               self.getTrack().moveModule(0, move_home = True)             ; self.stateChanged = True
-                elif k == 'end':                self.getTrack().moveModule(0, move_end = True)              ; self.stateChanged = True
-
-            elif 'ctrl' in modifiers:
-                if k == '+'\
-                  or k == 'numpadadd':          self.addTrack()                                             ; self.stateChanged = True
-                elif k == '-'\
-                  or k == 'numpadsubstract':    self.delTrack()                                             ; self.stateChanged = True
-            
-            else:
-                if   k == 'left':               self.getTrack().switchModule(-1)                            ; self.stateChanged = True
-                elif k == 'right':              self.getTrack().switchModule(+1)                            ; self.stateChanged = True
-                elif k == 'end':                self.getTrack().switchModule(0, to = -1)                    ; self.stateChanged = True
-                elif k == 'home':               self.getTrack().switchModule(0, to = +0)                    ; self.stateChanged = True
-                elif k == 'up':                 self.switchTrack(-1)                                        ; self.stateChanged = True
-                elif k == 'down':               self.switchTrack(+1)                                        ; self.stateChanged = True
-
-                elif k == '+'\
-                  or k == 'numpadadd':          self.addModuleWithNewPattern(self.getTrack().getLastModuleOff); self.stateChanged = True
-                elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), transpose = self.getModuleTranspose()); self.stateChanged = True
-                elif k == '-'\
-                  or k == 'numpadsubstract':    self.getTrack().delModule()                                 ; self.stateChanged = True
-                
-                elif k == 'f6':                 self.renameTrack()                                          ; self.stateChanged = True
-                elif k == 'f7':                 self.changeTrackParameters()                                ; self.stateChanged = True
-                elif k == 'f9':                 self.printPatterns()
-
         if(self.thePtnWidget.active) and self.getPattern():
-            if 'shift' in modifiers and 'ctrl' in modifiers:
-                if   k == 'pageup':             self.getPattern().stretchPattern(+inc_step, scale = True)   ; self.stateChanged = True
-                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step, scale = True)   ; self.stateChanged = True
-
-            elif 'shift' in modifiers:
-                if   k == 'left':               self.getPattern().stretchNote(-inc_step/8)                  ; self.stateChanged = True
-                elif k == 'right':              self.getPattern().stretchNote(+inc_step/8)                  ; self.stateChanged = True
-                elif k == 'up':                 self.getPattern().shiftAllNotes(+1)                         ; self.stateChanged = True
-                elif k == 'down':               self.getPattern().shiftAllNotes(-1)                         ; self.stateChanged = True
-
-                elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step)                 ; self.stateChanged = True
-                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step)                 ; self.stateChanged = True
-                
-                elif k == 'backspace':          self.getPattern().setGap(to = 0)                            ; self.stateChanged = True
-
-            elif 'ctrl' in modifiers:
-                if   k == 'left':               self.getPattern().moveNote(-inc_step/8)                     ; self.stateChanged = True
-                elif k == 'right':              self.getPattern().moveNote(+inc_step/8)                     ; self.stateChanged = True
-                elif k == 'up':                 self.getPattern().shiftNote(+12)                            ; self.stateChanged = True
-                elif k == 'down':               self.getPattern().shiftNote(-12)                            ; self.stateChanged = True
-
-                elif k == '+'\
-                  or k == 'numpadadd':          self.addPattern(select = True)                              ; self.stateChanged = True
-                elif k == '*'\
-                  or k == 'numpadmul':          self.addPattern(select = True, clone_current = True)        ; self.stateChanged = True
-                elif k == '-'\
-                  or k == 'numpadsubstract':    self.delPattern()                                           ; self.stateChanged = True
-
-            else:
-                if   k == 'left':               self.getPattern().switchNote(-1)                            ; self.stateChanged = True
-                elif k == 'right':              self.getPattern().switchNote(+1)                            ; self.stateChanged = True
-                elif k == 'home':               self.getPattern().switchNote(0, to = 0)                     ; self.stateChanged = True
-                elif k == 'end':                self.getPattern().switchNote(0, to = -1)                    ; self.stateChanged = True
-
-                elif k == 'up':                 self.getPattern().shiftNote(+1)                             ; self.stateChanged = True
-                elif k == 'down':               self.getPattern().shiftNote(-1)                             ; self.stateChanged = True
-                
-                elif k == '+'\
-                  or k == 'numpadadd':          self.getPattern().addNote(self.getNote(), append = True)    ; self.stateChanged = True
-                elif k == 'c':                  self.getPattern().addNote(self.getNote(), append = True, clone = True); self.stateChanged = True
-                elif k == '*'\
-                  or k == 'numpadmul':          self.getPattern().fillNote(self.getNote())                  ; self.stateChanged = True
-                elif k == '-'\
-                  or k == 'numpadsubstract':    self.getPattern().delNote()                                 ; self.stateChanged = True
-                elif k == 'spacebar':           self.getPattern().setGap(inc = True)                        ; self.stateChanged = True
-                elif k == 'backspace':          self.getPattern().setGap(dec = True)                        ; self.stateChanged = True
-
-                elif k == 'v':                  self.getPattern().getNote().setVelocity(self.numberInput)   ; self.stateChanged = True
-
-                elif k == 'f6':                 self.renamePattern()                                        ; self.stateChanged = True
-                elif k == 'f9':                 self.getPattern().printNoteList()
-            
+            if   action == 'PATTERN LONGER STRETCH':    self.getPattern().stretchPattern(+inc_step, scale = True) 
+            elif action == 'PATTERN SHORTER STRETCH':   self.getPattern().stretchPattern(-inc_step, scale = True) 
+            elif action == 'NOTE SHORTER':              self.getPattern().stretchNote(-inc_step/8)  
+            elif action == 'NOTE LONGER':               self.getPattern().stretchNote(+inc_step/8)  
+            elif action == 'NOTES TRANSPOSE ALL UP':    self.getPattern().shiftAllNotes(+1)         
+            elif action == 'NOTES TRANSPOSE ALL DOWN':  self.getPattern().shiftAllNotes(-1)         
+            elif action == 'PATTERN LONGER':            self.getPattern().stretchPattern(+inc_step) 
+            elif action == 'PATTERN SHORTER':           self.getPattern().stretchPattern(-inc_step) 
+            elif action == 'NOTE GAP ZERO':             self.getPattern().setGap(to = 0)                  
+            elif action == 'NOTE SHIFT LEFT':           self.getPattern().moveNote(-inc_step/8)      
+            elif action == 'NOTE SHIFT RIGHT':          self.getPattern().moveNote(+inc_step/8)      
+            elif action == 'NOTE TRANSPOSE UP':         self.getPattern().shiftNote(+12)             
+            elif action == 'NOTE TRANSPOSE DOWN':       self.getPattern().shiftNote(-12)             
+            elif action == 'PATTERN ADD NEW':           self.addPattern(select = True)                       
+            elif action == 'PATTERN ADD CLONE':         self.addPattern(select = True, clone_current = True) 
+            elif action == 'PATTERN DELETE':            self.delPattern()                                          
+            elif action == 'NOTE SELECT LEFT':          self.getPattern().switchNote(-1)                  
+            elif action == 'NOTE SELECT RIGHT':         self.getPattern().switchNote(+1)                  
+            elif action == 'NOTE SELECT FIRST':         self.getPattern().switchNote(0, to = 0)           
+            elif action == 'NOTE SELECT LAST':          self.getPattern().switchNote(0, to = -1)          
+            elif action == 'NOTE TRANSPOSE UP':         self.getPattern().shiftNote(+1)                   
+            elif action == 'NOTE TRANSPOSE DOWN':       self.getPattern().shiftNote(-1)                   
+            elif action == 'NOTE ADD NEW':              self.getPattern().addNote(self.getNote(), append = True)  
+            elif action == 'NOTE ADD CLONE':            self.getPattern().addNote(self.getNote(), append = True, clone = True)
+            elif action == 'NOTE CLONE SELECTION':      self.getPattern().fillNote(self.getNote())           
+            elif action == 'NOTE DELETE':               self.getPattern().delNote()                                
+            elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)         
+            elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)         
+            elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput)  
+            elif action == 'PATTERN RENAME':            self.renamePattern()                                       
+            elif action == 'DEBUG PRINT NOTELIST':      self.getPattern().printNoteList()      
+      
             if keytext:
                 if keytext.isdigit():           self.setNumberInput(keytext)
                 elif k == '/':                  self.setNumberInput('-') #imperfect, but the '-' key is already taken...
                 else:                           self.setNumberInput('')
 
-        # MISSING:
-        #       moveAllNotes()
-        #       undo stack
-        #       scrolling in track view / note view / unlimited size
-        #       mouse support
-
         self.update()
 
         if self.MODE_debug:
             print('DEBUG -- KEY:', k, keytext, modifiers)
-            self.printDebug()
+            self.printDebug(verbose = False)
 
         return True
         

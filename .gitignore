@@ -1,0 +1,8 @@
+*.may
+*.glsl
+*.bak
+file.wav
+sequence.h
+sfx.frag
+__pycache__/
+
