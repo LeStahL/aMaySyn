@@ -80,6 +80,7 @@ pattern_keys = {
                 'f9'                  : 'DEBUG PRINT NOTES'
                }
 
+# https://kivy.org/doc/stable/_modules/kivy/core/window.html
 
 def interpretKeypress(key, modifiers trkActive = False, ptnActive = False):
 
