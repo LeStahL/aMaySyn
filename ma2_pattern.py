@@ -7,13 +7,13 @@ import random
 
 class Pattern():
     
-    def __init__(self, name = 'NJU', length = 1, synth_type = '_', max_note = 0):
+    def __init__(self, name = 'NJU', length = 1, synth_type = '_', max_note = 0, color = None):
         self.name = name
         self.notes = []
         self.length = length if length and length > 0 else 1 # after adding, jump to "len field" in order to change it if required TODO
         self.current_note = 0
         self.current_gap = 0
-        self.randomizeColor()
+        self.color = color if color else self.randomColor()
         self.setTypeParam(synth_type = synth_type, max_note = max_note if max_note > 0 else 88)
 
     def setTypeParam(self, synth_type = None, max_note = None):
@@ -33,8 +33,8 @@ class Pattern():
     def getFirstTaggedNote(self):   return next(i for i in range(len(self.notes)) if self.notes[i].tagged)
 
     # THE MOST IMPORTANT FUNCTION!
-    def randomizeColor(self):
-        self.color = Color(random.uniform(.05,.95), .8, .88, mode = 'hsv').rgb
+    def randomColor(self):
+        return Color(random.uniform(.05,.95), .8, .88, mode = 'hsv').rgb
         
     def addNote(self, note = None, select = True, append = False, clone = False):
         if note is None:

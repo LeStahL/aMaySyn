@@ -23,6 +23,7 @@ from struct import pack, unpack
 from numpy import clip, ceil, sqrt
 from math import sin, exp, pi
 from datetime import *
+from copy import copy, deepcopy
 import pygame, wave
 import csv, re
 import operator
@@ -53,26 +54,28 @@ class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
     thePtnWidget = ObjectProperty(None)
 
+    info = {'title': 'piover2', 'BPM': 80., 'B_offset': 0.}
+
     current_track = None
-    current_module = None
-    current_note = None
     tracks = []
     patterns = []
 
     synatize_form_list = []
     synatize_main_list = []
-    
-    title = 'piover2'
-    BPM = 80.;
-    B_offset = 0.;
-    
+
     btnTitle = ObjectProperty()
     
-    debugMode = False
-    numberInputMode = False
+    MODE_debug = False
+    MODE_numberInput = False
     numberInput = ''
+
+    #first idea for undo: save state at EVERY action
+    undo_stack = []
+    undo_max_steps = 50
+    undo_pos = 0
+    MODE_undo = False
     
-    #updateAll = True # ah, fuck it. always update everythig. TODO improve performance... somehow.
+    stateChanged = True
     
     #helpers...
     def getTrack(self):                 return self.tracks[self.current_track] if self.current_track is not None else None
@@ -81,17 +84,32 @@ class Ma2Widget(Widget):
     def getModuleTranspose(self):       return self.getModule().transpose if self.getModule() else 0
     def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None
     def getModulePatternIndex(self):    return self.patterns.index(self.getModulePattern()) if self.patterns and self.getModulePattern() in self.patterns else -1
+    def getInfo(self, key):             return self.info[key] if key in self.info else None
+    def setInfo(self, key, value):      self.info[key] = value
+
     def getPatternLen(self, offset=0):  return self.getPattern(offset).length if self.getPattern(offset) else None
     def getPatternName(self):           return self.getPattern().name if self.getPattern() else 'None'
     def getPatternIndex(self):          return self.patterns.index(self.getPattern()) if self.patterns and self.getPattern() and self.getPattern() in self.patterns else -1
     def getPatternSynthType(self):      return self.getPattern().synth_type if self.getPattern() else '_'
     def getNote(self):                  return self.getPattern().getNote() if self.getPattern() else None
     def existsPattern(self, pattern):   return pattern in self.patterns
-    def getSameTypePatterns(self): return [p for p in self.patterns if p.synth_type in [self.getTrackSynthType(),'_']]
-    def getSameTypePatternIndex(self): return self.getSameTypePatterns().index(self.getPattern()) if self.getPattern() and self.getPattern() in self.getSameTypePatterns() else -1
-    def getTrackSynthType(self, track=None): return synths[(track if track else self.getTrack()).current_synth][0]
-    def isDrumTrack(self):              return self.getTrackSynthType() == 'D'
-    def getDefaultMaxNote(self, ptype=None): return 88 if not (ptype[0]=='D' if ptype else self.isDrumTrack()) else len(drumkit)
+
+    def getSameTypePatterns(self):
+        return [p for p in self.patterns if p.synth_type in [self.getTrackSynthType(),'_']]
+    
+    def getSameTypePatternIndex(self):
+        return self.getSameTypePatterns().index(self.getPattern()) if self.getPattern() and self.getPattern() in self.getSameTypePatterns() else -1
+    
+    def getTrackSynthType(self, track=None):
+        return synths[(track if track else self.getTrack()).current_synth][0]
+    
+    def isDrumTrack(self):
+        return self.getTrackSynthType() == 'D'
+    
+    def getDefaultMaxNote(self, ptype=None):
+        return 88 if not (ptype[0]=='D' if ptype else self.isDrumTrack()) else len(drumkit)
+
+################## OFFICIAL START OF STUFF... ##############
 
     def __init__(self, **kwargs):
         super(Ma2Widget, self).__init__(**kwargs)
@@ -110,21 +128,25 @@ class Ma2Widget(Widget):
         
     def _on_keyboard_down(self, keyboard, keycode, keytext, modifiers):
         
+        if self.stateChanged:
+            self.handleUndoStack()
+            self.stateChanged = False
+
         k = keycode[1]
-        
-        if   k == 'escape':                     App.get_running_app().stop() 
+
+        if   k == 'escape':                     App.get_running_app().stop()
         elif k == 'f8':                         self.toggleDebugMode()
         elif k == 'tab':                        self.switchActive()
 
         # THE MOST IMPORTANT KEY!
         elif k == 'f1':                         self.reRandomizeColors()
 
-        elif k == 'f2':                         self.renameSong()
-        elif k == 'f3':                         self.changeSongParameters()
+        elif k == 'f2':                         self.renameSong()                                           ; self.stateChanged = True
+        elif k == 'f3':                         self.changeSongParameters()                                 ; self.stateChanged = True
 
         elif k == 'f5':                         self.loadSynths(update = True)
 
-        elif k == 'f11':                        self.editCurve()
+        elif k == 'f11':                        self.editCurve()                                            ; self.stateChanged = True
 
         elif k == 'f12':                        pygame.mixer.stop()
 
@@ -132,130 +154,131 @@ class Ma2Widget(Widget):
             if k == 'b':                        self.buildGLSL(compileGL = True)
 
         elif 'ctrl' in modifiers:
-            if k == 'n':                        self.clearSong()
-            elif k == 'l':                      self.loadCSV_prompt()
+            if k == 'n':                        self.clearSong()                                            ; self.stateChanged = True
+            elif k == 'l':                      self.loadCSV_prompt()                                       ; self.stateChanged = True
             elif k == 's':                      self.saveCSV_prompt()
             elif k == 'b':                      self.buildGLSL()
-            elif k == 'u':                      self.saveCSV(backup = True)
-            elif k == 'z':                      self.loadCSV(backup = True)
+
+            elif k == 'z':                      self.stepUndoStack(-1)
+            elif k == 'y':                      self.stepUndoStack(+1)
 
         elif 'shift' in modifiers:
             pass
 
         else:
-            if k == 'a':                        self.getTrack().switchSynth(-1, debug = self.debugMode)
-            elif k == 's':                      self.getTrack().switchSynth(+1, debug = self.debugMode)
+            if k == 'a':                        self.getTrack().switchSynth(-1, debug = self.MODE_debug)    ; self.stateChanged = True
+            elif k == 's':                      self.getTrack().switchSynth(+1, debug = self.MODE_debug)    ; self.stateChanged = True
 
-            elif k == 'pagedown':               self.getTrack().switchModulePattern(self.getPattern(+1))
-            elif k == 'pageup':                 self.getTrack().switchModulePattern(self.getPattern(-1))
+            elif k == 'pagedown':               self.getTrack().switchModulePattern(self.getPattern(+1))    ; self.stateChanged = True
+            elif k == 'pageup':                 self.getTrack().switchModulePattern(self.getPattern(-1))    ; self.stateChanged = True
 
         # for precision work, press 'alt'
         inc_step = 1 if 'alt' not in modifiers else .25
 
-        #vorerst: nur tastatursteuerung - nerdfaktor und so :)
         if(self.theTrkWidget.active):
             if 'shift' in modifiers and 'ctrl' in modifiers:
-                if   k == 'left':               self.getTrack().moveAllModules(-inc_step)
-                elif k == 'right':              self.getTrack().moveAllModules(+inc_step)
+                if   k == 'left':               self.getTrack().moveAllModules(-inc_step)                   ; self.stateChanged = True
+                elif k == 'right':              self.getTrack().moveAllModules(+inc_step)                   ; self.stateChanged = True
             
             elif 'shift' in modifiers:
-                if   k == 'up':                 self.getTrack().transposeModule(+1)
-                elif k == 'down':               self.getTrack().transposeModule(-1)
-                elif k == 'left':               self.getTrack().moveModule(-inc_step)
-                elif k == 'right':              self.getTrack().moveModule(+inc_step)
-                elif k == 'home':               self.getTrack().moveModule(0, move_home = True)
-                elif k == 'end':                self.getTrack().moveModule(0, move_end = True)
+                if   k == 'up':                 self.getTrack().transposeModule(+1)                         ; self.stateChanged = True
+                elif k == 'down':               self.getTrack().transposeModule(-1)                         ; self.stateChanged = True
+                elif k == 'left':               self.getTrack().moveModule(-inc_step)                       ; self.stateChanged = True
+                elif k == 'right':              self.getTrack().moveModule(+inc_step)                       ; self.stateChanged = True
+                elif k == 'home':               self.getTrack().moveModule(0, move_home = True)             ; self.stateChanged = True
+                elif k == 'end':                self.getTrack().moveModule(0, move_end = True)              ; self.stateChanged = True
 
             elif 'ctrl' in modifiers:
                 if k == '+'\
-                  or k == 'numpadadd':          self.addTrack()
+                  or k == 'numpadadd':          self.addTrack()                                             ; self.stateChanged = True
                 elif k == '-'\
-                  or k == 'numpadsubstract':    self.delTrack()
+                  or k == 'numpadsubstract':    self.delTrack()                                             ; self.stateChanged = True
             
             else:
-                if   k == 'left':               self.getTrack().switchModule(-1)
-                elif k == 'right':              self.getTrack().switchModule(+1)
-                elif k == 'end':                self.getTrack().switchModule(0, to = -1)
-                elif k == 'home':               self.getTrack().switchModule(0, to = +0)
-                elif k == 'up':                 self.switchTrack(-1)
-                elif k == 'down':               self.switchTrack(+1)
+                if   k == 'left':               self.getTrack().switchModule(-1)                            ; self.stateChanged = True
+                elif k == 'right':              self.getTrack().switchModule(+1)                            ; self.stateChanged = True
+                elif k == 'end':                self.getTrack().switchModule(0, to = -1)                    ; self.stateChanged = True
+                elif k == 'home':               self.getTrack().switchModule(0, to = +0)                    ; self.stateChanged = True
+                elif k == 'up':                 self.switchTrack(-1)                                        ; self.stateChanged = True
+                elif k == 'down':               self.switchTrack(+1)                                        ; self.stateChanged = True
 
                 elif k == '+'\
-                  or k == 'numpadadd':          self.addModuleWithNewPattern(self.getTrack().getLastModuleOff)
-                elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), transpose = self.getModuleTranspose())
+                  or k == 'numpadadd':          self.addModuleWithNewPattern(self.getTrack().getLastModuleOff); self.stateChanged = True
+                elif k == 'c':                  self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), transpose = self.getModuleTranspose()); self.stateChanged = True
                 elif k == '-'\
-                  or k == 'numpadsubstract':    self.getTrack().delModule()
+                  or k == 'numpadsubstract':    self.getTrack().delModule()                                 ; self.stateChanged = True
                 
-                elif k == 'f6':                 self.renameTrack()
-                elif k == 'f7':                 self.changeTrackParameters()
+                elif k == 'f6':                 self.renameTrack()                                          ; self.stateChanged = True
+                elif k == 'f7':                 self.changeTrackParameters()                                ; self.stateChanged = True
                 elif k == 'f9':                 self.printPatterns()
 
         if(self.thePtnWidget.active) and self.getPattern():
             if 'shift' in modifiers and 'ctrl' in modifiers:
-                if   k == 'pageup':             self.getPattern().stretchPattern(+inc_step, scale = True)
-                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step, scale = True)
+                if   k == 'pageup':             self.getPattern().stretchPattern(+inc_step, scale = True)   ; self.stateChanged = True
+                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step, scale = True)   ; self.stateChanged = True
 
             elif 'shift' in modifiers:
-                if   k == 'left':               self.getPattern().stretchNote(-inc_step/8)
-                elif k == 'right':              self.getPattern().stretchNote(+inc_step/8)
-                elif k == 'up':                 self.getPattern().shiftAllNotes(+1)
-                elif k == 'down':               self.getPattern().shiftAllNotes(-1)
+                if   k == 'left':               self.getPattern().stretchNote(-inc_step/8)                  ; self.stateChanged = True
+                elif k == 'right':              self.getPattern().stretchNote(+inc_step/8)                  ; self.stateChanged = True
+                elif k == 'up':                 self.getPattern().shiftAllNotes(+1)                         ; self.stateChanged = True
+                elif k == 'down':               self.getPattern().shiftAllNotes(-1)                         ; self.stateChanged = True
 
-                elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step)
-                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step)
+                elif k == 'pageup':             self.getPattern().stretchPattern(+inc_step)                 ; self.stateChanged = True
+                elif k == 'pagedown':           self.getPattern().stretchPattern(-inc_step)                 ; self.stateChanged = True
                 
-                elif k == 'backspace':          self.getPattern().setGap(to = 0)
+                elif k == 'backspace':          self.getPattern().setGap(to = 0)                            ; self.stateChanged = True
 
             elif 'ctrl' in modifiers:
-                if   k == 'left':               self.getPattern().moveNote(-inc_step/8)
-                elif k == 'right':              self.getPattern().moveNote(+inc_step/8)
-                elif k == 'up':                 self.getPattern().shiftNote(+12)
-                elif k == 'down':               self.getPattern().shiftNote(-12)
+                if   k == 'left':               self.getPattern().moveNote(-inc_step/8)                     ; self.stateChanged = True
+                elif k == 'right':              self.getPattern().moveNote(+inc_step/8)                     ; self.stateChanged = True
+                elif k == 'up':                 self.getPattern().shiftNote(+12)                            ; self.stateChanged = True
+                elif k == 'down':               self.getPattern().shiftNote(-12)                            ; self.stateChanged = True
 
                 elif k == '+'\
-                  or k == 'numpadadd':          self.addPattern(select = True)
+                  or k == 'numpadadd':          self.addPattern(select = True)                              ; self.stateChanged = True
                 elif k == '*'\
-                  or k == 'numpadmul':          self.addPattern(select = True, clone_current = True)
+                  or k == 'numpadmul':          self.addPattern(select = True, clone_current = True)        ; self.stateChanged = True
                 elif k == '-'\
-                  or k == 'numpadsubstract':    self.delPattern()
+                  or k == 'numpadsubstract':    self.delPattern()                                           ; self.stateChanged = True
 
             else:
-                if   k == 'left':               self.getPattern().switchNote(-1)
-                elif k == 'right':              self.getPattern().switchNote(+1)
-                elif k == 'home':               self.getPattern().switchNote(0, to = 0)
-                elif k == 'end':                self.getPattern().switchNote(0, to = -1)
+                if   k == 'left':               self.getPattern().switchNote(-1)                            ; self.stateChanged = True
+                elif k == 'right':              self.getPattern().switchNote(+1)                            ; self.stateChanged = True
+                elif k == 'home':               self.getPattern().switchNote(0, to = 0)                     ; self.stateChanged = True
+                elif k == 'end':                self.getPattern().switchNote(0, to = -1)                    ; self.stateChanged = True
 
-                elif k == 'up':                 self.getPattern().shiftNote(+1)
-                elif k == 'down':               self.getPattern().shiftNote(-1)
+                elif k == 'up':                 self.getPattern().shiftNote(+1)                             ; self.stateChanged = True
+                elif k == 'down':               self.getPattern().shiftNote(-1)                             ; self.stateChanged = True
                 
                 elif k == '+'\
-                  or k == 'numpadadd':          self.getPattern().addNote(self.getNote(), append = True)
-                elif k == 'c':                  self.getPattern().addNote(self.getNote(), append = True, clone = True)
+                  or k == 'numpadadd':          self.getPattern().addNote(self.getNote(), append = True)    ; self.stateChanged = True
+                elif k == 'c':                  self.getPattern().addNote(self.getNote(), append = True, clone = True); self.stateChanged = True
                 elif k == '*'\
-                  or k == 'numpadmul':          self.getPattern().fillNote(self.getNote())
+                  or k == 'numpadmul':          self.getPattern().fillNote(self.getNote())                  ; self.stateChanged = True
                 elif k == '-'\
-                  or k == 'numpadsubstract':    self.getPattern().delNote()
-                elif k == 'spacebar':           self.getPattern().setGap(inc = True)
-                elif k == 'backspace':          self.getPattern().setGap(dec = True)
+                  or k == 'numpadsubstract':    self.getPattern().delNote()                                 ; self.stateChanged = True
+                elif k == 'spacebar':           self.getPattern().setGap(inc = True)                        ; self.stateChanged = True
+                elif k == 'backspace':          self.getPattern().setGap(dec = True)                        ; self.stateChanged = True
 
-                elif k == 'v':                  self.getPattern().getNote().setVelocity(self.numberInput)
+                elif k == 'v':                  self.getPattern().getNote().setVelocity(self.numberInput)   ; self.stateChanged = True
 
-                elif k == 'f6':                 self.renamePattern()
+                elif k == 'f6':                 self.renamePattern()                                        ; self.stateChanged = True
                 elif k == 'f9':                 self.getPattern().printNoteList()
             
-            if keytext.isdigit():               self.setNumberInput(keytext)
-            else:                               self.setNumberInput('')
+            if keytext:
+                if keytext.isdigit():           self.setNumberInput(keytext)
+                elif k == '/':                  self.setNumberInput('-') #imperfect, but the '-' key is already taken...
+                else:                           self.setNumberInput('')
 
         # MISSING:
         #       moveAllNotes()
+        #       undo stack
         #       scrolling in track view / note view / unlimited size
         #       mouse support
-        #       openGL linking
-        #       prompt for new song title before loading/saving (doesn't work at the moment because the BG app doesn't wait for the input)
 
         self.update()
 
-        if self.debugMode:
+        if self.MODE_debug:
             print('DEBUG -- KEY:', k, keytext, modifiers)
             self.printDebug()
 
@@ -267,12 +290,12 @@ class Ma2Widget(Widget):
         self.updateLabels()
             
     def updateLabels(self, dt = 0):
-        self.btnTitle.text = 'TITLE: ' + self.title
+        self.btnTitle.text = 'TITLE: ' + self.getInfo('title')
         self.btnPtnTitle.text = 'PTN: ' + self.getPatternName() + ' (' + str(self.getSameTypePatternIndex()+1) + '/' + str(len(self.getSameTypePatterns())) + ') ' + pattern_types[self.getPatternSynthType()]
         self.btnPtnInfo.text = 'PTN LEN: ' + str(self.getPatternLen())
 
     def mainBackgroundColor(self):
-        if self.debugMode:
+        if self.MODE_debug:
             return(1,.3,0,.1)
         else:
             return (0,0,0,1)
@@ -281,26 +304,68 @@ class Ma2Widget(Widget):
         self.theTrkWidget.active = not self.theTrkWidget.active
         self.thePtnWidget.active = not self.thePtnWidget.active
 
+    def handleUndoStack(self):
+        # is this everything I need to store?
+        state = {'info': deepcopy(self.info), 'tracks': deepcopy(self.tracks), 'patterns': deepcopy(self.patterns), 'current_track': self.current_track}
+
+        if self.MODE_undo:
+            self.MODE_undo = False        
+            self.undo_stack = self.undo_stack[:len(self.undo_stack) + self.undo_pos]
+            self.undo_pos = 0
+
+        if not self.undo_stack:
+            self.undo_stack = [state]
+        elif len(self.undo_stack) < self.undo_max_steps:
+            self.undo_stack.append(state)
+        else:
+            self.undo_stack = self.undo_stack[1:] + [state]
+
+    def stepUndoStack(self, inc):
+        self.MODE_undo = True
+
+        if not self.undo_stack: return
+        if inc < 0 and self.undo_pos == 1 - len(self.undo_stack): return
+        if inc > 0 and self.undo_pos == 0: return
+
+        self.undo_pos += inc
+        state = self.undo_stack[self.undo_pos-1]
+
+        # DAMN! HAVE TO REBUILD TO NOT BREAK INTEGRITY...
+        self.info = state['info']
+        self.tracks = state['tracks']
+        self.current_track = state['current_track']
+        self.patterns = []
+        for p in state['patterns']:
+            self.patterns.append(p)
+            for t in self.tracks:
+                for m in t.modules:
+                    if m.pattern.name == p.name:
+                        m.setPattern(p)
+
+        self.update()
+
     def renameSong(self):
-        popup = InputPrompt(self, title = 'RENAME SONG', title_font = self.font_name, default_text = self.title)
+        popup = InputPrompt(self, title = 'RENAME SONG', title_font = self.font_name, default_text = self.getInfo('title'))
         popup.bind(on_dismiss = self.handleRenameSong)
         popup.open()
     def handleRenameSong(self, *args):
         self._keyboard_request()
-        self.title = args[0].text
+        self.setInfo('title', args[0].text)
         self.update()
 
     def changeSongParameters(self):
-        par_string = str(self.BPM) + ' ' + str(self.B_offset)
-        popup = InputPrompt(self, title = 'ENTER BPM, <SPACE>, STARTING BEAT', title_font = self.font_name, default_text = par_string)
+        par_string = str(self.getInfo('BPM')) + ' ' + str(self.getInfo('B_offset'))
+        popup = InputPrompt(self, title = 'ENTER BPM, <SPACE>, BEAT OFFSET', title_font = self.font_name, default_text = par_string)
         popup.bind(on_dismiss = self.handleChangeSongParameters)
         popup.open()
     def handleChangeSongParameters(self, *args):
         self._keyboard_request()
         pars = args[0].text.split()
-        self.BPM = float(pars[0])
-        self.B_offset = float(pars[1])
-        self.theTrkWidget.updateMarker('OFFSET',self.B_offset)
+        self.setInfo('BPM', float(pars[0]))
+        try:    self.setInfo('B_offset', float(pars[1]))
+        except: self.setInfo('B_offset', 0)
+            
+        self.theTrkWidget.updateMarker('OFFSET',float(pars[1]))
         self.update()
 
     def renameTrack(self):
@@ -347,7 +412,7 @@ class Ma2Widget(Widget):
                 if offset == 0:
                     return self.patterns[self.patterns.index(self.getModulePattern())]
                 else:
-                    if self.debugMode:
+                    if self.MODE_debug:
                         return self.patterns[(self.patterns.index(self.getModulePattern()) + offset) % len(self.patterns)]
                     else:
                         patterns = self.getSameTypePatterns()
@@ -413,19 +478,19 @@ class Ma2Widget(Widget):
         self.tracks[0].addModule(0, self.patterns[0])
         
         self.current_track = 0
-        self.current_module = None
-        self.current_note = None
 
         if not no_renaming: self.renameSong()
         self.loadSynths(update = True)
 
     def setNumberInput(self, key):
         if key.isdigit():
-            if not self.numberInputMode: self.numberInput = ''
-            self.numberInputMode = True
+            if not self.MODE_numberInput: self.numberInput = ''
+            self.MODE_numberInput = True
             self.numberInput += key
+        elif key == '-' and self.MODE_numberInput:
+            self.numberInput = ('-' + self.numberInput).replace('--','')
         else:
-            self.numberInputMode = False
+            self.MODE_numberInput = False
 
     def setupInit(self):
         if '-debug' in sys.argv: self.toggleDebugMode()
@@ -434,17 +499,16 @@ class Ma2Widget(Widget):
         self.setupSomething()
         
         if len(sys.argv) > 1:
-            self.title = sys.argv[1]
+            self.setInfo('title', sys.argv[1])
         elif os.path.exists('.last'):
             with open('.last') as in_tmp:
-                self.title = in_tmp.read()
+                self.setInfo('title', in_tmp.read())
         else:
             pass
 
         self.loadSynths()
         Clock.schedule_once(self.loadCSV, 0)
 
-        self.current_module = 0
         self.update()
 
 ############## ONLY THE MOST IMPORTANT FUNCTION! ############
@@ -459,7 +523,7 @@ class Ma2Widget(Widget):
         
         global synths, drumkit
         
-        filename = self.title + '.syn'
+        filename = self.getInfo('title') + '.syn'
         if not os.path.exists(filename): filename = 'test.syn'
         
         self.synatize_form_list, self.synatize_main_list, drumkit = synatize(filename)
@@ -478,40 +542,38 @@ class Ma2Widget(Widget):
 
 ############### UGLY KIVY EXPORT FUNCTIONS #####################
 
-    def loadCSV_prompt(self, backup = False, no_prompt = False):
-        if backup or no_prompt:
-            self.loadCSV(backup = backup)
+    def loadCSV_prompt(self, no_prompt = False):
+        if no_prompt:
+            self.loadCSV()
         else:
-            popup = InputPrompt(self, title = 'WHICH TRACK IS IT, WHICH YOU DESIRE?', title_font = self.font_name, default_text = self.title)
+            popup = InputPrompt(self, title = 'WHICH TRACK IS IT, WHICH YOU DESIRE?', title_font = self.font_name, default_text = self.getInfo('title'))
             popup.bind(on_dismiss = self.loadCSV_handleprompt)
             popup.open()
     def loadCSV_handleprompt(self, *args):
         self._keyboard_request()
-        self.title = args[0].text.replace('.may','')
+        self.setInfo('title', args[0].text.replace('.may',''))
         self.loadCSV()
         self.update()
 
-    def saveCSV_prompt(self, backup = False, no_prompt = False):
-        if backup or no_prompt:
-            self.saveCSV(backup = backup)
+    def saveCSV_prompt(self, no_prompt = False):
+        if no_prompt:
+            self.saveCSV()
         else:
-            popup = InputPrompt(self, title = 'SAVE ASS', title_font = self.font_name, default_text = self.title)
+            popup = InputPrompt(self, title = 'SAVE ASS', title_font = self.font_name, default_text = self.getInfo('title'))
             popup.bind(on_dismiss = self.saveCSV_handleprompt)
             popup.open()
     def saveCSV_handleprompt(self, *args):
         self._keyboard_request()
-        self.title = args[0].text.replace('.may','')
+        self.setInfo('title', args[0].text.replace('.may',''))
         self.saveCSV()
         self.update()
 
 ################## ACTUAL EXPORT FUNCTIONS ###################
 
-    def loadCSV(self, dt = 0, backup = False):
-        filename = self.title + '.may'
-        if backup: filename = '.' + filename
+    def loadCSV(self, dt = 0):
+        filename = self.getInfo('title') + '.may'
                 
         if not os.path.isfile(filename):
-            if backup: return
             print(filename,'not around, start new track of that name')
             self.clearSong(no_renaming = True)
             return
@@ -523,11 +585,12 @@ class Ma2Widget(Widget):
             in_read = csv.reader(in_csv, delimiter='|')
             
             for r in in_read:
-                self.title = r[0]
                 self.tracks = []
                 self.patterns = []
-                self.BPM = float(r[1])
-                self.B_offset = float(r[2])
+                self.setInfo('title', r[0])
+                self.setInfo('BPM', float(r[1]))
+                self.setInfo('B_offset', float(r[2]))
+                self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
                 
                 c = 4
                 ### read tracks -- with modules assigned to dummy patterns
@@ -564,11 +627,10 @@ class Ma2Widget(Widget):
                                 m.setPattern(p)
                                 
 
-    def saveCSV(self, backup = False):
-        filename = self.title + '.may'
-        if backup: filename = '.' + filename
+    def saveCSV(self):
+        filename = self.getInfo('title') + '.may'
         
-        out_str = '|'.join([self.title, str(self.BPM), str(self.B_offset), str(len(self.tracks))]) + '|'
+        out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
             out_str += t.name + '|' + str(t.getSynthName()) + '|' + str(t.getNorm()) + '|' + str(len(t.modules)) + '|'
@@ -588,13 +650,12 @@ class Ma2Widget(Widget):
         out_csv.close()
         print(filename, "written.")
         
-        if not backup:
-            out_tmp = open('.last', "w")
-            out_tmp.write(self.title)
-            out_tmp.close()
+        out_last = open('.last', "w")
+        out_last.write(self.getInfo('title'))
+        out_last.close()
 
     def buildGLSL(self, compileGL = False):
-        filename = self.title + '.glsl'
+        filename = self.getInfo('title') + '.glsl'
 
         # ignore empty tracks
         tracks = [t for t in self.tracks if t.modules]
@@ -647,7 +708,7 @@ class Ma2Widget(Widget):
         #TODO: solve question - do I want max_mod_off here (perfect looping) or max_mod_off+max_rel (can listen to whole release decaying..)??
         seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
         seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
-        if self.B_offset!=0: seqcode += 'time += '+'{:.4f}'.format(self.B_offset/self.BPM*60)+';\n' + 4*' '
+        if self.getInfo('B_offset')!=0: seqcode += 'time += '+'{:.4f}'.format(self.getInfo('B_offset')/self.getInfo('BPM')*60)+';\n' + 4*' '
 
         print("START TEXTURE")
         
@@ -735,7 +796,7 @@ class Ma2Widget(Widget):
         print("TEXTURE FILE WRITTEN (sequence.h)")
 
         glslcode = glslcode.replace("//DEFCODE",defcode).replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode)\
-                           .replace("//BPMCODE","const float BPM = "+GLfloat(self.BPM)+";").replace("//FILTERCODE",filtercode)
+                           .replace("//BPMCODE","const float BPM = "+GLfloat(self.getInfo('BPM'))+";").replace("//FILTERCODE",filtercode)
 
         glslcode = self.purgeExpendables(glslcode)
 
@@ -838,28 +899,34 @@ class Ma2Widget(Widget):
             self.addTrack(name = 'Track ' + str(i+2))
         
     def toggleDebugMode(self):
-        self.debugMode = not self.debugMode
-        print('DEBUG MODE IS', 'ON' if self.debugMode else 'OFF')
+        self.MODE_debug = not self.MODE_debug
+        print('DEBUG MODE IS', 'ON' if self.MODE_debug else 'OFF')
         
     def printIfDebug(self, *messages):
-        if self.debugMode:
+        if self.MODE_debug:
             print(*messages)
         
-    def printDebug(self):
-        print('DEBUG -- TRACKS:')        
-        for t in self.tracks:
-            print(t.name, len(t.modules))
-            for m in t.modules:
-                print('    MODULE @',m.mod_on, m.pattern.name)
+    def printDebug(self, verbose = True):
+        print('DEBUG -- TRACKS:')
+        if verbose:  
+            for t in self.tracks:
+                print(t.name, len(t.modules))
+                for m in t.modules:
+                    print(' '*4, m.pattern.name, '@', m.mod_on)
                 
         print('DEBUG -- current track', self.current_track, '/', self.getTrack().name, '/', self.getTrackSynthType())
         print('DEBUG -- same/none type patterns:', [p.name for p in self.getSameTypePatterns()])
 
         print('DEBUG -- PATTERNS:')
-        for p in self.patterns:
-            print(p.name, len(p.notes), p.length)
+        if verbose:
+            for p in self.patterns:
+                print(p.name, len(p.notes), p.length)
+                for n in p.notes:
+                    print(' '*4, 'ON', n.note_on, 'LEN', n.note_len, 'PCH', n.note_pitch, 'VEL', n.note_vel)
             
         print('DEBUG -- current pattern', self.getPatternIndex(), '/', self.getPatternName())
+
+        print('DEBUG -- undo:', len(self.undo_stack), '/', self.undo_max_steps, '/', self.undo_pos, '/', self.MODE_undo)              
 
 ##################### NOW THE MIGHTY SHIT ##################
 
