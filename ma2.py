@@ -135,16 +135,7 @@ class Ma2Widget(Widget):
 
         k = keycode[1]
 
-        if   k == 'numpadenter': k = 'enter'
-        elif k == 'numpadadd': k = '+'
-        elif k == 'numpadsubstract': k = '-'
-        elif k == 'numpadmul': k = '*'
-        elif k == 'numpaddivide': k = '/'
-        
-        if 'shift' in modifiers: k = 'shift ' + k
-        if 'ctrl' in modifiers: k = 'ctrl ' + k
-
-        action = interpretKeypress(k, self.theTrkWidget.active, self.thePtnWidget.active)
+        action = interpretKeypress(k, modifiers, self.theTrkWidget.active, self.thePtnWidget.active)
 
         if action:
             self.stateChanged = doesActionChangeState(action)

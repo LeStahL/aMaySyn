@@ -81,7 +81,11 @@ pattern_keys = {
                }
 
 
-def interpretKeypress(key, trkActive = False, ptnActive = False):
+def interpretKeypress(key, modifiers trkActive = False, ptnActive = False):
+
+    key = key.replace('numpadadd','+').replace('numpadsubstract','-').replace('numpadmul','*').replace('numpaddivide','/').replace('numpad','')
+    if 'shift' in modifiers: key = 'shift ' + key
+    if 'ctrl' in modifiers: key = 'ctrl ' + key
     
     action = None
 
