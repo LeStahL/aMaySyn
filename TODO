@@ -1,14 +1,18 @@
 - fix problems with NR4 - drums? normalization?
+- make some great drums
 
 - MISSING in amaysyn:
    #       moveAllNotes()
    #       scrolling in track view / note view / unlimited size
    #       mouse support
    #       note slide
+   #       bug: fill pattern '*' doesn't work
+   #       create note should be possible when it doesnt fit to the right - just cut it
+   #	   "cursor" mode
 
+- terminfindung: SHADY BIZ (invite auf revision)?
+---> sorry, hab eigentlich kaum zeit
 
-- terminfindung: SHADY BIZ
-- revision: invite
 - revision: no partycoding anymore
 
 - usability - sprache vereinheitlichen und presets zusammentragen (ancient knowledge), normierung fixen

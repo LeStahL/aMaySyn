@@ -82,7 +82,7 @@ pattern_keys = {
 
 # https://kivy.org/doc/stable/_modules/kivy/core/window.html
 
-def interpretKeypress(key, modifiers trkActive = False, ptnActive = False):
+def interpretKeypress(key, modifiers, trkActive = False, ptnActive = False):
 
     key = key.replace('numpadadd','+').replace('numpadsubstract','-').replace('numpadmul','*').replace('numpaddivide','/').replace('numpad','')
     if 'shift' in modifiers: key = 'shift ' + key

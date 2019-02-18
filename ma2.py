@@ -151,11 +151,11 @@ class Ma2Widget(Widget):
         elif action == 'SYNTH RELOAD':                  self.loadSynths(update = True)
         elif action == 'CURVE EDIT':                    self.editCurve()                      
         elif action == 'MUTE':                          pygame.mixer.stop()           
-        elif action == 'SONG COMPILE':                  self.buildGLSL(compileGL = True)
+        elif action == 'SHADER PLAY':                   self.buildGLSL(compileGL = True)
         elif action == 'SONG CLEAR':                    self.clearSong()                                   
         elif action == 'SONG LOAD':                     self.loadCSV_prompt()                                
         elif action == 'SONG SAVE':                     self.saveCSV_prompt()
-        elif action == 'SONG TRANSLATE':                self.buildGLSL()
+        elif action == 'SHADER CREATE':                 self.buildGLSL()
         elif action == 'UNDO':                          self.stepUndoStack(-1)
         elif action == 'REDO':                          self.stepUndoStack(+1)
         elif action == 'SYNTH SELECT NEXT':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
@@ -219,7 +219,7 @@ class Ma2Widget(Widget):
             elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)         
             elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput)  
             elif action == 'PATTERN RENAME':            self.renamePattern()                                       
-            elif action == 'DEBUG PRINT NOTELIST':      self.getPattern().printNoteList()      
+            elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()      
       
             if keytext:
                 if keytext.isdigit():           self.setNumberInput(keytext)
