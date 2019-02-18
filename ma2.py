@@ -34,7 +34,7 @@ from ma2_track import *
 from ma2_pattern import *
 from ma2_widgets import *
 from ma2_synatize import synatize, synatize_build
-from ma2_keys import interpretKeypress, doesActionChangeState
+from ma2_keys import interpretKeypress, doesActionChangeState, correctForNumpad
 from SFXGLWidget import *
 
 GLfloat = lambda f: str(int(f))  + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
@@ -134,6 +134,7 @@ class Ma2Widget(Widget):
             self.stateChanged = False
 
         k = keycode[1]
+        keytext = correctForNumpad(keytext, k)
 
         action = interpretKeypress(k, modifiers, self.theTrkWidget.active, self.thePtnWidget.active)
 
@@ -157,12 +158,11 @@ class Ma2Widget(Widget):
         elif action == 'SONG SAVE':                     self.saveCSV_prompt()
         elif action == 'SHADER CREATE':                 self.buildGLSL()
         elif action == 'UNDO':                          self.stepUndoStack(-1)
-        elif action == 'REDO':                          self.stepUndoStack(+1)
+        elif action == 'REDO':                          self.stepUndoStack(+1) 
         elif action == 'SYNTH SELECT NEXT':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
         elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(+1, debug = self.MODE_debug)  
         elif action == 'PATTERN SELECT NEXT':           self.getTrack().switchModulePattern(self.getPattern(+1))  
         elif action == 'PATTERN SELECT LAST':           self.getTrack().switchModulePattern(self.getPattern(-1))  
-
 
         if(self.theTrkWidget.active):
             if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)     
@@ -200,8 +200,8 @@ class Ma2Widget(Widget):
             elif action == 'NOTE GAP ZERO':             self.getPattern().setGap(to = 0)                  
             elif action == 'NOTE SHIFT LEFT':           self.getPattern().moveNote(-inc_step/8)      
             elif action == 'NOTE SHIFT RIGHT':          self.getPattern().moveNote(+inc_step/8)      
-            elif action == 'NOTE TRANSPOSE UP':         self.getPattern().shiftNote(+12)             
-            elif action == 'NOTE TRANSPOSE DOWN':       self.getPattern().shiftNote(-12)             
+            elif action == 'NOTE TRANSPOSE OCT UP':     self.getPattern().shiftNote(+12)             
+            elif action == 'NOTE TRANSPOSE OCT DOWN':   self.getPattern().shiftNote(-12)             
             elif action == 'PATTERN ADD NEW':           self.addPattern(select = True)                       
             elif action == 'PATTERN ADD CLONE':         self.addPattern(select = True, clone_current = True) 
             elif action == 'PATTERN DELETE':            self.delPattern()                                          
@@ -218,13 +218,15 @@ class Ma2Widget(Widget):
             elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)         
             elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)         
             elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput)  
+            elif action == 'NOTE SET SLIDE':            self.getPattern().getNote().setSlide(self.numberInput)
             elif action == 'PATTERN RENAME':            self.renamePattern()                                       
             elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()      
       
             if keytext:
-                if keytext.isdigit():           self.setNumberInput(keytext)
-                elif k == '/':                  self.setNumberInput('-') #imperfect, but the '-' key is already taken...
-                else:                           self.setNumberInput('')
+                if keytext.isdigit() or keytext in ['.', '-']:
+                    self.setNumberInput(keytext)
+                else:
+                    self.setNumberInput('')
 
         self.update()
 
@@ -433,14 +435,19 @@ class Ma2Widget(Widget):
         self.loadSynths(update = True)
 
     def setNumberInput(self, key):
-        if key.isdigit():
-            if not self.MODE_numberInput: self.numberInput = ''
-            self.MODE_numberInput = True
-            self.numberInput += key
-        elif key == '-' and self.MODE_numberInput:
-            self.numberInput = ('-' + self.numberInput).replace('--','')
-        else:
+        if not key:
             self.MODE_numberInput = False
+
+        if not self.MODE_numberInput:
+            self.numberInput = ''
+            self.MODE_numberInput = True
+
+        if key.isdigit():
+            self.numberInput += key
+        elif key == '.' and '.' not in self.numberInput:
+            self.numberInput += key
+        elif key == '-':
+            self.numberInput = ('-' + self.numberInput).replace('--','')
 
     def setupInit(self):
         if '-debug' in sys.argv: self.toggleDebugMode()
@@ -563,8 +570,8 @@ class Ma2Widget(Widget):
                     
                     c += 4
                     for _ in range(int(r[c])):
-                        pattern.notes.append(Note(*(float(s) for s in r[c+1:c+4])))
-                        c += 4
+                        pattern.notes.append(Note(*(float(s) for s in r[c+1:c+6])))
+                        c += 5
                         
                     #if pattern.name not in [p.name for p in self.patterns]: # filter for duplicates -- TODO is this a good idea?
                     self.patterns.append(pattern)
@@ -592,7 +599,7 @@ class Ma2Widget(Widget):
         for p in self.patterns:
             out_str += '|' + p.name + '|' + p.synth_type + '|' + str(p.length) + '|' + str(len(p.notes))
             for n in p.notes:
-                out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) + '|' + str(n.note_vel)
+                out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) + '|' + str(n.note_vel) + '|' + str(n.note_slide)
                 
         # write to file
         out_csv = open(filename, "w")
@@ -650,6 +657,15 @@ class Ma2Widget(Widget):
 
         syn_rel.append(max_drum_rel)
 
+        # get slide times
+        syn_slide = []
+        for m in self.synatize_main_list:
+            if m['type'] == 'main':
+                syn_slide.append((float(m['slidetime']) if 'slidetime' in m else 0))
+        syn_slide.append(0) # because of drums
+
+        print("RELs:", syn_rel, "     SLIDE:", syn_slide)
+
         defcode  = '#define NTRK ' + nT + '\n'
         defcode += '#define NMOD ' + nM + '\n'
         defcode += '#define NPTN ' + nP + '\n'
@@ -676,6 +692,9 @@ class Ma2Widget(Widget):
         #seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_rel[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
         for t in tracks:
             tex += pack(fmt, float(syn_rel[t.getSynthIndex()]))
+        #seqcode += 'float trk_slide[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_slide[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
+        for t in tracks:
+            tex += pack(fmt, float(syn_slide[t.getSynthIndex()]))
         #seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
         for t in tracks:
             for m in t.modules:
@@ -711,6 +730,10 @@ class Ma2Widget(Widget):
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_vel * .01))
+        #seqcode += 'float note_slide[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_slide) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
+        for p in patterns:
+            for n in p.notes:
+                tex += pack(fmt, float(n.note_slide))
                 
         texlength = int(len(tex))
         while ((texlength % 4) != 0):

@@ -35,7 +35,10 @@ class Pattern():
     # THE MOST IMPORTANT FUNCTION!
     def randomColor(self):
         return Color(random.uniform(.05,.95), .8, .88, mode = 'hsv').rgb
-        
+
+    def randomizeColor(self):
+        self.color = self.randomColor()
+
     def addNote(self, note = None, select = True, append = False, clone = False):
         if note is None:
             note = Note()
@@ -208,12 +211,13 @@ class Pattern():
 
 class Note():
 
-    def __init__(self, note_on=0, note_len=1, note_pitch=24, note_vel=100): # set note_len to last default TODO
+    def __init__(self, note_on=0, note_len=1, note_pitch=24, note_vel=100, note_slide=0): # set note_len to last default TODO
         self.note_on = note_on
         self.note_off = note_on + note_len
         self.note_len = note_len
         self.note_pitch = int(note_pitch)
         self.note_vel = note_vel
+        self.note_slide = note_slide
         self.tagged = False
         # some safety checks TODO
 
@@ -228,8 +232,16 @@ class Note():
     def tag(self):
         self.tagged = True
 
-    def setVelocity(self, vel_str = '100'):
+    def setVelocity(self, numstr = '100'):
+        if numstr == '-': numstr = '0'
         try:
-            self.note_vel = min(int(vel_str), 999)
+            self.note_vel = min(int(numstr), 999)
+        except:
+            pass
+
+    def setSlide(self, numstr = '0'):
+        if numstr == '-': numstr = '0'
+        try:
+            self.note_slide = min(48, max(-48, float(numstr)))
         except:
             pass

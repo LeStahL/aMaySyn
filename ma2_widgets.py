@@ -18,6 +18,9 @@ from scipy import optimize
 from ma2_track import *
 from ma2_pattern import *
 
+mixcolor = lambda t1,t2: tuple((v1+v2)/2 for v1,v2 in zip(t1,t2))
+strfloat = lambda f: str(int(f)) if f==int(f) else str(f)
+
 class TrackWidget(Widget):
     active = BooleanProperty(True)
 
@@ -299,11 +302,20 @@ class PatternWidget(Widget):
                             Rectangle(pos = (draw_x + 4 * bar_w * n.note_len - 1, draw_y), size = (4 * bar_w * pattern.current_gap, key_h / 4))
 
                     if showVelocities:
-                        mixcolor = lambda t1,t2: tuple((v1+v2)/2 for v1,v2 in zip(t1,t2))
                         Color(*(mixcolor((0,0,0),pattern.color) if n == pattern.getNote() else mixcolor((1,1,1),pattern.color)))
-                        label = CoreLabel(text = str(n.note_vel), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
+                        label = CoreLabel(text = strfloat(n.note_vel), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
                         label.refresh()
-                        Rectangle(size = label.texture.size, pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height + 1), texture = label.texture)
+                        Rectangle(size = label.texture.size, \
+                                  pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height + 1), \
+                                  texture = label.texture)
+
+                    if n.note_slide != 0:
+                        Color(*(mixcolor((1,1,1),pattern.color)))
+                        label = CoreLabel(text = strfloat(n.note_slide), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
+                        label.refresh()
+                        Rectangle(size = label.texture.size, \
+                                  pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height + 1 + key_h), \
+                                  texture = label.texture)
 
             ### NUMBERINPUT ###
             Color(1,0,1,.9)

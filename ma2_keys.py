@@ -31,7 +31,7 @@ track_keys   = {
                 'shift home'       : 'MOD SHIFT HOME',
                 'shift end'        : 'MOD SHIFT END',
                 'ctrl +'           : 'TRACK ADD NEW',
-                'ctrl -'           : 'TRACK DELETE',
+                'ctrl delete'      : 'TRACK DELETE',
                 'left'             : 'MOD SELECT LEFT',
                 'right'            : 'MOD SELECT RIGHT',
                 'end'              : 'MOD SELECT LAST',
@@ -40,7 +40,7 @@ track_keys   = {
                 'down'             : 'TRACK SELECT NEXT',
                 '+'                : 'MOD ADD NEW',
                 'c'                : 'MOD ADD CLONE',
-                '-'                : 'MOD DELETE',
+                'delete'           : 'MOD DELETE',
                 'f6'               : 'TRACK RENAME',
                 'f7'               : 'TRACK CHANGE PARAMETERS',
                 'f9'               : 'DEBUG PRINT PATTERNS'
@@ -58,11 +58,11 @@ pattern_keys = {
                 'backspace'           : 'NOTE GAP ZERO',
                 'ctrl left'           : 'NOTE SHIFT LEFT',
                 'ctrl right'          : 'NOTE SHIFT RIGHT',
-                'ctrl up'             : 'NOTE TRANSPOSE UP',
-                'ctrl down'           : 'NOTE TRANSPOSE DOWN',
+                'ctrl up'             : 'NOTE TRANSPOSE OCT UP',
+                'ctrl down'           : 'NOTE TRANSPOSE OCT DOWN',
                 'ctrl +'              : 'PATTERN ADD NEW',
                 'ctrl *'              : 'PATTERN ADD CLONE',
-                'ctrl -'              : 'PATTERN DELETE',
+                'ctrl delete'         : 'PATTERN DELETE',
                 'left'                : 'NOTE SELECT LEFT',
                 'right'               : 'NOTE SELECT RIGHT',
                 'home'                : 'NOTE SELECT FIRST',
@@ -72,10 +72,11 @@ pattern_keys = {
                 '+'                   : 'NOTE ADD NEW',
                 'c'                   : 'NOTE ADD CLONE',
                 '*'                   : 'NOTE CLONE SELECTION',
-                '-'                   : 'NOTE DELETE',
+                'delete'              : 'NOTE DELETE',
                 'spacebar'            : 'GAP LONGER',
                 'backspace'           : 'GAP SHORTER',
                 'v'                   : 'NOTE SET VELOCITY',
+                'g'                   : 'NOTE SET SLIDE',
                 'f6'                  : 'PATTERN RENAME',
                 'f9'                  : 'DEBUG PRINT NOTES'
                }
@@ -84,7 +85,7 @@ pattern_keys = {
 
 def interpretKeypress(key, modifiers, trkActive = False, ptnActive = False):
 
-    key = key.replace('numpadadd','+').replace('numpadsubstract','-').replace('numpadmul','*').replace('numpaddivide','/').replace('numpad','')
+    key = correctForNumpad(key, key)
     if 'shift' in modifiers: key = 'shift ' + key
     if 'ctrl' in modifiers: key = 'ctrl ' + key
     
@@ -123,3 +124,13 @@ def doesActionChangeState(action):
         return True
     
     return False
+
+def correctForNumpad(keytext, k):
+    if 'numpad' not in k: return keytext
+    
+    return k.replace('numpadadd','+') \
+            .replace('numpadsubstract','-') \
+            .replace('numpadmul','*') \
+            .replace('numpaddivide','/') \
+            .replace('numpaddecimal', '.') \
+            .replace('numpad','')

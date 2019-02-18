@@ -31,7 +31,7 @@ form FeelIto op=overdrive src=FeelItbase gain=1.6
 form FeelItd op=waveshape src=FeelIto amount=.3 a=.2 b=.8 c=.4 d=.8 e=.8
 form FeelItch op=chorus src=FeelItd number=3 step=2e-3 intensity=2. rate=0.15
 #main FM src=FeelItbase release=.2
-main FM src=.8*fienv*FeelItch release=.6
+main FM src=.8*fienv*FeelItch release=.6 slidetime=.05
 
 osc  S01    shape=sin freq=f
 gac  G01    offset=0 const=1. lin=2. quad=-.5 sin=3. sin_coeff=2. exp=2. exp_coeff=-.25 mode=global
@@ -61,7 +61,7 @@ main justsaw src=somesaw1
 
 lfo    sweep  shape=sin freq=.25 scale=1500 shift=2000 mode=global
 filter BPsaw1 shape=bandpass src=somesaw1 center=sweep bandwidth=10 N=100
-main   BPsaw  src=BPsaw1
+main   BPsaw  src=BPsaw1 slidetime=.2
 
 env    stringenv    attack=0.2 decay=0.3 sustain=0.8 release=0.2
 lfo    stringvib    shape=sin freq=5.

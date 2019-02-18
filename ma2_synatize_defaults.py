@@ -7,7 +7,7 @@ def set_remaining_defaults(cid, cmd, form):
     
     if cmd in ['main', 'maindrum']:
         requirements.append('src')
-        defaults.update({'release':'0', 'relpower':'1'})
+        defaults.update({'release':'0', 'relpower':'1', 'slidetime':'6.3e-2'})
    
     elif cmd == 'random': # TODO: TREAT DIFFERENTLY
         defaults.update({'min':'0', 'max':'1', 'digits':'3'})

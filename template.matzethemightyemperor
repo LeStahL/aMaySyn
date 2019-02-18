@@ -235,15 +235,17 @@ int trk_sep(int index)      {return int(rfloat(index));}
 int trk_syn(int index)      {return int(rfloat(index+1+1*NTRK));}
 float trk_norm(int index)   {return     rfloat(index+1+2*NTRK);}
 float trk_rel(int index)    {return     rfloat(index+1+3*NTRK);}
-float mod_on(int index)     {return     rfloat(index+1+4*NTRK);}
-float mod_off(int index)    {return     rfloat(index+1+4*NTRK+1*NMOD);}
-int mod_ptn(int index)      {return int(rfloat(index+1+4*NTRK+2*NMOD));}
-float mod_transp(int index) {return     rfloat(index+1+4*NTRK+3*NMOD);}
-int ptn_sep(int index)      {return int(rfloat(index+1+4*NTRK+4*NMOD));}
-float note_on(int index)    {return     rfloat(index+2+4*NTRK+4*NMOD+NPTN);}
-float note_off(int index)   {return     rfloat(index+2+4*NTRK+4*NMOD+NPTN+1*NNOT);}
-float note_pitch(int index) {return     rfloat(index+2+4*NTRK+4*NMOD+NPTN+2*NNOT);}
-float note_vel(int index)   {return     rfloat(index+2+4*NTRK+4*NMOD+NPTN+3*NNOT);}
+float trk_slide(int index)  {return     rfloat(index+1+4*NTRK);}
+float mod_on(int index)     {return     rfloat(index+1+5*NTRK);}
+float mod_off(int index)    {return     rfloat(index+1+5*NTRK+1*NMOD);}
+int mod_ptn(int index)      {return int(rfloat(index+1+5*NTRK+2*NMOD));}
+float mod_transp(int index) {return     rfloat(index+1+5*NTRK+3*NMOD);}
+int ptn_sep(int index)      {return int(rfloat(index+1+5*NTRK+4*NMOD));}
+float note_on(int index)    {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN);}
+float note_off(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+1*NNOT);}
+float note_pitch(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+2*NNOT);}
+float note_vel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+3*NNOT);}
+float note_slide(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+4*NNOT);}
 
 float mainSynth(float time)
 {
@@ -259,46 +261,46 @@ float mainSynth(float time)
 
     float r_sidechain = 1.;
 
-    float Bon = 0.;
-    float Boff = 0.;
+    float B, Bon, Boff, Bproc, pitch;
+    int trk, tsep, tsep1, i, _modU, _modL, _mod, ptn, psep, psep1, _noteU, _noteL, _note, Bdrum;
 
-    for(int trk = 0; trk < NTRK; trk++)
+    for(trk = 0; trk < NTRK; trk++)
     {
-        int tsep = trk_sep(trk);
-        int tsep1 = trk_sep(trk+1);
+        tsep = trk_sep(trk);
+        tsep1 = trk_sep(trk+1);
 
-        int _modU = tsep1 - 1;
-        for(int i=tsep; i<tsep1-1; i++) if(BT < mod_on(i)) {_modU = i; break;}
+        _modU = tsep1 - 1;
+        for(i = tsep; i < tsep1 - 1; i++) if(BT < mod_on(i)) {_modU = i; break;}
                
-        int _modL = tsep - 1;
-        for(int i=tsep; i<tsep1-1; i++) if(BT < mod_off(i) + trk_rel(trk)) {_modL = i; break;}
+        _modL = tsep - 1;
+        for(i = tsep; i < tsep1 - 1; i++) if(BT < mod_off(i) + trk_rel(trk)) {_modL = i; break;}
        
-        for(int _mod = _modL; _mod <= _modU; _mod++)
+        for(_mod = _modL; _mod <= _modU; _mod++)
         {
-            float B = BT - mod_on(_mod);
+            B = BT - mod_on(_mod);
 
-            int ptn = mod_ptn(_mod);
-            int psep = ptn_sep(ptn);
-            int psep1 = ptn_sep(ptn+1);
+            ptn = mod_ptn(_mod);
+            psep = ptn_sep(ptn);
+            psep1 = ptn_sep(ptn+1);
                          
-            int _noteU = psep1 - 1;
-            for(int i=psep; i<psep1-1; i++) if(B < note_on(i + 1)) {_noteU = i; break;}
+            _noteU = psep1 - 1;
+            for(i = psep; i < psep1 - 1; i++) if(B < note_on(i + 1)) {_noteU = i; break;}
 
-            int _noteL = psep1 - 1;
-            for(int i=psep; i<psep1-1; i++) if(B <= note_off(i ) + trk_rel(trk)) {_noteL = i; break;}
+            _noteL = psep1 - 1;
+            for(i = psep; i < psep1 - 1; i++) if(B <= note_off(i ) + trk_rel(trk)) {_noteL = i; break;}
            
-            for(int _note = _noteL; _note <= _noteU; _note++)
+            for(_note = _noteL; _note <= _noteU; _note++)
             {
                 Bon  = note_on(_note);
                 Boff = note_off(_note);
 
                 if(trk_syn(trk) == drum_index)
                 {
-                    int Bdrum = int(note_pitch(_note));
+                    Bdrum = int(note_pitch(_note));
 
                     if(Bdrum == 0) // "sidechaining"
                     {
-                        float Bproc = (B-Bon)/(Boff-Bon);
+                        Bproc = (B-Bon)/(Boff-Bon);
                         r_sidechain = min(r_sidechain, 1. - smoothstep(Bon,Bon+1e-4,B) + pow(Bproc,8.));
                     }
                     else
@@ -306,7 +308,9 @@ float mainSynth(float time)
                 }
                 else
                 {
-                    r += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, note_pitch(_note) + mod_transp(_mod), trk_syn(trk), note_vel(_note), trk_rel(trk));
+                    pitch = note_pitch(_note) + mod_transp(_mod)
+                            + note_slide(_note) * 2. * (1. - smoothstep(Bon - trk_slide(trk), Bon + trk_slide(trk), B));
+                    r += trk_norm(trk) * AMAYSYN(time, B, Bon, Boff, pitch, trk_syn(trk), note_vel(_note), trk_rel(trk));
                 }
             }
         }
