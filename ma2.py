@@ -664,8 +664,6 @@ class Ma2Widget(Widget):
                 syn_slide.append((float(m['slidetime']) if 'slidetime' in m else 0))
         syn_slide.append(0) # because of drums
 
-        print("RELs:", syn_rel, "     SLIDE:", syn_slide)
-
         defcode  = '#define NTRK ' + nT + '\n'
         defcode += '#define NMOD ' + nM + '\n'
         defcode += '#define NPTN ' + nP + '\n'

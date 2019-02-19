@@ -206,14 +206,15 @@ float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, floa
 
 float AMAYSYN(float t, float B, float Bon, float Boff, float note, int Bsyn, float vel, float Brel)
 {
-    float Bprog = B-Bon;
-    float Bproc = Bprog/(Boff-Bon);
+    Boff += Brel;
     float L = Boff-Bon;
+    float Bprog = B-Bon;
+    float Bproc = Bprog/L;
     float tL = SPB*L;
     float _t = SPB*(B-Bon);
     float f = freqC1(note);
 
-    float env = theta(B-Bon) * (1. - smoothstep(Boff, Boff+Brel, B));
+    float env = theta(B-Bon) * (1. - smoothstep(Boff-Brel, Boff, B));
 	float s = _sin(t*f);
 
 	//SYNCODE

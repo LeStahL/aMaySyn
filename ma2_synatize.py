@@ -407,7 +407,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                 for term in sources:
                     syncode += instance(term) + (newlineplus if term != sources[-1] else ';')
                 if 'relpower' in form_main and form_main['relpower'] != '1':
-                    syncode += '\nenv = theta(B-Bon)*pow(1.-smoothstep(Boff, Boff+Brel, B),'+form_main['relpower']+');'
+                    syncode += '\nenv = theta(B-Bon)*pow(1.-smoothstep(Boff-Bref, Boff, B),'+form_main['relpower']+');'
                 syncode += newlineclosingbrace
             syncount += 1
         
