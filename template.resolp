@@ -1,4 +1,4 @@
-float resolpTEMPLATE(float time, float f, float tL, float fa, float reso) // CHEERS TO metabog https://www.shadertoy.com/view/XljSD3 - thanks for letting me steal
+float resolpTEMPLATE(float time, float f, float tL, float vel, float fa, float reso) // CHEERS TO metabog https://www.shadertoy.com/view/XljSD3 - thanks for letting me steal
 {
     int maxTaps = 128;
     fa = sqrt(fa*Tsample);

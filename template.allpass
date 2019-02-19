@@ -1,4 +1,4 @@
-float allpassTEMPLATE(float time, float f, float tL, float gain, float Ndelay)
+float allpassTEMPLATE(float time, float f, float tL, float vel, float gain, float Ndelay)
 {
     float _TIME = time;
     float sum = -gain*INSTANCE;

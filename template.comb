@@ -1,4 +1,4 @@
-float combTEMPLATE(float time, float f, float tL, float IIR_gain, float IIR_N, float FIR_gain, float FIR_N)
+float combTEMPLATE(float time, float f, float tL, float vel, float IIR_gain, float IIR_N, float FIR_gain, float FIR_N)
 {
     int imax = int(log(filterthreshold)/log(IIR_gain));
     float sum = 0.;

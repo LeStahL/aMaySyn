@@ -1,4 +1,4 @@
-float bandpassTEMPLATE(float time, float f, float tL, float fcenter, float bw, float M)
+float bandpassTEMPLATE(float time, float f, float tL, float vel, float fcenter, float bw, float M)
 {
     float y = 0.;
         

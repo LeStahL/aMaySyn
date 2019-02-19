@@ -1,4 +1,4 @@
-float reverbTEMPLATE_IIR(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4)
+float reverbTEMPLATE_IIR(float time, float f, float tL, float vel, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4)
 {
     int imax = int(log(filterthreshold)/log(IIRgain));
     float delay[4] = float[4](IIRdel1, IIRdel2, IIRdel3, IIRdel4);
@@ -20,11 +20,11 @@ float reverbTEMPLATE_IIR(float time, float f, float tL, float IIRgain, float IIR
     return .25*sum;
 }
 
-float reverbTEMPLATE_AP1(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1)
+float reverbTEMPLATE_AP1(float time, float f, float tL, float vel, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1)
 {
     // first allpass delay line
     float _TIME = time;
-    float sum = -APgain * reverbTEMPLATE_IIR(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4);
+    float sum = -APgain * reverbTEMPLATE_IIR(_TIME, f, tL, vel, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4);
     float fac = 1. - APgain * APgain;
     
     int imax = 1 + int((log(filterthreshold)-log(fac))/log(APgain));
@@ -32,18 +32,18 @@ float reverbTEMPLATE_AP1(float time, float f, float tL, float IIRgain, float IIR
     for(int i=0; i<imax; i++)
     {
         _TIME -= APdel1 * (.9 + 0.2*pseudorandom(time));
-        sum += fac * reverbTEMPLATE_IIR(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4);
+        sum += fac * reverbTEMPLATE_IIR(_TIME, f, tL, vel, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4);
         fac *= APgain * (1. + 0.01*pseudorandom(_TIME));
     }
     return sum;        
 }
 
-float reverbTEMPLATE(float time, float f, float tL, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1, float APdel2)
+float reverbTEMPLATE(float time, float f, float tL, float vel, float IIRgain, float IIRdel1, float IIRdel2, float IIRdel3, float IIRdel4, float APgain, float APdel1, float APdel2)
 {   // // based on this Schroeder Reverb from Paul Wittschen: http://www.paulwittschen.com/files/schroeder_paper.pdf
     // todo: add some noise...
     // second allpass delay line
     float _TIME = time;
-    float sum = -APgain * reverbTEMPLATE_AP1(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
+    float sum = -APgain * reverbTEMPLATE_AP1(_TIME, f, tL, vel, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
     float fac = 1. - APgain * APgain;
 
     int imax = 1 + int((log(filterthreshold)-log(fac))/log(APgain));
@@ -51,7 +51,7 @@ float reverbTEMPLATE(float time, float f, float tL, float IIRgain, float IIRdel1
     for(int i=0; i<imax; i++)
     {
         _TIME -= APdel2 * (.9 + 0.2*pseudorandom(time));
-        sum += fac * reverbTEMPLATE_AP1(_TIME, f, tL, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
+        sum += fac * reverbTEMPLATE_AP1(_TIME, f, tL, vel, IIRgain, IIRdel1, IIRdel2, IIRdel3, IIRdel4, APgain, APdel1);
         fac *= APgain * (1. + 0.01*pseudorandom(_TIME));
     }
     return sum;        

@@ -1,4 +1,4 @@
-float avghpTEMPLATE(float time, float f, float tL, float N)
+float avghpTEMPLATE(float time, float f, float tL, float vel, float N)
 {    
     int iN = int(N);
 

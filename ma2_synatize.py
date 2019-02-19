@@ -369,7 +369,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                     print("PARSING - ERROR! THIS FILTER DOES NOT EXIST: " + form['shape'], form, sep='\n')
                     quit()
 
-                return form['shape']+form['id']+'(_PROG,f,tL,'+','.join([instance(form[p]) for p in pars])+')'
+                return form['shape']+form['id']+'(_PROG,f,tL,vel,'+','.join([instance(form[p]) for p in pars])+')'
 
             else:
                 print("PARSING - ERROR! THIS FORM TYPE DOES NOT EXIST: "+form['type'], form, sep='\n')

@@ -261,7 +261,7 @@ float mainSynth(float time)
 
     float r_sidechain = 1.;
 
-    float B, Bon, Boff, Bproc, pitch;
+    float B, Bon, Boff, pitch, Bproc;
     int trk, tsep, tsep1, i, _modU, _modL, _mod, ptn, psep, psep1, _noteU, _noteL, _note, Bdrum;
 
     for(trk = 0; trk < NTRK; trk++)
