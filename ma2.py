@@ -640,7 +640,7 @@ class Ma2Widget(Widget):
         actually_used_synths = set(t.getSynthName()[2:] for t in self.tracks)
         actually_used_drums = set(n.note_pitch for p in patterns if p.synth_type == 'D' for n in p.notes)
         
-        syncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
+        syncode, drumsyncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
 
         # get release times
         syn_rel = []
@@ -766,7 +766,7 @@ class Ma2Widget(Widget):
 
         print("TEXTURE FILE WRITTEN (sequence.h)")
 
-        glslcode = glslcode.replace("//DEFCODE",defcode).replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode)\
+        glslcode = glslcode.replace("//DEFCODE",defcode).replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("//DRUMSYNCODE",drumsyncode)\
                            .replace("//BPMCODE","const float BPM = "+GLfloat(self.getInfo('BPM'))+";").replace("//FILTERCODE",filtercode)
 
         glslcode = self.purgeExpendables(glslcode)
