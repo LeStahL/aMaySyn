@@ -262,7 +262,6 @@ float note_slide(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+4*NNOT
 float mainSynth(float time)
 {
     //SEQCODE
-    
     float r = 0.;
     float d = 0.;
 
@@ -284,7 +283,7 @@ float mainSynth(float time)
         trel  = trk_rel(trk);
  
         for(_modU = tsep0; (_modU < tsep1 - 1) && (BT > mod_on(_modU + 1)); _modU++);             
-        for(_modL = tsep0; (_modL < tsep1 - 1) && (BT >= mod_off(_modL) + trk_rel(trk)); _modL++);
+        for(_modL = tsep0; (_modL < tsep1 - 1) && (BT >= mod_off(_modL) + trel); _modL++);
 
         for(int _mod = _modL; _mod <= _modU; _mod++)
         {
@@ -315,16 +314,16 @@ float mainSynth(float time)
 
                 if(Bsyn == drum_index)
                 {
-                    Bdrum = -int(note_pitch(_note));
+                    Bdrum = int(note_pitch(_note));
                     if(Bdrum == 0) { r_sidechain = min(r_sidechain, 1. - min(1e4 * Bprog,1.) + pow(Bproc,8.)); }
                     //DRUMSYNCODE
-                    d += trk_norm(trk) * amaysyn;
+                    d += trk_norm(trk) * amaysyn * theta(Bprog);
                 }
                 else
                 {
                     f = freqC1(note_pitch(_note) + mod_transp(_mod));
 
-                    if(false && abs(note_slide(_note))>1e-2) // THIS IS SLIDEY BIZ - BUT SHITTY AS CRAPPY FUCK RIGHT NOW!
+                    if(abs(note_slide(_note))>1e-2) // THIS IS SLIDEY BIZ - BUT SHITTY AS CRAPPY FUCK RIGHT NOW!
                     {
                         float Bslide = trk_slide(trk);
                         float fac    = note_slide(_note) * log(2.)/36.;
@@ -338,9 +337,8 @@ float mainSynth(float time)
                         f = (B <= Bslide) ? f * corr / _t : f * (1. + corr / _t); 
                     }
 
-                    float env = theta(B-Bon) * (1. - smoothstep(Boff-trel, Boff, B));
+                    float env = theta(Bprog) * (1. - smoothstep(Boff-trel, Boff, B));
                     //SYNCODE
-                    //amaysyn = _sin(f * _t);
                     r += trk_norm(trk) * clamp(env,0.,1.) * amaysyn;
                 }
             }

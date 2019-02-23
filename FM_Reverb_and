@@ -1,0 +1,110 @@
+// FM Reverb
+// Created by Dmitry Andreev - and'2014
+// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+
+#define PI 3.1415927
+
+vec2 hash22noise(vec2 p) // Hash from https://www.shadertoy.com/view/4djSRW
+{
+    float p  = fract(vec2(t, t*1.423)) * vec2(5.3983, 5.4427));
+    p += dot(p.yx, p.xy +  vec2(21.5351, 14.3137));
+    return 2. * fract(vec2(p.x * p.y * 95.4337, p.x * p.y * 97.597)) - 1.;
+}
+
+vec2 lpnoise(float t, float fq)
+{
+    t *= fq;
+
+    float tt = fract(t);
+    float tn = t - tt;
+    tt = smoothstep(0.0, 1.0, tt);
+
+    vec2 n0 = hash22noise(floor(tn + 0.0) / fq);
+    vec2 n1 = hash22noise(floor(tn + 1.0) / fq);
+
+    return mix(n0, n1, tt);
+}
+
+vec2 reverb_phase(float t, float amt)
+{
+        vec2 r = lpnoise(t,  100.0)
+               + lpnoise(t,  550.0) * 0.2
+               + lpnoise(t, 1050.0) * 0.1 * exp(-t * 5.0);
+
+    return amt * r;
+}
+
+float sine(float x)
+{
+    return sin(2.0 * PI * x);
+}
+
+vec2 sine(vec2 v) { return vec2(sine(v.x), sine(v.y)); }
+
+vec2 synthWave(float t)
+{
+    bool do_reverb = mod(t, 8.0) > 4.0;
+    t = mod(t, 2.0);
+
+    float f0 = 880.0;
+
+    vec2 w = vec2(sine(t * f0) * exp(-t * 2.5));
+
+    if (do_reverb)
+    {
+        w += sine(t * f0 + reverb_phase(t, 0.1)) * exp(-t * 2.0);
+        w -= sine(t * f0          ) * exp(-t * 2.0);
+    }
+
+    w *= 1.0 - exp(-t * 800.0);
+
+    return w;
+}
+
+//
+
+float remap(float low, float high, float x)
+{
+    return clamp((x - low) / (high - low), 0.0, 1.0);
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    vec2  uv = fragCoord.xy / iResolution.xy;
+    float gt = (uv.x - 1.0) * 5.0 + mod(iTime, 8.0);
+
+    // Fourier transform
+    const float n = 256.0;
+    float fi = floor(uv.y * n * 0.5);
+    float angle = 2.0 * PI * fi / n;
+    vec2  di = vec2(cos(angle), sin(angle));
+    vec2  df = vec2(1.0, 0.0);
+    vec2  f  = vec2(0.0, 0.0);
+
+    for (int i = 0; i < int(n); i++)
+    {
+        float x = float(i) / n;
+
+        float t = x * 0.05 + gt;
+        vec2  w = synthWave(t);
+        float v = (w.x + w.y) * 0.5;
+
+        // Hann window
+        v *= 0.5 * (1.0 - cos(2.0 * PI * x));
+
+        f += df * v;
+        df = df.xy * di.x + vec2(-1.0, 1.0) * df.yx * di.y;
+    }
+
+    float y = 0.5 * length(f);
+    y = sqrt(y / (1.0 + y));
+    y = clamp(y, 0.0, 1.0);
+
+    vec3 clr = vec3(0.0);
+    clr = mix(clr, vec3(0.2, 0.2, 0.7), remap(0.00, 0.25, y));
+    clr = mix(clr, vec3(0.9, 0.1, 0.0), remap(0.25, 0.50, y));
+    clr = mix(clr, vec3(1.0, 1.0, 0.3), remap(0.50, 0.75, y));
+    clr = mix(clr, vec3(1.0, 1.0, 1.0), remap(0.75, 1.00, y));
+
+    fragColor = vec4(clr, 1.0);
+}

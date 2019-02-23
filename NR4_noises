@@ -1,0 +1,89 @@
+/* Noise Review
+* Copyright (C) 2019  Alexander Kraus <nr4@z10.info>
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+// Update 1: removed time glitch with mod
+
+// define VALUE for value noise, nothing gives perlin
+#define VALUE
+
+// Global constants
+const vec3 c = vec3(1., 0., -1.);
+
+// Hash function
+float rand(float x)
+{
+    return fract(sin(dot(x*c.xx-1. ,vec2(12.9898,78.233)))*43758.5453);
+}
+
+// One-dimensional value noise
+float value_noise_1d(float t)
+{
+    float i = floor(t);
+    t = fract(t);
+    return mix(-1.+2.*rand(i), -1.+2.*rand(i+1.), smoothstep(0., 1., t));
+}
+
+// One-dimensional perlin noise
+float derivative_noise_1d(float t)
+{
+    float i = floor(t);
+    t = fract(t);
+    t = ((6.*t-15.)*t+10.)*t*t*t;
+    return mix(-1.+2.*rand(i), -1.+2.*rand(i+1.), t);
+}
+
+// Make noise multi-frequency
+#define mf(noise, x, fmin, fmax, alpha, dst) \
+{\
+    dst = 0.;\
+    float a = 1., nf = 0.;\
+    for(float f = fmin; f<fmax; f = f*2.)\
+    {\
+        dst += a*noise(f*(x));\
+        a *= alpha;\
+        nf += 1.;\
+    }\
+    dst *= (1.-alpha)/(1.-pow(alpha, nf));\
+}
+
+vec2 mainSound( float time )
+{
+    time = mod(time, 4.);
+    
+    const float f = 440.,
+        tau = 2.*acos(-1.);
+    float d = 0.;
+    
+    if(mod(floor(time), 2.) == 0.) // Single-freqency
+    {
+#ifdef VALUE
+            d = value_noise_1d(tau * f * time);
+#else
+            d = derivative_noise_1d(tau * f * time);
+#endif
+    }
+    else // Multi-Frequency
+    {
+#ifdef VALUE
+            mf(value_noise_1d, tau * f * time, 110., 1000., .45, d);
+#else
+            mf(derivative_noise_1d, tau * f * time, 110., 1000., .45, d);
+#endif
+    }
+    
+    return vec2(d);
+}
