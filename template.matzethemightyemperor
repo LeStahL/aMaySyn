@@ -311,12 +311,11 @@ float mainSynth(float time)
                 Bproc   = Bprog / L;
                 _t      = Bprog * SPB;
                 vel     = note_vel(_note);
-//                time = tL; // does every place use the right time / tL ??
 
                 if(syn == drum_index)
                 {
                     drum = int(note_pitch(_note));
-                    if(drum == 0) { r_sidechain = min(r_sidechain, 1. - min(1e4 * Bprog,1.) + pow(Bproc,8.)); }
+                    if(drum == 0) { r_sidechain = min(r_sidechain, 1. - clamp(1e4 * Bprog,0.,1.) + pow(Bprog/(L-rel),8.)); }
                     //DRUMSYNCODE
                     d += trk_norm(trk) * amaysyn * theta(Bprog);
                 }
@@ -324,20 +323,19 @@ float mainSynth(float time)
                 {
                     f = freqC1(note_pitch(_note) + mod_transp(_mod));
 
-                    if(abs(note_slide(_note)) > 1e-3) // THIS IS SLIDEY BIZ - BUT SHITTY AS CRAPPY FUCK RIGHT NOW!
+                    if(abs(note_slide(_note)) > 1e-3) // THIS IS SLIDEY BIZ
                     {
                         float Bslide = trk_slide(trk);
-                        float fac    = note_slide(_note) * log(2.)/12.;
+                        float fac = note_slide(_note) * log(2.)/12.;
                         if (Bprog <= Bslide)
                         {
                             float help = 1. - Bprog/Bslide;
-                            f *= Bslide/Bprog * (fhelp(fac) - help * fhelp(fac*help*help));
+                            f *= Bslide/B * (fhelp(fac) - help * fhelp(fac*help*help));
                         }
                         else
                         {
-                            f *= 1. + Bslide/Bprog * (fhelp(fac) - 1.);
+                            f *= 1. + (Bslide * (fhelp(fac)-1.) - Bon) / B;
                         }
-
                     }
 
                     float env = theta(Bprog) * (1. - smoothstep(Boff-rel, Boff, B));
