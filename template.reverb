@@ -6,7 +6,7 @@ float reverbTEMPLATE_IIR(float time, float f, float tL, float vel, float IIRgain
     float sum = 0.;
     
     // 4 IIR comb filters
-    for(int d=0; d<8; d++)
+    for(int d=0; d<4; d++)
     {
         float fac = 1.;
         

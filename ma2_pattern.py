@@ -45,7 +45,7 @@ class Pattern():
             append = False
         if clone: select = False
         
-        note = Note(note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch % self.max_note, note.note_vel)
+        note = Note(note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch % self.max_note, note.note_vel, note.note_slide)
         note.tag()
         
         if note.note_off > self.length:

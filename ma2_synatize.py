@@ -30,7 +30,7 @@ _BPM = {'id':'BPM', 'type':'uniform'}
 _note = {'id':'note', 'type':'uniform'}
 _Fsample = {'id':'Fsample', 'type':'uniform'}
 _Tsample = {'id':'Tsample', 'type':'uniform'}
-_trel = {'id':'trel', 'type':'uniform'}
+_rel = {'id':'rel', 'type':'uniform'}
 
 newlineplus = '\n' + 6*' ' + '+'
 
@@ -38,7 +38,7 @@ def synatize(syn_file = 'test.syn'):
 
     syncode = ""
 
-    form_list = [_f, _t, _t_, _B, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample, _Tsample, _trel]
+    form_list = [_f, _t, _t_, _B, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample, _Tsample, _rel]
     main_list = []
    
     print('PARSING', './' + syn_file)
@@ -397,16 +397,16 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
     else:
         #print('BUILDING MAIN LIST:', main_list, actually_used_synths)
         syncount = 1
-        syncode = 'if(Bsyn == 0){amaysyn = _sin(f*_t);}\n' + 20*' '
+        syncode = 'if(syn == 0){amaysyn = _sin(f*_t);}\n' + 20*' '
         for form_main in main_list:
             if form_main['type']!='main': continue
             sources = form_main['src'].split(',')
             if actually_used_synths is None or form_main['id'] in actually_used_synths:
-                syncode += 'else if(Bsyn == ' + str(syncount) + '){\n' + 24*' ' + 'amaysyn = '
+                syncode += 'else if(syn == ' + str(syncount) + '){\n' + 24*' ' + 'amaysyn = '
                 for term in sources:
                     syncode += instance(term) + (newlineplus if term != sources[-1] else ';')
                 if 'relpower' in form_main and form_main['relpower'] != '1':
-                    syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-trel, Boff, B),'+form_main['relpower']+');'
+                    syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-rel, Boff, B),'+form_main['relpower']+');'
                 syncode += '\n' + 20*' ' + '}\n' + 20*' '
             syncount += 1
         syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
@@ -417,7 +417,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
             if form_main['type']!='maindrum': continue
             sources = form_main['src'].split(',')
             if actually_used_drums is None or drumcount in actually_used_drums:
-                drumsyncode += 'else if(Bdrum == ' + str(drumcount) + '){\n' + 24*' ' + 'amaysyn = '
+                drumsyncode += 'else if(drum == ' + str(drumcount) + '){\n' + 24*' ' + 'amaysyn = '
                 if 'amp' in form_main and form_main['amp'] != '1': #in case you want e.g. velocity scaling for filtered drums... not pretty, but could work.
                     drumsyncode += instance(form['amp']) + '*'
                 for term in sources:
