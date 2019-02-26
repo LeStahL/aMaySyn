@@ -1,6 +1,8 @@
 *.may
 *.glsl
 *.bak
+*.rnd
+out/
 file.wav
 sequence.h
 sfx.frag

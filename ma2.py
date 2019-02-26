@@ -74,10 +74,14 @@ class Ma2Widget(Widget):
     undo_stack = []
     undo_max_steps = 50
     undo_pos = 0
-    MODE_undo = False
-    
+    MODE_undo = False    
     stateChanged = True
-    
+
+    #headless mode just renders to file
+    #./run.sh <ID> -headless
+    MODE_headless = False
+    outdir = 'out/'
+
     #helpers...
     def getTrack(self):                 return self.tracks[self.current_track] if self.current_track is not None else None
     def getLastTrack(self):             return self.tracks[-1] if self.tracks else None
@@ -109,6 +113,15 @@ class Ma2Widget(Widget):
     
     def getDefaultMaxNote(self, ptype=None):
         return 88 if not (ptype[0]=='D' if ptype else self.isDrumTrack()) else len(drumkit)
+
+    def getWAVFileName(self, count):
+        return './' + self.outdir + '/' + self.getInfo('title') + '_' + str(count) + '.wav'
+
+    def getWAVFileCount(self):
+        if not os.path.isdir('./' + self.outdir): return '001'
+        count = 1
+        while os.path.isfile(self.getWAVFileName(f'{count:03d}')): count += 1
+        return f'{count:03d}'
 
 ################## OFFICIAL START OF STUFF... ##############
 
@@ -450,21 +463,25 @@ class Ma2Widget(Widget):
             self.numberInput = ('-' + self.numberInput).replace('--','')
 
     def setupInit(self):
+
+        if '-headless' in sys.argv: self.MODE_headless = True
         if '-debug' in sys.argv: self.toggleDebugMode()
         
         self.loadSynths()
-        self.setupSomething()
+        self.setupTest()
         
         if len(sys.argv) > 1:
             self.setInfo('title', sys.argv[1])
         elif os.path.exists('.last'):
             with open('.last') as in_tmp:
                 self.setInfo('title', in_tmp.read())
-        else:
-            pass
 
         self.loadSynths()
         Clock.schedule_once(self.loadCSV, 0)
+
+        if self.MODE_headless:
+            if not os.path.isdir('./' + self.outdir): os.mkdir(self.outdir)
+            Clock.schedule_once(self.instantCompileGLSL, 0.1)
 
         self.update()
 
@@ -611,7 +628,10 @@ class Ma2Widget(Widget):
         out_last.write(self.getInfo('title'))
         out_last.close()
 
-    def buildGLSL(self, compileGL = False):
+    def instantCompileGLSL(self, delta):
+        self.buildGLSL(compileGL = True, renderWAV = True)
+
+    def buildGLSL(self, compileGL = False, renderWAV = False):
         filename = self.getInfo('title') + '.glsl'
 
         # ignore empty tracks
@@ -640,7 +660,12 @@ class Ma2Widget(Widget):
         actually_used_synths = set(t.getSynthName()[2:] for t in self.tracks)
         actually_used_drums = set(n.note_pitch for p in patterns if p.synth_type == 'D' for n in p.notes)
         
-        syncode, drumsyncode, filtercode = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
+        syncode, drumsyncode, filtercode, store_randoms \
+            = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
+
+        if self.MODE_headless:
+            with open(self.getInfo('title') + '.rnd', 'a') as of:
+                of.write(str(self.getWAVFileCount()) + '\t' + '\t'.join([key + '=' + str(store_randoms[key]) for key in store_randoms]) + '\n')
 
         # get release times
         syn_rel = []
@@ -795,8 +820,8 @@ class Ma2Widget(Widget):
 
         pyperclip.copy(glslcode)
         
-        if compileGL:
-            self.compileShader(glslcode)
+        if compileGL or renderWAV:
+            self.compileShader(glslcode, renderWAV)
 
     def purgeExpendables(self, code):
         func_list = {}
@@ -861,7 +886,7 @@ class Ma2Widget(Widget):
 
 ###################### DEBUG FUNCTIONS ######################
 
-    def setupSomething(self):
+    def setupTest(self):
         self.addTrack("Bassline", synth = 0)
         self.addPattern("Sündig",2)
         self.tracks[0].addModule(0, self.patterns[0], 0, select = False)
@@ -909,7 +934,7 @@ class Ma2Widget(Widget):
         self._keyboard_request()
         self.update()        
 
-    def compileShader(self, shader, render_to_file = False):
+    def compileShader(self, shader, renderWAV):
         if not shader:
             shader = '''vec2 mainSound( float time ){ return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) ); }''' #assign for test purposes
         
@@ -929,24 +954,35 @@ class Ma2Widget(Widget):
             print('music is empty.')
             return
  
-        pygame.mixer.pre_init(frequency=int(44100), size=-16, channels=2, buffer=4096)
-        pygame.init()
-        pygame.mixer.init()
-        pygame.mixer.stop()
-        pygame.mixer.Sound(buffer=self.music).play()
+        if not renderWAV:
+            pygame.mixer.pre_init(frequency=int(44100), size=-16, channels=2, buffer=4096)
+            pygame.init()
+            pygame.mixer.init()
+            pygame.mixer.stop()
+            pygame.mixer.Sound(buffer=self.music).play()
         
         endtime = datetime.datetime.now()
         el = endtime - starttime
 
         print("Execution time", str(el.total_seconds()) + 's')
 
-        if render_to_file:
-            sfile = wave.open('file.wav','w')
-            sfile.setframerate(44100)
-            sfile.setnchannels(2)
-            sfile.setsampwidth(2)
-            sfile.writeframesraw(self.music)
-            sfile.close()        
+        if renderWAV:
+            # determine number of samples for one songlength
+            song_length = max(t.getLastModuleOff() for t in self.tracks) / float(self.getInfo('BPM')) * 60
+            sound_framerate = 44100
+            sound_channels = 2
+            sound_samplewidth = 2
+            total_samples = int(song_length * sound_framerate * sound_channels * sound_samplewidth + 1)
+
+            sfile = wave.open(self.getWAVFileName(self.getWAVFileCount()),'w')
+            sfile.setframerate(sound_framerate)
+            sfile.setnchannels(sound_channels)
+            sfile.setsampwidth(sound_samplewidth)
+            sfile.writeframesraw(self.music[:total_samples])
+            sfile.close()
+
+        if self.MODE_headless:
+            App.get_running_app().stop()
 
         self.update()
 

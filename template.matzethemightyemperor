@@ -330,7 +330,7 @@ float mainSynth(float time)
                         if (Bprog <= Bslide)
                         {
                             float help = 1. - Bprog/Bslide;
-                            f *= Bslide/B * (fhelp(fac) - help * fhelp(fac*help*help));
+                            f *= Bslide * (fhelp(fac) - help * fhelp(fac*help*help)) / B;
                         }
                         else
                         {

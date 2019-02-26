@@ -169,7 +169,8 @@ class PatternWidget(Widget):
         pattern = parent.getPattern()
         transpose = parent.getModuleTranspose()
         isDrum = parent.isDrumTrack()
-                
+        # cursor = parent.getCursor()
+
         def isKeyBlack(key): return self.isKeyBlack(key) if not isDrum else (key % 2 == 0)
         
         pad_l = 10

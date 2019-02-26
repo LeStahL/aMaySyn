@@ -426,8 +426,10 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
             drumcount += 1
         drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
 
+    store_randoms = {}
     for r in (f for f in form_list if f['type']=='random'):
         print('RANDOM', r['id'], '=', r['value'])
+        store_randoms.update({r['id']: r['value']})
 
     print("\nBUILT SYN CODE:\n", 4*' '+syncode, 4*' '+drumsyncode, sep="")
 
@@ -439,7 +441,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
         ff.close()
         filtercode += ffcode.replace('TEMPLATE',form['id']).replace('INSTANCE',instance(form['src'])).replace('_PROG','_TIME').replace('_BPROG','Bprog').replace('Bprog','_TIME*SPB')
 
-    return syncode, drumsyncode, filtercode
+    return syncode, drumsyncode, filtercode, store_randoms
 
 
 if __name__ == '__main__':
