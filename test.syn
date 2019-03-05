@@ -87,7 +87,7 @@ form   FeelIto    op=overdrive src=FeelItbase gain=1.6
 form   FeelItd    op=waveshape src=FeelIto amount=.3 a=.2 b=.8 c=.4 d=.8 e=.8
 form   FeelItch   op=chorus src=FeelItd number=3 step=2e-3 intensity=2. rate=0.15
 #main   FM         src=FeelItbase release=.2
-main   FM         src=.8*fienv*FeelItch release=.15 slidetime=.5
+main   FM         src=.8*fienv*FeelItch release=.15 slidetime=.2
 
 osc  S01    shape=sin freq=f
 gac  G01    offset=0 const=1. lin=2. quad=-.5 sin=3. sin_coeff=2. exp=2. exp_coeff=-.25 mode=global
