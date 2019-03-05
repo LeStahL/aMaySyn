@@ -343,11 +343,11 @@ vec2 mainSynth(float time)
                         if (Bprog <= Bslide)
                         {
                             float help = 1. - Bprog/Bslide;
-                            f *= Bslide * (fhelp(fac) - help * fhelp(fac*help*help)) / B;
+                            f *= Bslide * (fhelp(fac) - help * fhelp(fac*help*help)) / Bprog;
                         }
                         else
                         {
-                            f *= 1. + (Bslide * (fhelp(fac)-1.) - Bon) / B;
+                            f *= 1. + (Bslide * (fhelp(fac)-1.) - Bon) / Bprog;
                         }
                     }
 

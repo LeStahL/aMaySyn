@@ -1,11 +1,13 @@
 ########### SYNTHS ###########
 
+osc  fm0         shape=fm
+main FM0         src=fm0 slidetime=.2
+
 osc fm1op2fb
 osc fm1op2   freq=.999*f phase=.35*fm1op2fb
 lfo fm1fb    shape=saw freq=2 mode=global,beat
 osc fm1op1   phase=fm1fb*fm1op2
 osc fm1sub1  shape=sin freq=.5*f
-
 osc  fm1sub2     freq=.501*f
 env  quickattack attack=0.01 hold=1 decay=1 sustain=0
 main FM1         src=quickattack*fm1op1+quickattack*0.4*fm1sub1+quickattack*0.4*fm1sub2 release=.1
