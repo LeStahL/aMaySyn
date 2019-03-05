@@ -23,7 +23,7 @@ float fhelp(float x) { return 1. + .333*x;} // 1. + .33333*x + .1*x*x + .02381*x
 const float BPS = BPM/60.;
 const float SPB = 60./BPM;
 
-const float Fsample = 44100.;
+const float Fsample = 48000.; // PRODUCTION: CHANGE THIS BACK TO 44100.
 const float Tsample = 1./Fsample;
 
 const float stereo_delay = 2e-4; //enhance the stereo feel - this is experimental since I included the stereo functionality
@@ -260,7 +260,7 @@ int ptn_sep(int index)      {return int(rfloat(index+1+5*NTRK+4*NMOD));}
 float note_on(int index)    {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN);}
 float note_off(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+1*NNOT);}
 float note_pitch(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+2*NNOT);}
-float note_pan(int index)   {return     rfloat(index+2+5+NTRK+4*NMOD+NPTN+3*NNOT);}
+float note_pan(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+3*NNOT);}
 float note_vel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+4*NNOT);}
 float note_slide(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+5*NNOT);}
 
@@ -320,9 +320,9 @@ vec2 mainSynth(float time)
                 Bproc = Bprog / L;
                 _t    = Bprog * SPB;
                 _t2   = _t - stereo_delay;
-                vel   = .3 + note_vel(_note);
+                vel   = note_vel(_note);
                 amtL  = clamp(1. - note_pan(_note), 0., 1.);
-                amtR  = clamp(1. + note_pan(_note), 0., 1.);
+                amtR  = clamp(1. + note_pan(_note), 0., 1.); 
 
                 if(syn == drum_index)
                 {
@@ -359,8 +359,7 @@ vec2 mainSynth(float time)
             }
         }
     }
-    return vec2(sidechain * sL + dL, sidechain * sL + dR);
-//    return vec2(s_atan(sidechain * sL + dL), s_atan(sidechain*sL + dR));
+    return vec2(sidechain * sL + dL, sidechain * sR + dR); // do we need s_atan?
 }
 
 vec2 mainSound(float t)

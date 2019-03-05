@@ -409,7 +409,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                 for term in sources:
                     syncodeL += instance(term) + (newlineplus if term != sources[-1] else ';')
                 
-                syncodeR = syncodeL.replace('(_TIME','time2').replace('_PROG','_t2')
+                syncodeR = syncodeL.replace('_TIME','time2').replace('_PROG','_t2')
                 syncodeL = syncodeL.replace('_TIME','time').replace('_PROG','_t')
 
                 syncode += 'else if(syn == ' + str(syncount) + '){\n' + 24*' ' \
