@@ -302,6 +302,14 @@ class PatternWidget(Widget):
                             Color(1,1,1,.4)
                             Rectangle(pos = (draw_x + 4 * bar_w * n.note_len - 1, draw_y), size = (4 * bar_w * pattern.current_gap, key_h / 4))
 
+                    if n.note_pan != 0:
+                        Color(*(mixcolor((1,1,1),pattern.color)))
+                        label = CoreLabel(text = strfloat(n.note_pan), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
+                        label.refresh()
+                        Rectangle(size = label.texture.size, \
+                                  pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height - key_h), \
+                                  texture = label.texture)
+
                     if showVelocities:
                         Color(*(mixcolor((0,0,0),pattern.color) if n == pattern.getNote() else mixcolor((1,1,1),pattern.color)))
                         label = CoreLabel(text = strfloat(n.note_vel), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)

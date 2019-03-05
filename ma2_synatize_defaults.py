@@ -9,8 +9,8 @@ def set_remaining_defaults(cid, cmd, form):
         requirements.append('src')
         defaults.update({'release':'0', 'relpower':'1', 'slidetime':'6.3e-2'})
    
-    elif cmd == 'random': # TODO: TREAT DIFFERENTLY
-        defaults.update({'min':'0', 'max':'1', 'digits':'3'})
+    elif cmd == 'random':
+        defaults.update({'min':'0', 'max':'1', 'digits':'3', 'store':False})
 
     elif cmd == 'osc' or cmd == 'lfo':
         defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0', 'overdrive':'0'})
@@ -74,7 +74,7 @@ def set_remaining_defaults(cid, cmd, form):
             elif form['shape'] == 'allpass':
                 defaults.update({'gain':'.9', 'ndelay':'1'})
             elif form['shape'] in ['avghp', 'avglp']:
-                defaults.update({'N':'2'})
+                defaults.update({'n':'2'})
             elif form['shape'] == 'bandpass':
                 defaults.update({'center':'500', 'bandwidth':'100', 'n':'32'}) # TODO: this is still not working right. fix, if possible.
             elif form['shape'] == 'comb':
@@ -93,7 +93,7 @@ def set_remaining_defaults(cid, cmd, form):
         
         try:
             if form['op'] == 'detune':
-                defaults.update({'amount':'.01,.985'})
+                defaults.update({'amount':'.01,-.005'})
                 
             elif form['op'] =='pitchshift':
                 defaults.update({'steps':'12'})

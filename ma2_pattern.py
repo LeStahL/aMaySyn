@@ -45,7 +45,14 @@ class Pattern():
             append = False
         if clone: select = False
         
-        note = Note(note.note_on + append * note.note_len + self.current_gap, note.note_len, note.note_pitch % self.max_note, note.note_vel, note.note_slide)
+        note = Note( \
+            note_on = note.note_on + append * note.note_len + self.current_gap, \
+            note_len = note.note_len, \
+            note_pitch = note.note_pitch % self.max_note, \
+            note_pan = note.note_pan, \
+            note_vel = note.note_vel, \
+            note_slide = note.note_slide \
+            )
         note.tag()
         
         if note.note_off > self.length:
@@ -80,8 +87,15 @@ class Pattern():
                 if n.note_off > note.note_off:
                     copy_len = note.note_off - n.note_on
                     
-                self.notes.append(Note(copy_on, copy_len, n.note_pitch, n.note_vel))
-                
+                self.notes.append(Note( \
+                    note_on = copy_on, \
+                    note_len = note_copy_len, \
+                    note_pitch = n.note_pitch, \
+                    note_pan = n.note_pan, \
+                    note_vel = n.note_vel, \
+                    note_slide = n.note_slide \
+                    ))
+
             copy_pos += copy_span 
             
         self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
@@ -207,17 +221,18 @@ class Pattern():
     ### DEBUG ###
     def printNoteList(self):
         for n in self.notes:
-            print(n.note_on, n.note_off, n.note_len, n.note_pitch, n.note_vel)
+            print('on',n.note_on,'off',n.note_off,'len',n.note_len,'pitch',n.note_pitch,'pan',n.note_pan,'vel',n.note_vel,'slide',n.note_slide)
 
 class Note():
 
-    def __init__(self, note_on=0, note_len=1, note_pitch=24, note_vel=100, note_slide=0): # set note_len to last default TODO
-        self.note_on = note_on
-        self.note_off = note_on + note_len
-        self.note_len = note_len
+    def __init__(self, note_on=0, note_len=1, note_pitch=24, note_pan=0, note_vel=100, note_slide=0): # set note_len to last default TODO
+        self.note_on = float(note_on)
+        self.note_off = float(note_on) + float(note_len)
+        self.note_len = float(note_len)
         self.note_pitch = int(note_pitch)
-        self.note_vel = note_vel
-        self.note_slide = note_slide
+        self.note_pan = int(note_pan)
+        self.note_vel = int(note_vel)
+        self.note_slide = float(note_slide)
         self.tagged = False
         # some safety checks TODO
 
@@ -232,16 +247,20 @@ class Note():
     def tag(self):
         self.tagged = True
 
-    def setVelocity(self, numstr = '100'):
-        if numstr == '-': numstr = '0'
+    def setPan(self, numstr = '0'):
+        try:
+            self.note_pan = min(100, max(-100, int(numstr)))
+        except:
+            self.note_pan = 0
+
+    def setVelocity(self, numstr):
         try:
             self.note_vel = min(int(numstr), 999)
         except:
-            pass
+            self.note_vel = 100
 
-    def setSlide(self, numstr = '0'):
-        if numstr == '-': numstr = '0'
+    def setSlide(self, numstr):
         try:
             self.note_slide = min(48, max(-48, float(numstr)))
         except:
-            pass
+            self.note_slide = 0

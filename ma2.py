@@ -230,6 +230,7 @@ class Ma2Widget(Widget):
             elif action == 'NOTE DELETE':               self.getPattern().delNote()                                
             elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)         
             elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)         
+            elif action == 'NOTE SET PAN':              self.getPattern().getNote().setPan(self.numberInput)
             elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput)  
             elif action == 'NOTE SET SLIDE':            self.getPattern().getNote().setSlide(self.numberInput)
             elif action == 'PATTERN RENAME':            self.renamePattern()                                       
@@ -471,7 +472,7 @@ class Ma2Widget(Widget):
         self.setupTest()
         
         if len(sys.argv) > 1:
-            self.setInfo('title', sys.argv[1])
+            self.setInfo('title', sys.argv[1].split('.')[0])
         elif os.path.exists('.last'):
             with open('.last') as in_tmp:
                 self.setInfo('title', in_tmp.read())
@@ -585,10 +586,24 @@ class Ma2Widget(Widget):
                     pattern_type = r[c+2] if r[c+2] in pattern_types else '_'
                     pattern = Pattern(name = r[c+1], length = float(r[c+3]), synth_type = pattern_type, max_note = self.getDefaultMaxNote(pattern_type))
                     
+                    if self.MODE_debug: print(c, "READ PATTERN ", r[c+1], r[c+2], r[c+3], r[c+4])
+
                     c += 4
                     for _ in range(int(r[c])):
-                        pattern.notes.append(Note(*(float(s) for s in r[c+1:c+6])))
-                        c += 5
+                        if self.MODE_debug:
+                            try:
+                                print(c, "    READ NOTE ", r[c+1], r[c+2], r[c+3], r[c+4], r[c+5], r[c+6])
+                            except:
+                                print(c, " ERROR WITH REST", r[c+1:])
+
+                        pattern.notes.append(Note(\
+                            note_on    = float(r[c+1]),\
+                            note_len   = float(r[c+2]),\
+                            note_pitch = int(float(r[c+3])),\
+                            note_pan   = int(float(r[c+4])),\
+                            note_vel   = int(float(r[c+5])),\
+                            note_slide = float(r[c+6])))
+                        c += 6
                         
                     #if pattern.name not in [p.name for p in self.patterns]: # filter for duplicates -- TODO is this a good idea?
                     self.patterns.append(pattern)
@@ -616,7 +631,8 @@ class Ma2Widget(Widget):
         for p in self.patterns:
             out_str += '|' + p.name + '|' + p.synth_type + '|' + str(p.length) + '|' + str(len(p.notes))
             for n in p.notes:
-                out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) + '|' + str(n.note_vel) + '|' + str(n.note_slide)
+                out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) \
+                        +  '|' + str(n.note_pan) + '|' + str(n.note_vel) + '|' + str(n.note_slide)
                 
         # write to file
         out_csv = open(filename, "w")
@@ -663,9 +679,11 @@ class Ma2Widget(Widget):
         syncode, drumsyncode, filtercode, store_randoms \
             = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
 
-        if self.MODE_headless:
+        if store_randoms:
+            timestamp = datetime.datetime.now().strftime('%Y/%m/%d %H:%M')[2:]
+            countID = str(self.getWAVFileCount()) if self.MODE_headless else '(unsaved)'
             with open(self.getInfo('title') + '.rnd', 'a') as of:
-                of.write(str(self.getWAVFileCount()) + '\t' + '\t'.join([key + '=' + str(store_randoms[key]) for key in store_randoms]) + '\n')
+                of.write(timestamp + '\t' + countID + '\t' + '\t'.join([key + '=' + str(store_randoms[key]) for key in store_randoms]) + '\n')
 
         # get release times
         syn_rel = []
@@ -749,6 +767,10 @@ class Ma2Widget(Widget):
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_pitch))
+        #seqcode += 'float note_pan[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pan * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
+        for p in patterns:
+            for n in p.notes:
+                tex += pack(fmt, float(n.note_pan * .01))
         #seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
         for p in patterns:
             for n in p.notes:

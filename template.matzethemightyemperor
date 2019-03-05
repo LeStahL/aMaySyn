@@ -26,6 +26,8 @@ const float SPB = 60./BPM;
 const float Fsample = 44100.;
 const float Tsample = 1./Fsample;
 
+const float stereo_delay = 2e-4; //enhance the stereo feel - this is experimental since I included the stereo functionality
+
 const float filterthreshold = 1e-3;
 
 //TEXCODE
@@ -71,7 +73,7 @@ float value_noise_1d(float t)
 {
     float i = floor(t);
     t = fract(t);
-    return mix(-1.+2.*rand(i), -1.+2.*rand(i+1.), smoothstep(0., 1., t));
+    return mix(-1.+2.*pseudorandom(i), -1.+2.*pseudorandom(i+1.), smoothstep(0., 1., t));
 }
 
 float lpnoise(float t, float fq) // kudos to Dmitry Andreev - and'2014!
@@ -258,24 +260,26 @@ int ptn_sep(int index)      {return int(rfloat(index+1+5*NTRK+4*NMOD));}
 float note_on(int index)    {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN);}
 float note_off(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+1*NNOT);}
 float note_pitch(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+2*NNOT);}
-float note_vel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+3*NNOT);}
-float note_slide(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+4*NNOT);}
+float note_pan(int index)   {return     rfloat(index+2+5+NTRK+4*NMOD+NPTN+3*NNOT);}
+float note_vel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+4*NNOT);}
+float note_slide(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+5*NNOT);}
 
-float mainSynth(float time)
+vec2 mainSynth(float time)
 {
     //SEQCODE
-    float r = 0.;
-    float d = 0.;
+    float sL = 0.;
+    float sR = 0.;
+    float dL = 0.;
+    float dR = 0.;
 
     // mod for looping
     float BT = mod(BPS * time, max_mod_off);
-    if(BT > max_mod_off) return r;
     time = SPB * BT;
+    
+    float time2 = time - stereo_delay;
+    float sidechain = 1.;
 
-    float r_sidechain = 1.;
-    float amaysyn;
-
-    float B, Bon, Boff, Bprog, Bproc, L, tL, _t, vel, rel, f;
+    float amaysynL, amaysynR, amaydrumL, amaydrumR, B, Bon, Boff, Bprog, Bproc, L, tL, _t, _t2, vel, rel, f, amtL, amtR;
     int tsep0, tsep1, _modU, _modL, ptn, psep0, psep1, _noteU, _noteL, syn, drum;
 
     for(int trk = 0; trk < NTRK; trk++)
@@ -299,25 +303,34 @@ float mainSynth(float time)
                          
             for(_noteU = psep0; (_noteU < psep1 - 1) && (B > note_on(_noteU + 1)); _noteU++);
             for(_noteL = psep0; (_noteL < psep1 - 1) && (B >= note_off(_noteL) + rel); _noteL++);
-           
+            //here: could introduce "monosynth" mode that sets _noteL = _noteU
+
             for(int _note = _noteL; _note <= _noteU; _note++)
             {
-                amaysyn = 0.;
-                Bon     = note_on(_note);
-                Boff    = note_off(_note) + rel;
-                L       = Boff - Bon;
-                tL      = L * SPB;
-                Bprog   = B - Bon;
-                Bproc   = Bprog / L;
-                _t      = Bprog * SPB;
-                vel     = note_vel(_note);
+                amaysynL  = 0.;
+                amaysynR  = 0.;
+                amaydrumL = 0.;
+                amaydrumR = 0.;
+
+                Bon   = note_on(_note);
+                Boff  = note_off(_note) + rel;
+                L     = Boff - Bon;
+                tL    = L * SPB;
+                Bprog = B - Bon;
+                Bproc = Bprog / L;
+                _t    = Bprog * SPB;
+                _t2   = _t - stereo_delay;
+                vel   = .3 + note_vel(_note);
+                amtL  = clamp(1. - note_pan(_note), 0., 1.);
+                amtR  = clamp(1. + note_pan(_note), 0., 1.);
 
                 if(syn == drum_index)
                 {
                     drum = int(note_pitch(_note));
-                    if(drum == 0) { r_sidechain = min(r_sidechain, 1. - clamp(1e4 * Bprog,0.,1.) + pow(Bprog/(L-rel),8.)); }
+                    if(drum == 0) { sidechain = min(sidechain, 1. - clamp(1e4 * Bprog,0.,1.) + pow(Bprog/(L-rel),8.)); }
                     //DRUMSYNCODE
-                    d += trk_norm(trk) * amaysyn * theta(Bprog);
+                    dL += amtL * s_atan(trk_norm(trk) * amaydrumL * theta(Bprog));
+                    dR += amtR * s_atan(trk_norm(trk) * amaydrumR * theta(Bprog));
                 }
                 else
                 {
@@ -340,20 +353,19 @@ float mainSynth(float time)
 
                     float env = theta(Bprog) * (1. - smoothstep(Boff-rel, Boff, B));
                     //SYNCODE
-                    r += trk_norm(trk) * clamp(env,0.,1.) * amaysyn;
+                    sL += amtL * s_atan(trk_norm(trk) * clamp(env,0.,1.) * amaysynL);
+                    sR += amtR * s_atan(trk_norm(trk) * clamp(env,0.,1.) * amaysynR);
                 }
             }
         }
     }
-    return s_atan(r_sidechain * r + d);
+    return vec2(sidechain * sL + dL, sidechain * sL + dR);
+//    return vec2(s_atan(sidechain * sL + dL), s_atan(sidechain*sL + dR));
 }
 
 vec2 mainSound(float t)
 {
-    //enhance the stereo feel
-    float stereo_delay = 2e-4;
-
-    return vec2(mainSynth(t), mainSynth(t-stereo_delay));
+    return mainSynth(t);
 }
 
 void main()

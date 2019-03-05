@@ -77,6 +77,7 @@ pattern_keys = {
                 'backspace'           : 'GAP SHORTER',
                 'v'                   : 'NOTE SET VELOCITY',
                 'g'                   : 'NOTE SET SLIDE',
+                'p'                   : 'NOTE SET PAN',
                 'f6'                  : 'PATTERN RENAME',
                 'f9'                  : 'DEBUG PRINT NOTES'
                }

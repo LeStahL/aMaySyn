@@ -19,10 +19,59 @@ env  stutter   shape=expdecayrepeat exponent=16. beats=.125
 env  slowdec   shape=expdecay exponent=1.5
 main Supersaw  src=stutter*slowdec*somesaw
 
-osc   id0001  shape=madd
-osc   id0002  shape=sin
-env   id1001  attack=.2 release=.2
-main  StringM src=id0002 release=0 slidetime=.8
+random shp1     min=0   max=.1   digits=2   store
+random shp2     min=1   max=3    digits=2   store
+random maddcut  min=30  max=300  digits=2   store
+random maddcutq min=.01 max=9.99 digits=2   store
+random maddres  min=0   max=5    digits=2   store
+random maddresq min=.01 max=9.99 digits=2   store
+random maddpw   min=0   max=.99  digits=2   store
+random maddmix  min=-1  max=1    digits=2   store
+random madddet  min=0   max=.02  digits=2   store
+osc   id0001  shape=madd            nmax=200 ninc=1 mix=maddmix cutoff=maddcut q=maddcutq res=maddres resq=maddresq pw=maddpw detune=madddet
+form  id0002  waveshape src=id0001  amount=shp1*id1001 a=0 b=.8 c=.05 d=1 e=.9
+form  id0003  saturate  src=id0002  gain=shp2*id1001
+form  id0004  delay     src=id0003  number=1 delay=.02 gain=.01
+form  id0012  pitchshift src=id0001 steps=-12
+form  id0013  detune    src=id0004
+env   id1001  attack=1.3 release=.4
+main  StringM src=id1001*id0013+.4*id1001*id0004 release=.4 slidetime=.8
+
+#RANDOM FM MANIA
+random lev1 min=0 max=127 digits=0 
+random lev2 min=0 max=127 digits=0 
+random lev3 min=0 max=127 digits=0 
+random lev4 min=0 max=127 digits=0 
+random alg0 min=1 max=11  digits=0 
+random fbk1 min=0 max=127 digits=0 
+random fbk2 min=0 max=127 digits=0 
+random fbk3 min=0 max=127 digits=0 
+random fbk4 min=0 max=127 digits=0 
+random att0 min=0 max=0.1 digits=3 
+random hld0 min=0 max=0.1 digits=3 
+random dec0 min=0 max=0.2 digits=3 
+random sus0 min=0 max=1   digits=3 
+random rel0 min=0 max=.2  digits=3
+random att2 min=0 max=.25 digits=3
+random dec2 min=0 max=.25 digits=3
+random hld2 min=0 max=.25 digits=3
+random sus2 min=0 max=.5  digits=3
+random att3 min=0 max=.25 digits=3
+random hld3 min=0 max=.25 digits=3
+random dec3 min=0 max=.25 digits=3
+random sus3 min=0 max=.5  digits=3
+random att4 min=0 max=.25 digits=3
+random hld4 min=0 max=.25 digits=3
+random dec4 min=0 max=.25 digits=3
+random sus4 min=0 max=.5  digits=3
+
+env    FManiaE2 attack=att2 decay=dec2 sustain=sus2 hold=hld2
+env    FManiaE3 attack=att3 decay=dec3 sustain=sus3 hold=hld3
+env    FManiaE4 attack=att4 decay=dec4 sustain=sus4 hold=hld4
+osc    FManiaA shape=fm lv1=lev1 lv2=FManiaE2*lev2 lv3=FManiaE3*lev3 lv4=FManiaE4*lev4 fr1=.5 fr3=1.001 fb1=fbk1 fb2=fbk2 fb3=fbk3 fb4=fbk4 algo=alg0 parscale=127
+env    FManiaE attack=att0 decay=dec0 sustain=sus0 hold=hld0 release=rel0
+form   FManiaB op=chorus src=FManiaA number=3 step=4e-3 intensity=3. rate=0.1
+main   FMania  src=FManiaB*FManiaE release=.3
 
 #1/127 = 7.87e-3
 const  vel1       pow(vel,12.*7.87e-3)
@@ -182,15 +231,15 @@ main M8_ILike2 src=A24_someenv*A24_someenv2*A24_lp release=.01
 
 ########### DRUMS ###########
 
-random f0 min=50 max=80 digits=1
+random f0 min=50  max=80  digits=1
 random f1 min=100 max=150 digits=1
-drum BDbody shape=kick freq_start=f0 freq_end=f1 freq_decay=0.1 attack=0.1 hold=0.1 decay=0.3 click_amp=1.2 click_delay=.05 click_timbre=.8 overdrive=10 
-maindrum BD1 src=BDbody
+drum        BDbody shape=kick freq_start=f0 freq_end=f1 freq_decay=0.1 attack=0.1 hold=0.1 decay=0.3 click_amp=1.2 click_delay=.05 click_timbre=.8 overdrive=10 
+maindrum    BD1 src=BDbody
 
-drum BDbody2 shape=kick2 freq_start=50 freq_end=200 freq_decay=0.12 attack=0.015 hold=0.1 decay=0.15 click_amp=0.4 click_delay=0.03 click_timbre=1. sq_phase=5 sq_nmax=10 sq_mix=0.8 sq_inr=1 sq_ndecay=1 sq_res=1 sq_resq=.1 sq_detune=.1
+drum BDbody2 shape=kick2 freq_start=200 freq_end=50 freq_decay=0.12 attack=0.015 hold=0.1 decay=0.15 click_amp=0.4 click_delay=0.03 click_timbre=1. sq_phase=5 sq_nmax=10 sq_mix=0.8 sq_inr=1 sq_ndecay=1 sq_res=1 sq_resq=.1 sq_detune=.1
 maindrum BD2 src=3.*BDbody2
 
-drum BDbody3 shape=kick2 freq_start=60 freq_end=150 freq_decay=0.2 attack=0.01 hold=0.3 decay=0.1 click_amp=1.5 click_delay=0.05 click_timbre=5. sq_phase=5 sq_nmax=10 sq_mix=0.8 sq_inr=1 sq_ndecay=1 sq_res=1 sq_resq=.1 
+drum BDbody3 shape=kick2 freq_start=150 freq_end=60 freq_decay=0.2 attack=0.01 hold=0.3 decay=0.1 click_amp=1.5 click_delay=0.05 click_timbre=5. sq_phase=5 sq_nmax=10 sq_mix=0.8 sq_inr=1 sq_ndecay=1 sq_res=1 sq_resq=.1 
 filter BDbody3f shape=avglp src=BDbody3 N=4
 filter BDbody3ff shape=avglp src=BDbody3f N=4
 maindrum BD3 src=4.*BDbody3ff

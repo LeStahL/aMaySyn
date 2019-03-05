@@ -75,6 +75,9 @@ def synatize(syn_file = 'test.syn'):
                 
             elif cmd == 'const' and 'value' not in form:
                 form.update({'value': a})
+
+            elif cmd == 'random' and a == 'store':
+                form.update({'store': True})
         
         form, defaults, requirements = set_remaining_defaults(cid, cmd, form)
 
@@ -358,7 +361,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                 elif form['shape'] == 'allpass':
                     pars = ['gain', 'ndelay']
                 elif form['shape'] in ['avglp', 'avghp']:
-                    pars = ['N']
+                    pars = ['n']
                 elif form['shape'] == 'bandpass':
                     pars = ['center', 'bandwidth', 'n']
                 elif form['shape'] == 'comb':
@@ -392,21 +395,29 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
 
     if not main_list:
         print("BUILDING MAIN LIST - WARNING: no main form defined! will return empty sound")
-        syncode = "amaysyn = 0.; //some annoying weirdo forgot to define the main form!"
+        syncode = "amaysynL = amaysynR = 0.; //some annoying weirdo forgot to define the main form!"
 
     else:
         #print('BUILDING MAIN LIST:', main_list, actually_used_synths)
         syncount = 1
-        syncode = 'if(syn == 0){amaysyn = _sin(f*_t);}\n' + 20*' '
+        syncode = 'if(syn == 0){amaysynL = _sin(f*_t); amaysynR = _sin(f*_t2);}\n' + 20*' '
         for form_main in main_list:
             if form_main['type']!='main': continue
             sources = form_main['src'].split(',')
             if actually_used_synths is None or form_main['id'] in actually_used_synths:
-                syncode += 'else if(syn == ' + str(syncount) + '){\n' + 24*' ' + 'amaysyn = '
+                syncodeL = ''
                 for term in sources:
-                    syncode += instance(term) + (newlineplus if term != sources[-1] else ';')
+                    syncodeL += instance(term) + (newlineplus if term != sources[-1] else ';')
+                
+                syncodeR = syncodeL.replace('(_TIME','time2').replace('_PROG','_t2')
+                syncodeL = syncodeL.replace('_TIME','time').replace('_PROG','_t')
+
+                syncode += 'else if(syn == ' + str(syncount) + '){\n' + 24*' ' \
+                        +  'amaysynL = ' + syncodeL + '\n' + 24*' ' + 'amaysynR = ' + syncodeR 
+
                 if 'relpower' in form_main and form_main['relpower'] != '1':
                     syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-rel, Boff, B),'+form_main['relpower']+');'
+
                 syncode += '\n' + 20*' ' + '}\n' + 20*' '
             syncount += 1
         syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
@@ -417,21 +428,26 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
             if form_main['type']!='maindrum': continue
             sources = form_main['src'].split(',')
             if actually_used_drums is None or drumcount in actually_used_drums:
-                drumsyncode += 'else if(drum == ' + str(drumcount) + '){\n' + 24*' ' + 'amaysyn = '
+                drumsyncodeL = ''
                 if 'amp' in form_main and form_main['amp'] != '1': #in case you want e.g. velocity scaling for filtered drums... not pretty, but could work.
-                    drumsyncode += instance(form['amp']) + '*'
+                    drumsyncodeL += instance(form['amp']) + '*'
                 for term in sources:
-                    drumsyncode += instance(term) + (newlineplus if term != sources[-1] else ';')
-                drumsyncode += '\n' + 20*' ' + '}\n' + 20*' '
+                    drumsyncodeL += instance(term) + (newlineplus if term != sources[-1] else ';')
+                
+                drumsyncodeR = drumsyncodeL.replace('_TIME','time2').replace('_PROG','_t2')
+                drumsyncodeL = drumsyncodeL.replace('_TIME','time').replace('_PROG','_t')
+
+                drumsyncode += 'else if(drum == ' + str(drumcount) + '){\n' + 24*' ' \
+                            +  'amaydrumL = ' + drumsyncodeL + '\n' + 24*' ' + 'amaydrumR = ' + drumsyncodeR \
+                            +  '\n' + 20*' ' + '}\n' + 20*' '
             drumcount += 1
         drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
 
     store_randoms = {}
     for r in (f for f in form_list if f['type']=='random'):
-        print('RANDOM', r['id'], '=', r['value'])
-        store_randoms.update({r['id']: r['value']})
-
-    print("\nBUILT SYN CODE:\n", 4*' '+syncode, 4*' '+drumsyncode, sep="")
+        if r['store']:
+            store_randoms.update({r['id']: r['value']})
+        print('RANDOM CHOICE:', r['id'], 'in', '['+str(r['min'])+'..'+str(r['max'])+']', '-->', str(r['value']))
 
     filter_list = [f for f in form_list if f['type']=='filter']
     filtercode = '' 
