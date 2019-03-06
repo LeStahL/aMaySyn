@@ -57,7 +57,7 @@ random rel0 min=0 max=.2  digits=3 store
 osc    FManiaA shape=fm lv1=lev1 lv2=lev2 lv3=lev3 lv4=lev4 fr1=.5 fr3=1.001 fb1=fbk1 fb2=fbk2 fb3=fbk3 fb4=fbk4 algo=alg0 parscale=127
 env    FManiaE attack=att0 decay=dec0 sustain=sus0 hold=hld0 release=rel0
 form   FManiaB op=chorus src=FManiaA number=3 step=4e-3 intensity=3. rate=0.1
-main   FMania  src=FManiaB*FManiaE release=.4 slidetime=.1337
+main   FMania  src=FManiaB*FManiaE release=.4 slidetime=.6
 
 #1/127 = 7.87e-3
 const  vel1       pow(vel,12.*7.87e-3)

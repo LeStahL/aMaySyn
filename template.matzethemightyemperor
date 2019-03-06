@@ -359,7 +359,7 @@ vec2 mainSynth(float time)
             }
         }
     }
-    return vec2(sidechain * sL + dL, sidechain * sR + dR); // do we need s_atan?
+    return vec2(s_atan(sidechain * sL + dL), s_atan(sidechain * sR + dR));
 }
 
 vec2 mainSound(float t)
