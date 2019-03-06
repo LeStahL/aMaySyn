@@ -9,6 +9,7 @@ global_keys  = {
                 'f11'           : 'CURVE EDIT',
                 'f12'           : 'MUTE',
                 'ctrl shift b'  : 'SHADER PLAY',
+                'ctrl enter'    : 'SHADER PLAY', #why not both...
                 'ctrl n'        : 'SONG CLEAR',
                 'ctrl l'        : 'SONG LOAD',
                 'ctrl s'        : 'SONG SAVE',

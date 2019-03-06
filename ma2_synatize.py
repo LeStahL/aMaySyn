@@ -189,7 +189,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
             elif form['type'] == 'osc' or form['type'] == 'lfo':
 
                     if form['type'] == 'osc':
-                        phi = instance(form['freq']) + '*_TIME'
+                        phi = instance(form['freq']) + '*_PROG'
 
                     elif form['type'] == 'lfo':
                         tvar = '*Bprog' if 'global' not in form['mode'] else '*B'
@@ -312,11 +312,11 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                         env_sustain = instance(form['sustain'])
                         timbre1 = instance(form['timbre1'])
                         timbre2 = instance(form['timbre2'])
-                        return 'fract(sin(_TIME*100.*'+timbre1+')*50000.*'+timbre2+')*doubleslope(_PROG,'+env_attack+','+env_decay+','+env_sustain+')'
+                        return 'fract(sin(_PROG*100.*'+timbre1+')*50000.*'+timbre2+')*doubleslope(_PROG,'+env_attack+','+env_decay+','+env_sustain+')'
                         
                     elif form['shape'] == 'bitexplosion':
                         inst_nvar = instance(form['nvar'], force_int = True) # was: str(int(form['par'][0]))
-                        return 'bitexplosion(_TIME, _BPROG, ' + inst_nvar + ',' + ','.join(instance(form[p]) for p in ['freqvar', 'twostepvar', 'var1', 'var2', 'var3', 'decay']) + ')' 
+                        return 'bitexplosion(_PROG, _BPROG, ' + inst_nvar + ',' + ','.join(instance(form[p]) for p in ['freqvar', 'twostepvar', 'var1', 'var2', 'var3', 'decay']) + ')' 
 
 
             elif form['type']=='env':
@@ -455,7 +455,9 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
         ff = open("template."+form['shape'])
         ffcode = ff.read()
         ff.close()
-        filtercode += ffcode.replace('TEMPLATE',form['id']).replace('INSTANCE',instance(form['src'])).replace('_PROG','_TIME').replace('_BPROG','Bprog').replace('Bprog','_TIME*SPB')
+        filtercode += ffcode.replace('TEMPLATE',form['id']).replace('INSTANCE',instance(form['src']))\
+                            .replace('_PROG','_TIME').replace('_BPROG','Bprog').replace('Bprog','_TIME*SPB')
+        # think again... do we really prefer _TIME over _PROG?? (what is with slides?)
 
     return syncode, drumsyncode, filtercode, store_randoms
 
