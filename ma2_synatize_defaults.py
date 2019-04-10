@@ -10,7 +10,7 @@ def set_remaining_defaults(cid, cmd, form):
         defaults.update({'release':'0', 'relpower':'1', 'slidetime':'.125'})
    
     elif cmd == 'random':
-        defaults.update({'min':'0', 'max':'1', 'digits':'3', 'store':False})
+        defaults.update({'min':'0', 'max':'1', 'digits':'3', 'store':False, 'tag':''})
 
     elif cmd == 'osc' or cmd == 'lfo':
         defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0', 'overdrive':'0'})
@@ -45,11 +45,30 @@ def set_remaining_defaults(cid, cmd, form):
             elif form['shape'] == 'kick2': # TODO: CALIBRATE (might need resonance? idk)
                 defaults.update({'sq_phase':'5', 'sq_nmax':'10', 'sq_mix':'.8', 'sq_inr':'1', 'sq_ndecay':'1', 'sq_res':'1', 'sq_resq':'1', 'sq_detune':'0'})
             elif form['shape'] == 'snare': # TODO: CALIBRATE
-                defaults.update({'freq0':'6000', 'freq1':'800', 'freq2':'350', 'freqdecay0':'.01', 'freqdecay1':'.01', 'decay':'.25', 'sustain':'.3', 'release':'.1', \
+                defaults.update({'freq0':'6000', 'freq1':'800', 'freq2':'350', 'freqdecay1':'.01', 'freqdecay2':'.01', 'decay':'.25', 'sustain':'.3', 'release':'.1', \
                                  'noise_amount':'.7', 'noise_attack':'.05', 'noise_decay':'.3', 'noise_sustain':'.3', 'overdrive':'0.6'})
             elif form['shape'] == 'bitexplosion':
                 defaults.update({'nvar':'0', 'freqvar':'1', 'twostepvar':'1', 'var1':'1', 'var2':'1', 'var3':'1', 'decay':'1'})
-                
+            elif form['shape'] == 'protokick':
+                defaults.update({'freq0':'180', 'freq1':'50', 'freqdecay':'.15', 'hold':'.2', 'decay':'.5', 'drive':'1.2', 'detune':'5e-3',\
+                                 'rev_amount':'.7', 'rev_hold':'.2', 'rev_decay':'.3', 'rev_drive':'1'})
+            elif form['shape'] == 'protokickass':
+                defaults.update({'freq0':'180', 'freq1':'50', 'freqdecay':'.15', 'attack':'5e-3', 'decay':'.5', 'drive':'2.4',\
+                                 'rev1_amt':'.8', 'rev1_tone':'2000', 'rev1_exp':'13.5', 'rev1_drive':'.4',\
+                                 'noise_amt':'.6', 'noise_hold':'9e-3', 'noise_decay':'9e-2', 'noise_tone':'16000',\
+                                 'rev2_amt':'.04', 'rev2_tone':'8000', 'rev2_exp':'3', 'rev3_amt':'.03', 'rev3_tone':'5000', 'rev3_exp':'1'})
+            elif form['shape'] == 'protosnare':
+                defaults.update({'noise_amp':'.25', 'tone_amp': '.8', 'freq0':'500', 'freq1':'300', 'freqdecay':'.5', 'fmtone_amp':'.2', 'fmtone_freq':'500',\
+                                 'noise1_amount':'.7', 'noise1_freq':'3196', 'noise2_amount':'.3', 'noise2_freq':'2965', 'noise3_amount':'.6', 'noise3_freq':'3643',\
+                                 'attack':'1e-3', 'decay':'.1', 'release':'.2', 'tone_decayexp':'30', 'fmtone_decayexp':'20'})
+            elif form['shape'] == 'protoshake':
+                defaults.update({'timbre':'1', 'amp':'2', 'decay':'.05', 'release':'.01'})
+            elif form['shape'] == 'protoride':
+                defaults.update({'base_freq':'1240', 'base_pw':'.4', 'mod_freq':'525', 'mod_pw':'.2', 'noise_amt':'.9', 'noise_freq':'20',\
+                                 'vibe_pw':'.2', 'vibe_freq':'20', 'comb_delay':'.445e-4', 'env_attack':'0', 'env_decay':'.8'})
+            elif form['shape'] == 'protocrash':
+                defaults.update({'base_freq':'310', 'base_pw':'.2', 'mod_freq':'1050', 'mod_pw':'.2', 'noise_amt':'1.5', 'noise_freq':'15',\
+                                 'vibe_pw':'.2', 'vibe_freq':'20', 'comb_delay':'.445e-4', 'env_attack':'0', 'env_decay':'.6'})
         except:
             pass
 

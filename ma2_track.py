@@ -11,7 +11,8 @@ class Track():
     current_synth = -1
     
     par_norm = 1.
-    
+    mute = False
+
     def __init__(self, synths, name = '', synth = -1):
         self.synths = synths
         self.name = name
@@ -30,9 +31,10 @@ class Track():
     def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
     def getLastModuleOff(self):           return self.getLastModule().getModuleOff() if self.getLastModule() else 0
 
-    def getSynthName(self):               return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else '__None'
     def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] not in ['I','D'] and self.current_synth != -1 else self.current_synth
-    def getSynthType(self):               return self.getSynthName()[0]
+    def getSynthFullName(self):           return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else '__None'
+    def getSynthName(self):               return self.getSynthFullName()[2:]
+    def getSynthType(self):               return self.getSynthFullName()[0]
     def getNorm(self):                    return self.par_norm
     def isEmpty(self):                    return (self.modules == [])
 
@@ -117,11 +119,11 @@ class Track():
         self.modules=[]
 
     def prepareForPatternDeletion(self, pattern_to_delete):
-        patterns = App.get_running_app().root.patterns
         offset = 0
         for m in self.modules:
             m.mod_on += offset
             if m.pattern == pattern_to_delete:
+                patterns = App.get_running_app().root.patterns
                 m.pattern = patterns[patterns.index(m.pattern)-1]
                 offset += m.pattern.length - pattern_to_delete.length
 
@@ -129,9 +131,11 @@ class Track():
         if self.synths:
             #make sure that only empty tracks can be assigned the special synths
             if not self.isEmpty() and not debug:
-                if self.synths[self.current_synth][0] in ['I','_']:
+                synth = self.synths[self.current_synth]
+                synth_type = synth[0]
+                if synth_type in ['I','_']:
                     isynths = [s for s in self.synths if s[0] in ['I','_']]
-                    current_isynth = isynths.index(self.synths[self.current_synth])
+                    current_isynth = isynths.index(synth)
                     current_isynth = (current_isynth + inc) % len(isynths)
                     self.current_synth = self.synths.index(isynths[current_isynth])
                 else:
@@ -139,17 +143,22 @@ class Track():
             
             else:
                 self.current_synth = (self.current_synth + inc) % len(self.synths)
+                if self.getModulePattern():
+                    self.getModulePattern().setTypeParam(synth_type = self.synths[self.current_synth][0])
 
     def updateSynths(self, synths):
-        old_synth = self.getSynthName()
+        old_synth = self.getSynthFullName()
         self.synths = synths
         if old_synth in synths:
             self.current_synth = synths.index(old_synth)
         else:
             self.current_synth = -1
 
-    def setParameters(self, norm):
-        self.par_norm = float(norm)
+    def setParameters(self, norm = None, mute = None):
+        if norm is not None:
+            self.par_norm = float(norm)
+        if mute is not None:
+            self.mute = mute
 
 class Module():
 

@@ -1,6 +1,5 @@
 #define PI radians(180.)
 float clip(float a) { return clamp(a,-1.,1.); }
-//float theta(float x) { return clamp(x*1e4,0.,1.); }
 float theta(float x) { return smoothstep(0.,1e-3,x); }
 float _sin(float a) { return sin(2. * PI * mod(a,1.)); }
 float _sin_(float a, float p) { return sin(2. * PI * mod(a,1.) + p); }
@@ -37,6 +36,35 @@ float doubleslope(float t, float a, float d, float s)
     return smoothstep(-.00001,a,t) - (1.-s) * smoothstep(0.,d,t-a);
 }
 
+float drop_phase(float time, float t1, float f0, float f1)
+{
+    float t = min(time, t1);
+    float phi = f0*t + .5*(f1-f0)/t1*t*t;
+
+    if(time > t1)
+    {
+        phi += f1 * (time - t1);
+    }
+    return phi;
+}
+
+float drop2_phase(float time, float t1, float t2, float f0, float f1, float f2)
+{
+    float t = min(time, t1);
+    float phi = f0*t + .5*(f1-f0)/t1*t*t;
+
+    if(time > t1)
+    {
+        t = min(time, t2);
+        phi += f1*t - t1*f2 + .5*(f2-f1)/(t2-t1)*(t*t - t1*t1);
+    }
+    if(time > t2)
+    {
+        phi += f2 * (time-t2);
+    }
+    return phi;
+}
+
 float blackmannoise(float t, float ton, float M)
 {
     t -= ton;
@@ -50,22 +78,6 @@ float blackmannoise(float t, float ton, float M)
         s -= w*pseudorandom(t-m*Tsample);
     }
     return s;
-}
-
-float rednoise(float time, float seed, float r) // this function is hardcore low! avoid it for large (time-seed)!
-{   // e.g. r = .9 is some low frequency noise
-	s = pseudorandom(seed);
-    int N = int((time-seed) * Fsample);
-    float r = .9;
-    float r2 = sqrt(1.-r*r);
-    for(int i=1; i<N; i++)
-    {
-        s = r*s + r2*pseudorandom(seed+float(i)*Tsample);
-    }
-    return s;
-    // thinking... might be enough to do this:
-    // float r3 = exp(-N*log(r));
-    // return r3*pseudorandom(seed) + sqrt(1.-r3*r3)*pseudorandom(time);
 }
 
 // One-dimensional value noise from https://www.shadertoy.com/view/wdj3D1 (NR4)
@@ -94,7 +106,6 @@ float lpnoise(float t, float fq) // kudos to Dmitry Andreev - and'2014!
 float reverb_phase(float t, float amt)
 {
     float r = lpnoise(t, 100.0) + 0.2*lpnoise(t, 550.0) + 0.1*lpnoise(t, 1050.0)*exp(-5.*t);
-
     return amt * r;
 }
 
@@ -111,7 +122,7 @@ float env_AHDSRexp(float x, float L, float A, float H, float D, float S, float R
     float att = pow(x/A,8.);
     float dec = S + (1.-S) * exp(-(x-H-A)/D);
     float rel = (x <= L-R) ? 1. : pow((L-x)/R,4.);
-    return (x < A ? att : x < A+H ? 1 . : dec) * rel;
+    return (x < A ? att : x < A+H ? 1. : dec) * rel;
 }
 
 float s_atan(float a) { return 2./PI * atan(a); }
@@ -214,14 +225,16 @@ float QFM(float t, float f, float phase, float LV1, float LV2, float LV3, float 
 
 //FILTERCODE
 
-float karplusstrong(float time, float f) // work in progress...
+float protokick(float t, float f_start, float f_end, float fdecay, float hold, float decay, float drive, float detune, float rev_amount, float rev_hold, float rev_decay, float rev_drive)
 {
-    float u = f * f * (3.0 - 2.0 * f ); // custom cubic curve
-    return mix(pseudorandom(time), pseudorandom(time+1.), u);
-}
+    float phi = drop_phase(t, fdecay, f_start, f_end);
+    float rev_phi = phi + reverb_phase(t, rev_amount);
+    return clamp(drive*.5*(_sin(phi)+_sin((1.-detune)*phi)),-1.,1.) * exp(-max(t-hold, 0.)/decay)
+         + clamp(rev_drive*.5*(_sin(rev_phi)+_sin((1.-detune)*rev_phi)),-1.,1.) * exp(-max(t-rev_hold, 0.)/rev_decay);
+} 
 
 float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decay)
-{
+{ // this still sounds very different on different systems...
     float snd = 0.;
     float B2 = mod(B,2.);
     float f = 60.*fvar;

@@ -32,6 +32,8 @@ class Pattern():
     def getLastNote(self):          return self.notes[-1] if self.notes else None
     def getFirstTaggedNote(self):   return next(i for i in range(len(self.notes)) if self.notes[i].tagged)
 
+    def getDrumIndex(self):         return self.getNote().note_pitch if self.getNote() and self.synth_type == 'D' else None
+
     # THE MOST IMPORTANT FUNCTION!
     def randomColor(self):
         return Color(random.uniform(.05,.95), .8, .88, mode = 'hsv').rgb
@@ -217,6 +219,16 @@ class Pattern():
                 n.note_len = n.note_off - n.note_on
             else:
                 break
+
+    def updateDrumkit(self, old_drumkit, new_drumkit):
+        if not self.synth_type == 'D' or not self.notes:
+            return
+        for n in self.notes:
+            try:
+                n.note_pitch = new_drumkit.index(old_drumkit[n.note_pitch])
+            except:
+                pass
+        self.max_note = len(new_drumkit)
 
     ### DEBUG ###
     def printNoteList(self):

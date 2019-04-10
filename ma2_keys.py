@@ -1,25 +1,30 @@
 global_keys  = {
-                'escape'        : 'EXIT',
-                'f8'            : 'DEBUG TOGGLE',
-                'tab'           : 'PANEL SWITCH',
-                'f1'            : 'COLORS RANDOMIZE',
-                'f2'            : 'SONG RENAME',
-                'f3'            : 'SONG CHANGE PARAMETERS',
-                'f5'            : 'SYNTH RELOAD',
-                'f11'           : 'CURVE EDIT',
-                'f12'           : 'MUTE',
-                'ctrl shift b'  : 'SHADER PLAY',
-                'ctrl enter'    : 'SHADER PLAY', #why not both...
-                'ctrl n'        : 'SONG CLEAR',
-                'ctrl l'        : 'SONG LOAD',
-                'ctrl s'        : 'SONG SAVE',
-                'ctrl b'        : 'SHADER CREATE',
-                'ctrl z'        : 'UNDO',
-                'ctrl y'        : 'REDO',
-                'a'             : 'SYNTH SELECT NEXT',
-                's'             : 'SYNTH SELECT LAST',
-                'pagedown'      : 'PATTERN SELECT NEXT',
-                'pageup'        : 'PATTERN SELECT LAST'
+                'escape'           : 'EXIT',
+                'f8'               : 'DEBUG TOGGLE',
+                'tab'              : 'PANEL SWITCH',
+                'f1'               : 'COLORS RANDOMIZE',
+                'f2'               : 'SONG RENAME',
+                'f3'               : 'SONG CHANGE PARAMETERS',
+                'f5'               : 'SYNTH RELOAD',
+                'ctrl f5'          : 'SYNTH RELOAD NEW RANDOMS',
+                'f11'              : 'CURVE EDIT',
+                'f12'              : 'MUTE',
+                'ctrl shift b'     : 'SHADER PLAY',
+                'ctrl enter'       : 'SHADER PLAY', #why not both...
+		        'ctrl shift enter' : 'SHADER RENDER',
+                'ctrl n'           : 'SONG CLEAR',
+                'ctrl l'           : 'SONG LOAD',
+                'ctrl s'           : 'SONG SAVE',
+                'ctrl b'           : 'SHADER CREATE',
+                'ctrl z'           : 'UNDO',
+                'ctrl y'           : 'REDO',
+                'a'                : 'SYNTH SELECT NEXT',
+                's'                : 'SYNTH SELECT LAST',
+                'pagedown'         : 'PATTERN SELECT NEXT',
+                'pageup'           : 'PATTERN SELECT LAST',
+                'ctrl i'           : 'DIALOG PATTERN IMPORT',
+                'ctrl o'           : 'DIALOG PATTERN EXPORT',
+                'shift k'          : 'SYNTH FILE RESET DEFAULT',
                }
 
 track_keys   = {
@@ -44,7 +49,10 @@ track_keys   = {
                 'delete'           : 'MOD DELETE',
                 'f6'               : 'TRACK RENAME',
                 'f7'               : 'TRACK CHANGE PARAMETERS',
-                'f9'               : 'DEBUG PRINT PATTERNS'
+                'm'                : 'TRACK MUTE',
+                'f9'               : 'DEBUG PRINT PATTERNS',
+                'k'                : 'SYNTH EDIT',
+                'ctrl k'           : 'SYNTH CLONE HARD',
                }
 
 pattern_keys = {
@@ -58,7 +66,7 @@ pattern_keys = {
                 'shift down'          : 'NOTES TRANSPOSE ALL DOWN',
                 'shift pageup'        : 'PATTERN LONGER',
                 'shift pagedown'      : 'PATTERN SHORTER',
-                'backspace'           : 'NOTE GAP ZERO',
+                'shift backspace'     : 'NOTE GAP ZERO',
                 'ctrl left'           : 'NOTE SHIFT LEFT',
                 'ctrl right'          : 'NOTE SHIFT RIGHT',
                 'ctrl up'             : 'NOTE TRANSPOSE UP',
@@ -80,7 +88,9 @@ pattern_keys = {
                 'g'                   : 'NOTE SET SLIDE',
                 'p'                   : 'NOTE SET PAN',
                 'f6'                  : 'PATTERN RENAME',
-                'f9'                  : 'DEBUG PRINT NOTES'
+                'f9'                  : 'DEBUG PRINT NOTES',
+                'k'                   : 'DRUMSYNTH EDIT',
+                'ctrl k'              : 'DRUMSYNTH CLONE HARD',
                }
 
 # https://kivy.org/doc/stable/_modules/kivy/core/window.html

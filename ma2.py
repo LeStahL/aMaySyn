@@ -14,6 +14,7 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, Line, Ellipse
 from kivy.core.text import Label as CoreLabel
 from kivy.uix.modalview import ModalView
+from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
 from kivy.animation import Animation
@@ -24,6 +25,7 @@ from numpy import clip, ceil, sqrt
 from math import sin, exp, pi
 from datetime import *
 from copy import copy, deepcopy
+from shutil import move, copyfile
 import pygame, wave
 import csv, re
 import operator
@@ -43,6 +45,7 @@ Config.set('graphics', 'width', '1600')
 Config.set('graphics', 'height', '1000')
 #Config.set('kivy', 'log_level', 'warning')
 
+def_synfile = 'default.syn'
 def_synths = ['D_Drums', 'G_GFX', '__None']
 def_drumkit = ['SideChn']
 
@@ -54,6 +57,7 @@ pattern_types = {'I': 'SYNTH', '_': 'NO TYPE', 'D':'DRUMS', 'G':'GFX'}
 class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
     thePtnWidget = ObjectProperty(None)
+    somePopup = ObjectProperty(None)
 
     info = {'title': 'piover2', 'BPM': 80., 'B_offset': 0.}
 
@@ -63,8 +67,12 @@ class Ma2Widget(Widget):
 
     synatize_form_list = []
     synatize_main_list = []
+    last_synatized_forms = []
+    stored_randoms = []
+    synatized_code_syn = ''
+    synatized_code_drum = ''
 
-    btnTitle = ObjectProperty()
+ #   btnTitle = ObjectProperty()
     
     MODE_debug = False
     MODE_numberInput = False
@@ -98,6 +106,9 @@ class Ma2Widget(Widget):
     def getPatternSynthType(self):      return self.getPattern().synth_type if self.getPattern() else '_'
     def getNote(self):                  return self.getPattern().getNote() if self.getPattern() else None
     def existsPattern(self, pattern):   return pattern in self.patterns
+
+    def getTypeOnlyPatterns(self, only_type):
+        return [p for p in self.patterns if p.synth_type == only_type]
 
     def getSameTypePatterns(self):
         return [p for p in self.patterns if p.synth_type in [self.getTrackSynthType(),'_']]
@@ -160,22 +171,27 @@ class Ma2Widget(Widget):
         elif action == 'DEBUG TOGGLE':                  self.toggleDebugMode()
         elif action == 'PANEL SWITCH':                  self.switchActive()
         elif action == 'COLORS RANDOMIZE':              self.reRandomizeColors()  # MOST IMPORTANT FEATURE!
-        elif action == 'SONG RENAME':                   self.renameSong()                     
-        elif action == 'SONG CHANGE PARAMETERS':        self.changeSongParameters()           
-        elif action == 'SYNTH RELOAD':                  self.loadSynths(update = True)
-        elif action == 'CURVE EDIT':                    self.editCurve()                      
-        elif action == 'MUTE':                          pygame.mixer.stop()           
+        elif action == 'SONG RENAME':                   self.renameSong()
+        elif action == 'SONG CHANGE PARAMETERS':        self.changeSongParameters()
+        elif action == 'SYNTH RELOAD':                  self.loadSynths()
+        elif action == 'SYNTH RELOAD NEW RANDOMS':      self.loadSynths(reshuffle_randoms = True) 
+        elif action == 'CURVE EDIT':                    self.editCurve()
+        elif action == 'MUTE':                          pygame.mixer.stop()
         elif action == 'SHADER PLAY':                   self.buildGLSL(compileGL = True)
-        elif action == 'SONG CLEAR':                    self.clearSong()                                   
-        elif action == 'SONG LOAD':                     self.loadCSV_prompt()                                
+        elif action == 'SHADER RENDER':                 self.buildGLSL(compileGL = True, renderWAV = True)
+        elif action == 'SONG CLEAR':                    self.clearSong()
+        elif action == 'SONG LOAD':                     self.loadCSV_prompt()
         elif action == 'SONG SAVE':                     self.saveCSV_prompt()
         elif action == 'SHADER CREATE':                 self.buildGLSL()
         elif action == 'UNDO':                          self.stepUndoStack(-1)
-        elif action == 'REDO':                          self.stepUndoStack(+1) 
+        elif action == 'REDO':                          self.stepUndoStack(+1)
         elif action == 'SYNTH SELECT NEXT':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
-        elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(+1, debug = self.MODE_debug)  
-        elif action == 'PATTERN SELECT NEXT':           self.getTrack().switchModulePattern(self.getPattern(+1))  
-        elif action == 'PATTERN SELECT LAST':           self.getTrack().switchModulePattern(self.getPattern(-1))  
+        elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(+1, debug = self.MODE_debug)
+        elif action == 'PATTERN SELECT NEXT':           self.getTrack().switchModulePattern(self.getPattern(+1))
+        elif action == 'PATTERN SELECT LAST':           self.getTrack().switchModulePattern(self.getPattern(-1))
+        elif action == 'DIALOG PATTERN IMPORT':         self.importPattern()
+        elif action == 'DIALOG PATTERN EXPORT':         self.exportPattern()
+        elif action == 'SYNTH FILE RESET DEFAULT':      self.resetSynthsToDefault()
 
         if(self.theTrkWidget.active):
             if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)     
@@ -199,8 +215,11 @@ class Ma2Widget(Widget):
             elif action == 'MOD DELETE':                self.getTrack().delModule()
             elif action == 'TRACK RENAME':              self.renameTrack()
             elif action == 'TRACK CHANGE PARAMETERS':   self.changeTrackParameters()
+            elif action == 'TRACK MUTE':                self.getTrack().setParameters(mute = not self.getTrack().mute)
             elif action == 'DEBUG PRINT PATTERNS':      self.printPatterns()
-            
+            elif action == 'SYNTH CLONE HARD':          self.synthClone(hard = True)
+            elif action == 'SYNTH EDIT':                self.editSynth()
+
         if(self.thePtnWidget.active) and self.getPattern():
             if   action == 'PATTERN LONGER STRETCH':    self.getPattern().stretchPattern(+inc_step, scale = True) 
             elif action == 'PATTERN SHORTER STRETCH':   self.getPattern().stretchPattern(-inc_step, scale = True) 
@@ -234,7 +253,9 @@ class Ma2Widget(Widget):
             elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput)  
             elif action == 'NOTE SET SLIDE':            self.getPattern().getNote().setSlide(self.numberInput)
             elif action == 'PATTERN RENAME':            self.renamePattern()                                       
-            elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()      
+            elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()
+            elif action == 'DRUMSYNTH CLONE HARD':      self.synthClone(drum = True, hard = True)
+            elif action == 'DRUMSYNTH EDIT':            self.editSynth(drum = True)
       
             if keytext:
                 if keytext.isdigit() or keytext in ['.', '-']:
@@ -246,7 +267,7 @@ class Ma2Widget(Widget):
 
         if self.MODE_debug:
             print('DEBUG -- KEY:', k, keytext, modifiers)
-            self.printDebug(verbose = False)
+            self.printDebug(verbose = True)
 
         return True
         
@@ -446,7 +467,7 @@ class Ma2Widget(Widget):
         self.current_track = 0
 
         if not no_renaming: self.renameSong()
-        self.loadSynths(update = True)
+        self.loadSynths()
 
     def setNumberInput(self, key):
         if not key:
@@ -468,7 +489,7 @@ class Ma2Widget(Widget):
         if '-headless' in sys.argv: self.MODE_headless = True
         if '-debug' in sys.argv: self.toggleDebugMode()
         
-        self.loadSynths()
+        self.loadSynths(update = False)
         self.setupTest()
         
         if len(sys.argv) > 1:
@@ -477,7 +498,7 @@ class Ma2Widget(Widget):
             with open('.last') as in_tmp:
                 self.setInfo('title', in_tmp.read())
 
-        self.loadSynths()
+        #self.loadSynths() # TODO is this not redundant?
         Clock.schedule_once(self.loadCSV, 0)
 
         if self.MODE_headless:
@@ -494,26 +515,141 @@ class Ma2Widget(Widget):
 
 ################## AND THE OTHER ONE... #####################
 
-    def loadSynths(self, update = False):
+    def loadSynths(self, update = True, reshuffle_randoms = False):
         
         global synths, drumkit
+        old_drumkit = drumkit
         
-        filename = self.getInfo('title') + '.syn'
-        if not os.path.exists(filename): filename = 'test.syn'
-        
-        self.synatize_form_list, self.synatize_main_list, drumkit = synatize(filename)
-        
+        synfile = self.getInfo('title') + '.syn'
+        if not os.path.exists(synfile): synfile = def_synfile
+
+        self.synatize_form_list, self.synatize_main_list, drumkit, self.stored_randoms \
+            = synatize(synfile, stored_randoms = self.stored_randoms, reshuffle_randoms = reshuffle_randoms)
+
         synths = ['I_' + m['id'] for m in self.synatize_main_list if m['type']=='main']
         synths.extend(def_synths)
         
         drumkit = def_drumkit + drumkit
         self.thePtnWidget.updateDrumkit(drumkit)
 
-        print('LOAD:', synths, drumkit)
+        #print('LOAD:', synths, drumkit)
         
         if update:
-            for t in self.tracks: t.updateSynths(synths)
+            for t in self.tracks:
+                t.updateSynths(synths)
+            for p in self.getTypeOnlyPatterns('D'):
+                p.updateDrumkit(old_drumkit, drumkit)
             self.update()
+
+    def resetSynthsToDefault(self):
+        synfile = self.getInfo('title') + '.syn'
+        if os.path.exists(synfile): copyfile(synfile, synfile + '.bak')
+        copyfile(def_synfile, synfile)
+        print("New", synfile, "copied from", def_synfile, "and old version kept as", synfile + '.bak')
+
+    def synthClone(self, hard = False, drum = False):
+        if not self.synatized_code_syn:
+            print("No code in memory! Compile once before you clone!")
+            return
+        if not hard: # soft cloning would be "copy every relevant line in the synfile, not the synatized_forms"
+            print("soft cloning not yet implemented for synths or drum synths!")
+            return
+        if drum and self.getTrackSynthType() != 'D':
+            return
+        if not drum and self.getTrackSynthType() == 'D':
+            print("Current Track is drum track, go do Pattern (TAB) to clone single drums")
+            return
+
+        count = 0
+        if drum:
+            oldID = drumkit[self.getPattern().getDrumIndex()]
+            while True:
+                formID = oldID + str(count)
+                if formID not in drumkit: break
+                count += 1
+        else:
+            oldID = self.getTrack().getSynthName()
+            while True:
+                formID = oldID + '.' + str(count)
+                if formID not in synths: break
+                count += 1
+
+        try:
+            formTemplate = next(form for form in self.last_synatized_forms if form['id'] == oldID)
+            formType = formTemplate['type']
+            formMode = formTemplate['mode']
+            formBody = ' '.join(key + '=' + formTemplate[key] for key in formTemplate if key not in  ['type', 'id', 'mode'])
+            if formMode: formBody += ' mode=' + ','.join(formMode)
+        except StopIteration:
+            print("Current (drum) synth is not compiled yet. Do so and try again.")
+            return
+        except:
+            print("could not CLONE HARD:", formID, formTemplate)
+            raise
+
+        synfile = self.getInfo('title') + '.syn'
+        if not os.path.exists(synfile): copyfile(def_synfile, synfile)
+        with open(synfile, mode='a') as filehandle:
+            filehandle.write('\n' + formType + 4*' ' + formID + 4*' ' + formBody)
+
+        self.loadSynths() # TODO: automatically select new synth?
+
+    def synthDeactivate(self, drum = False):
+        if drum:
+            if self.getTrackSynthType() != 'D': return
+            formID = drumkit[self.getPattern().getNote().note_pitch]
+        else:
+            formID = self.getTrack().getSynthName()
+
+        synfile = self.getInfo('title') + '.syn'
+        tmpfile = '.' + synfile
+        if not os.path.exists(synfile): copyfile(def_synfile, synfile)
+        move(synfile, tmpfile)
+        with open(tmpfile, mode='r') as tmp_handle:
+            with open(synfile, mode='w') as new_handle:
+                for line in tmp_handle.readlines():
+                    lineparse = line.split()
+                    if len(lineparse)>2 and lineparse[0] in ['main', 'maindrum'] and lineparse[1] == formID:
+                        new_handle.write('#' + line)
+                    else:
+                        new_handle.write(line)
+
+        #TODO: some feature to reactivate ;)
+        self.loadSynths()
+
+    def synthChangeName(self, newID, drum = False):
+        if drum:
+            if self.getTrackSynthType() != 'D': return
+            formID = drumkit[self.getPattern().getNote().note_pitch]
+        else:
+            if self.getTrackSynthType() == 'D': return
+            formID = self.getTrack().getSynthName()
+
+        synfile = self.getInfo('title') + '.syn'
+        tmpfile = '.' + synfile
+        if not os.path.exists(synfile): copyfile(def_synfile, synfile)
+        move(synfile, tmpfile)
+        with open(tmpfile, mode='r') as tmp_handle:
+            with open(synfile, mode='w') as new_handle:
+                for line in tmp_handle.readlines():
+                    lineparse = line.split()
+                    if len(lineparse)>2 and lineparse[0] in ['main', 'maindrum'] and lineparse[1] == formID:
+                        new_handle.write(line.replace(' '+formID+' ', ' '+newID+' '))
+                    else:
+                        new_handle.write(line)
+        if drum:
+            drumkit[drumkit.index(formID)] = newID
+        else:
+            synths[synths.index(self.getTrack().getSynthFullName())] = self.getTrack().getSynthType() + '_' + newID
+        self.loadSynths()
+
+    def editSynth(self, drum = False):
+        if drum and self.getTrack().getSynthType() != 'D': return
+        if not drum and self.getTrack().getSynthType() != 'I': return
+
+        popup = EditSynthDialog(synth_name = self.getTrack().getSynthName() if not drum else drumkit[self.getPattern().getDrumIndex()], is_drum = drum)
+        popup.bind(on_dismiss = self.handlePopupDismiss)
+        popup.open()
 
 ############### UGLY KIVY EXPORT FUNCTIONS #####################
 
@@ -553,7 +689,7 @@ class Ma2Widget(Widget):
             self.clearSong(no_renaming = True)
             return
                     
-        self.loadSynths()
+        self.loadSynths(update = False)
         print("... synths were reloaded. now read", filename)
 
         with open(filename) as in_csv:
@@ -571,7 +707,7 @@ class Ma2Widget(Widget):
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[3])):
                     track = Track(synths, name = r[c], synth = synths.index(r[c+1]) if r[c+1] in synths else -1)
-                    track.setParameters(norm = float(r[c+2]))
+                    track.setParameters(norm = float(r[c+2].replace('m','')), mute = ('m' in r[c+2]))
 
                     c += 3
                     for _ in range(int(r[c])):
@@ -622,7 +758,7 @@ class Ma2Widget(Widget):
         out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
-            out_str += t.name + '|' + str(t.getSynthName()) + '|' + str(t.getNorm()) + '|' + str(len(t.modules)) + '|'
+            out_str += t.name + '|' + str(t.getSynthFullName()) + '|' + str(t.getNorm()) + t.mute * 'm' + '|' + str(len(t.modules)) + '|'
             for m in t.modules:
                 out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
                         
@@ -650,8 +786,7 @@ class Ma2Widget(Widget):
     def buildGLSL(self, compileGL = False, renderWAV = False):
         filename = self.getInfo('title') + '.glsl'
 
-        # ignore empty tracks
-        tracks = [t for t in self.tracks if t.modules]
+        tracks = [t for t in self.tracks if t.modules and not t.mute]
 
         actually_used_patterns = [m.pattern for t in tracks for m in t.modules]
         patterns = [p for p in self.patterns if p in actually_used_patterns]
@@ -673,23 +808,28 @@ class Ma2Widget(Widget):
         gf.close()
 
         self.loadSynths()
-        actually_used_synths = set(t.getSynthName()[2:] for t in self.tracks)
+        actually_used_synths = set(t.getSynthName() for t in self.tracks if not t.getSynthType() == '_')
         actually_used_drums = set(n.note_pitch for p in patterns if p.synth_type == 'D' for n in p.notes)
         
-        syncode, drumsyncode, filtercode, store_randoms \
-            = synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
+        if self.MODE_debug: print("ACTUALLY USED:", actually_used_synths, actually_used_drums)
 
-        if store_randoms:
+        self.synatized_code_syn, self.synatized_code_drum, filtercode, self.last_synatized_forms = \
+            synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
+
+	# TODO: would be really nice: option to not re-shuffle the last throw of randoms, but export these to WAV on choice... TODOTODOTODOTODO!
+	# TODO LATER: great plans -- live looping ability (how bout midi input?)
+        if self.stored_randoms:
             timestamp = datetime.datetime.now().strftime('%Y/%m/%d %H:%M')[2:]
-            countID = str(self.getWAVFileCount()) if self.MODE_headless else '(unsaved)'
+            countID = str(self.getWAVFileCount()) if renderWAV else '(unsaved)'
             with open(self.getInfo('title') + '.rnd', 'a') as of:
-                of.write(timestamp + '\t' + countID + '\t' + '\t'.join([key + '=' + str(store_randoms[key]) for key in store_randoms]) + '\n')
+                of.write(timestamp + '\t' + countID + '\t' \
+                                   + '\t'.join((rnd['id'] + '=' + str(rnd['value'])) for rnd in self.stored_randoms if rnd['store']) + '\n')
 
         # get release times
         syn_rel = []
         max_rel = 0
         max_drum_rel = 0
-        print(self.synatize_main_list)
+        if self.MODE_debug: print(self.synatize_main_list)
         for m in self.synatize_main_list:
             if m['type'] == 'main':
                 syn_rel.append((float(m['release']) if 'release' in m else 0))
@@ -721,65 +861,54 @@ class Ma2Widget(Widget):
         
         fmt = '@e'
         tex = b''
-        #seqcode += 'int trk_sep[' + nT1 + '] = int[' + nT1 + '](' + ','.join(map(str, track_sep)) + ');\n' + 4*' '
+
+        # TODO:make it more pythonesk with something like
+        # tex += ''.join(pack(fmt, float(s)) for s in track_sep)
+        # etc.
+
         for s in track_sep:
             tex += pack(fmt, float(s))
-        #seqcode += 'int trk_syn[' + nT + '] = int[' + nT + '](' + ','.join(str(t.getSynthIndex()+1) for t in tracks) + ');\n' + 4*' '
         for t in tracks:
             tex += pack(fmt, float(t.getSynthIndex()+1))
-        #seqcode += 'float trk_norm[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(t.getNorm()) for t in tracks) + ');\n' + 4*' '
         for t in tracks:
             tex += pack(fmt, float(t.getNorm()))
-        #seqcode += 'float trk_rel[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_rel[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
         for t in tracks:
             tex += pack(fmt, float(syn_rel[t.getSynthIndex()]))
-        #seqcode += 'float trk_slide[' + nT + '] = float[' + nT + '](' + ','.join(GLfloat(syn_slide[t.getSynthIndex()]) for t in tracks) + ');\n' + 4*' '
         for t in tracks:
             tex += pack(fmt, float(syn_slide[t.getSynthIndex()]))
-        #seqcode += 'float mod_on[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.mod_on) for t in tracks for m in t.modules) + ');\n' + 4*' '
         for t in tracks:
             for m in t.modules:
                 tex += pack(fmt, float(m.mod_on))
-        #seqcode += 'float mod_off[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.getModuleOff()) for t in tracks for m in t.modules) + ');\n' + 4*' '
         for t in tracks:
             for m in t.modules:
                 tex += pack(fmt, float(m.getModuleOff()))
-        #seqcode += 'int mod_ptn[' + nM + '] = int[' + nM + '](' + ','.join(str(self.patterns.index(m.pattern)) for t in tracks for m in t.modules) + ');\n' + 4*' '
         for t in tracks:
             for m in t.modules:
                 tex += pack(fmt, float(patterns.index(m.pattern))) # this could use some purge-non-used-patterns beforehand...
-        #seqcode += 'float mod_transp[' + nM + '] = float[' + nM + '](' + ','.join(GLfloat(m.transpose) for t in tracks for m in t.modules) + ');\n' + 4*' '
         for t in tracks:
             for m in t.modules:
                 tex += pack(fmt, float(m.transpose))
-        #seqcode += 'int ptn_sep[' + nP1 + '] = int[' + nP1 + '](' + ','.join(map(str, pattern_sep)) + ');\n' + 4*' '
         for s in pattern_sep:
             tex += pack(fmt, float(s))
-        #seqcode += 'float note_on[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_on) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_on))
-        #seqcode += 'float note_off[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_off) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_off))
-        #seqcode += 'float note_pitch[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pitch) for p in self.patterns for n in p.notes) + ');\n' + 4*' '
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_pitch))
-        #seqcode += 'float note_pan[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_pan * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_pan * .01))
-        #seqcode += 'float note_vel[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_vel * .01) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_vel * .01))
-        #seqcode += 'float note_slide[' + nN + '] = float[' + nN + '](' + ','.join(GLfloat(n.note_slide) for p in self.patterns for n in p.notes) + ');\n' + 4*' '  
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_slide))
-                
+               
         texlength = int(len(tex))
         while ((texlength % 4) != 0):
             tex += bytes(10)
@@ -813,8 +942,13 @@ class Ma2Widget(Widget):
 
         print("TEXTURE FILE WRITTEN (sequence.h)")
 
-        glslcode = glslcode.replace("//DEFCODE",defcode).replace("//SEQCODE",seqcode).replace("//SYNCODE",syncode).replace("//DRUMSYNCODE",drumsyncode)\
-                           .replace("//BPMCODE","const float BPM = "+GLfloat(self.getInfo('BPM'))+";").replace("//FILTERCODE",filtercode)
+        glslcode = glslcode\
+            .replace("//DEFCODE", defcode)\
+            .replace("//SEQCODE", seqcode)\
+            .replace("//SYNCODE", self.synatized_code_syn)\
+            .replace("//DRUMSYNCODE", self.synatized_code_drum)\
+            .replace("//FILTERCODE",filtercode)\
+            .replace("//BPMCODE", "const float BPM = "+GLfloat(self.getInfo('BPM'))+";")
 
         glslcode = self.purgeExpendables(glslcode)
 
@@ -829,7 +963,7 @@ class Ma2Widget(Widget):
             
         print("GLSL CODE WRITTEN (sfx.frag) -- NR4-compatible fragment shader")
 
-        # "for shadertoy" version
+        # for "standalone" version
         tex_n = str(int(ceil(texlength/2)))
         texcode = 'const float sequence_texture[' + tex_n + '] = float[' + tex_n + '](' + ','.join(map(GLfloat, arrayf)) + ');\n'
 
@@ -928,7 +1062,7 @@ class Ma2Widget(Widget):
         print('DEBUG -- TRACKS:')
         if verbose:  
             for t in self.tracks:
-                print(t.name, len(t.modules))
+                print(t.name, len(t.modules), t.getSynthFullName(), t.getSynthIndex(), t.getSynthType())
                 for m in t.modules:
                     print(' '*4, m.pattern.name, '@', m.mod_on)
                 
@@ -946,13 +1080,33 @@ class Ma2Widget(Widget):
 
         print('DEBUG -- undo:', len(self.undo_stack), '/', self.undo_max_steps, '/', self.undo_pos, '/', self.MODE_undo)              
 
-##################### NOW THE MIGHTY SHIT ##################
+################### NOW THE MIGHTY SHIT ###################
+
+    def importPattern(self):
+        popup = ImportPatternDialog()
+        popup.bind(on_dismiss = self.handleImportPattern)
+        popup.open()
+    def handleImportPattern(self, *args):
+        if args[0].return_pattern:
+            print("Imported Pattern:", args[0].return_pattern.name)
+            self.patterns.append(args[0].return_pattern)
+            self.patterns[-1].printNoteList()   
+        self._keyboard_request()
+        self.update()        
+
+    def exportPattern(self):
+        #TODO - export to XML, remember LMMS_lengthscale!
+        pass
 
     def editCurve(self):
         popup = CurvePrompt(self, title = 'EDIT THE CURVE IF U DARE', title_font = self.font_name)
         popup.bind(on_dismiss = self.handleEditCurve)
         popup.open()
+        
     def handleEditCurve(self, *args):
+        self.handlePopupDismiss()
+
+    def handlePopupDismiss(self, *args):
         self._keyboard_request()
         self.update()        
 
@@ -976,7 +1130,7 @@ class Ma2Widget(Widget):
             print('music is empty.')
             return
  
-        if not renderWAV:
+        if not self.MODE_headless:
             pygame.mixer.pre_init(frequency=int(44100), size=-16, channels=2, buffer=4096)
             pygame.init()
             pygame.mixer.init()
@@ -1042,6 +1196,7 @@ class InputPrompt(ModalView):
         self.text = args[0].text
         self.dismiss()
 
+
 class CurvePrompt(ModalView):
     
     text = ''
@@ -1090,3 +1245,4 @@ class Ma2App(App):
 
 if __name__ == '__main__':
     Ma2App().run()
+    

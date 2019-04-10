@@ -6,7 +6,7 @@
 <PatternWidget>:
     canvas:
 
-#<SongViewWidget>:
+#<SongViewWidget>: # doesn't exist yet
 
 <Widget>:
     font_name: 'RobotoMono-Regular'
@@ -16,16 +16,26 @@
     text: ''
     
     background_normal: ''
-    background_color: 0,0,0,1
+    background_color: (0,0,0,1)
+    disabled_color: (.2,.2,.2,1)
     
     canvas:
         Color:
-            rgb: (.8,.8,.8)
+            rgb: (.8,.8,.8) if not self.disabled else (.2,.2,.2)
         Line:
             rectangle: self.x+3, self.y+3, self.width-6, self.height-6
             width: 1.2
             joint: 'miter'
             
+<OpaqueLabel@Label>:
+    background_color: 0, 0, 0, 1
+    canvas.before:
+        Color:
+            rgba: self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
 <Ma2Widget>:
 
     theTrkWidget: thisTrkWidget
@@ -51,18 +61,18 @@
             
             RetroButton:
                 id: btnTitleID
-                on_press: root.pressTitle()
+                on_release: root.pressTitle()
             RetroButton:
-                on_press: root.pressTrkAdd()
+                on_release: root.pressTrkAdd()
                 text: 'TRK +'
                 size_hint_x: 0.1
             RetroButton:
-                on_press: root.pressTrkDel()
+                on_release: root.pressTrkDel()
                 text: 'TRK -'
                 size_hint_x: 0.1
             RetroButton:
                 id: btnTrkInfoID
-                on_press: root.pressTrkInfo()
+                on_release: root.pressTrkInfo()
                 text: 'TRK Info (Name, Inst, Transpose)'
                 size_hint_x: 0.4
                 
@@ -76,36 +86,36 @@
             height: root.height * 0.05
             size_hint_y: None
             RetroButton:
-                on_press: root.pressModAdd()
+                on_release: root.pressModAdd()
                 text: "MOD+"
                 size_hint_x: 0.15
             RetroButton:
-                on_press: root.pressModDel()
+                on_release: root.pressModDel()
                 text: "MOD-"
                 size_hint_x: 0.15
             RetroButton:
-                on_press: root.pressPtnLast()
+                on_release: root.pressPtnLast()
                 text: "<"
                 size_hint_x: 0.15
             RetroButton:        
                 id: btnPtnTitleID
-                on_press: root.pressPtnTitle()
+                on_release: root.pressPtnTitle()
                 text: "PTN: bad performance"
             RetroButton:
-                on_press: root.pressPtnNext()
+                on_release: root.pressPtnNext()
                 text: ">"
                 size_hint_x: 0.15
             RetroButton:
-                on_press: root.pressPtnAdd()
+                on_release: root.pressPtnAdd()
                 text: "PTN+"
                 size_hint_x: 0.15
             RetroButton:
-                on_press: root.pressPtnDel()
+                on_release: root.pressPtnDel()
                 text: "PTN-"
                 size_hint_x: 0.15
             RetroButton:
                 id: btnPtnInfoID
-                on_press: root.pressPtnInfo()
+                on_release: root.pressPtnInfo()
                 text: "PAT LEN (Beats)"
                 size_hint_x: 0.4
 
@@ -117,26 +127,26 @@
             height: root.height * 0.05
             size_hint_y: None
             RetroButton:
-                on_press: root.pressNoteAdd()
+                on_release: root.pressNoteAdd()
                 text: "NOTE +"
             RetroButton:
-                on_press: root.pressNoteDel()
+                on_release: root.pressNoteDel()
                 text: "NOTE -"
             RetroButton:
                 id: btnNotePitchID
-                on_press: root.pressNotePitch()
+                on_release: root.pressNotePitch()
                 text: "NOTE PITCH (or Drum)"
             RetroButton:
                 id: btnNoteOnID
-                on_press: root.pressNoteOn()
+                on_release: root.pressNoteOn()
                 text: "NOTE ON"
             RetroButton:
                 id: btnNoteLenID
-                on_press: root.pressNoteLen()
+                on_release: root.pressNoteLen()
                 text: "NOTE LEN"
             RetroButton:
                 id: btnNoteVelID
-                on_press: root.pressNoteVel()
+                on_release: root.pressNoteVel()
                 text: "NOTE VEL"
 
         BoxLayout:
@@ -145,13 +155,191 @@
             size_hint_y: None
             RetroButton:
                 id: a
-                on_press: root.pressLoadCSV()
+                on_release: root.pressLoadCSV()
                 text: "Load .may"
             RetroButton:
                 id: b
-                on_press: root.pressSaveCSV()
+                on_release: root.pressSaveCSV()
                 text: "Save .may"
             RetroButton:
                 id: c
-                on_press: root.pressBuildCode()
+                on_release: root.pressBuildCode()
                 text: "Export GLSL"
+
+
+<EditSynthDialog>:
+    size_hint: .4, .4
+    title: ""
+    background: "./transparent.png"
+    separator_height: 0
+
+    synthNameInput: synthNameInput
+
+    canvas:
+        Color:
+            rgb: (0.8, 0.8, 0.8)
+        Line:
+            rectangle: (self.x+2, self.y+2, self.width-4, self.height-4)
+            width: 2.4
+            joint: 'miter'
+
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint: (.9, .9)
+        OpaqueLabel:
+            text: "Edit Synth (Name only, for now)"
+            background_color: 0,0,0,1
+            size_hint: (1, .15)
+            pos_hint: {'center_x': 0.5}
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: (1, .15)
+            pos_hint: {'center_x':0.5, 'center_y':0.5}
+            Label:
+                text: "Name:"
+                size_hint: (.25, .5)
+                pos_hint: {'center_x':0.5, 'center_y':0.5}
+            TextInput:
+                id: synthNameInput
+                size_hint: (.75, .5)
+                pos_hint: {'center_x':0.5, 'center_y':0.5}
+                multiline: False
+                focus: True
+                on_text_validate:
+                    root.synthChangeName(synthNameInput.text)
+                    self.parent.parent.dismiss()
+        RetroButton:
+            text: "CHANGE NAME"
+            size_hint: (1, .15)
+            on_release:
+                root.synthChangeName(synthNameInput.text)
+                self.parent.parent.dismiss()
+        RetroButton:
+            text: "DEACTIVATE SYNTH"
+            size_hint: (1, .15)
+            on_release:
+                root.synthDeactivate()
+                self.parent.parent.dismiss()
+        RetroButton:
+            text: "CANCEL"
+            size_hint: (1, .15)
+            on_release:
+                self.parent.parent.dismiss()
+
+
+<ImportPatternDialog>:
+    size_hint: .8, .8
+    title: ""
+    separator_height: 0
+    #background: ""
+
+    importPatternFilenameInput: importPatternFilenameInputID
+    importPatternList: importPatternListID
+    importPatternButton: importPatternButtonID
+
+    on_open:
+        importPatternFilenameInputID.select_all()
+
+    canvas:
+        Color:
+            rgb: (.8, .8, .8)
+        Line:
+            rectangle: (self.x+2, self.y+2, self.width-4, self.height-4)
+            width: 2.4
+            joint: 'miter'
+
+    FloatLayout:
+
+        Label:
+            text: "Quite weird: you control this dialog by mouse. SORRY -- no time till Revision!"
+            size_hint: (0.6, 0.1)
+            pos_hint: {'x':0.2, 'top':1}
+    
+        Label:
+            text: "Anyway. Import Pattern From File (XML)?"
+            size_hint: (0.6, 0.1)
+            pos_hint: {'x':0.2, 'top':.95}
+    
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: (0.8, None)
+            height: 36
+            pos_hint: {'x':0.1, 'top':.85}
+            Label:
+                text: "Filename:"
+                size_hint: (0.1, 1)
+            TextInput:
+                id: importPatternFilenameInputID
+                text: "enter filename here, then press PARSE (or ENTER)"
+                size_hint: (0.7, 1)
+                multiline: False
+                focus: True
+                on_text_validate: root.parseFile()
+            RetroButton:
+                text: "PARSE"
+                size_hint: (0.1, 1)
+                on_release: root.parseFile()
+            RetroButton:
+                text: "CLEAR"
+                size_hint: (0.1, 1)
+                on_release: root.clearFile()
+
+        SelectableRecycleView:
+            id: importPatternListID
+            size_hint: (0.8, .5)
+            pos_hint: {'center_x': 0.5, 'center_y': 0.525}
+            
+        RetroButton:
+            id: importPatternButtonID
+            text: "IMPORT SE SHIT!"
+            disabled: True
+            font_size: 80
+            size_hint: (0.6, 0.2)
+            pos_hint: {'x': 0.05, 'y': 0.05}
+            on_release:
+                if not self.disabled: root.parsePattern()
+
+        RetroButton:
+            text: "do it not. (sorry)"
+            font_size: 16
+            size_hint: (0.16, 0.05)
+            pos_hint: {'x': 0.75, 'y': 0.1}
+            on_release:
+                self.parent.parent.dismiss()
+
+<ExportPatternDialog>:
+
+
+<SelectableLabel>:
+    canvas.before:
+        Color:
+            rgba: (.6, 0, .3, .6) if self.selected else (0, 0, 0, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+
+<SelectableRecycleView>:
+    viewclass: 'SelectableLabel'
+    scroll_type: ['bars', 'content']
+    canvas.before:
+        Color:
+            rgb: (0, 0, 0)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    canvas.after:
+        Color:
+            rgb: (.8,.8,.8)
+        Line:
+            rectangle: (self.x, self.y, self.width, self.height)
+            width: 1.2
+            joint: 'miter'
+    SelectableRecycleBoxLayout:
+        default_size: None, 28
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False

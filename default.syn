@@ -235,7 +235,7 @@ main M8_ILike2 src=A24_someenv*A24_someenv2*A24_lp release=.01
 
 random f0 min=50  max=80  digits=1
 random f1 min=100 max=150 digits=1
-drum        BDbody shape=kick freq_start=f0 freq_end=f1 freq_decay=0.1 attack=0.1 hold=0.1 decay=0.3 click_amp=1.2 click_delay=.05 click_timbre=.8 overdrive=10 
+drum        BDbody shape=kick freq_start=f1 freq_end=f0 freq_decay=0.1 attack=0.1 hold=0.1 decay=0.3 click_amp=1.2 click_delay=.05 click_timbre=.8 overdrive=10 
 maindrum    BD1 src=BDbody
 
 drum BDbody2 shape=kick2 freq_start=200 freq_end=50 freq_decay=0.12 attack=0.015 hold=0.1 decay=0.15 click_amp=0.4 click_delay=0.03 click_timbre=1. sq_phase=5 sq_nmax=10 sq_mix=0.8 sq_inr=1 sq_ndecay=1 sq_res=1 sq_resq=.1 sq_detune=.1
@@ -259,7 +259,7 @@ drum hut shape=fmnoise attack=0 decay=0.05 sustain=0 timbre1=.3 timbre2=2
 lfo acclfo shape=squ freq=4. mode=beat,global shift=.6 scale=.25
 maindrum HAT src=.4*acclfo*hut
 
-drum snr shape=snare freq0=6000 freq1=800 freq2=350 freqdecay0=0.01 freqdecay1=0.01 decay=0.25 sustain=0.3 release=0.1 noise_amount=.7 noise_attack=0.05 noise_decay=0.3 noise_sustain=0.3 overdrive=1.6
+drum snr shape=snare freq0=6000 freq1=800 freq2=350 freqdecay1=0.01 freqdecay2=0.01 decay=0.25 sustain=0.3 release=0.1 noise_amount=.7 noise_attack=0.05 noise_decay=0.3 noise_sustain=0.3 overdrive=1.6
 maindrum SNR src=snr
 
 filter snrrev shape=reverb src=snr iir_gain=0.15 iir_delay1=0.000297 iir_delay2=0.000371 iir_delay3=0.000411 iir_delay4=0.000437 ap_gain=0.2 ap_delay1=0.000017 ap_delay2=0.00005

@@ -4,13 +4,17 @@ kivy.require('1.10.0') # replace with your current kivy version !
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
+from kivy.uix.modalview import ModalView
 from kivy.properties import NumericProperty, ObjectProperty, BooleanProperty
 from kivy.core.window import Window
 from kivy.config import Config
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, Line, Ellipse
 from kivy.core.text import Label as CoreLabel
-from math import pi, sin, exp
+from math import pi, sin, exp, ceil
+
+import xml.etree.ElementTree as ET
+from ma2_selectableRV import *
 
 import numpy as np
 from scipy import optimize
@@ -20,6 +24,9 @@ from ma2_pattern import *
 
 mixcolor = lambda t1,t2: tuple((v1+v2)/2 for v1,v2 in zip(t1,t2))
 strfloat = lambda f: str(int(f)) if f==int(f) else str(f)
+
+LMMS_scalenotes = 192
+LMMS_scalebars = 4
 
 class TrackWidget(Widget):
     active = BooleanProperty(True)
@@ -63,9 +70,9 @@ class TrackWidget(Widget):
             for i,t in enumerate(tracklist[0:15]):
                 #height: 375
                 draw_x = self.x + pad_l
-                draw_y = self.top - pad_t - (i+1)*row_h - i*gap_h;
+                draw_y = self.top - pad_t - (i+1) * row_h - i * gap_h
                 
-                Color(*((.2,.2,.2) if i!=current_track else (.5,.2,.2)))
+                Color(*((.2,.2,.2) if i != current_track else (.5,.2,.2)))
                 Rectangle(pos = (draw_x, draw_y), size = (char_w*chars_name + 4,row_h))
 
                 ### TRACK NAME ###
@@ -78,17 +85,24 @@ class TrackWidget(Widget):
                 ### SYNTH NAME ###
                 draw_x += char_w*(chars_name+1) + 4
                 Color(.8,.8,.8,1)
-                label = CoreLabel(text = t.getSynthName()[2:2+chars_synth], font_size = font_size, font_name = self.font_name)
+                label = CoreLabel(text = t.getSynthName()[:chars_synth], font_size = font_size, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
                                 
                 ### GRID ###
                 draw_x = grid_l
-                Color(*((.2,.2,.2) if i != current_track else (.5,.2,.2)))
+                Color(*((.2,.2,.2) if i != current_track else (.5,.2,.2)), 1 - 0.5 * t.mute)
                 while draw_x + beat_w <= self.right - pad_r:
                     Rectangle(pos = (draw_x, draw_y), size = (beat_w-1,row_h))
                     draw_x += beat_w
-                    
+
+                ### TRACK INFO ###
+                Color(1,1,1,.7)
+                volume_label = "MUTE" if t.mute else str(int(100 * t.par_norm)) + '%'
+                label = CoreLabel(text = volume_label, font_size = font_size, font_name = self.font_name)
+                label.refresh()
+                Rectangle(size = label.texture.size, pos = (self.right - pad_r - label.width, draw_y), texture = label.texture)
+
                 ### MODULES ###
                 for m in t.modules:
                     Color(*m.pattern.color, 0.4)
@@ -355,6 +369,7 @@ class CurveWidget(Widget):
         self.c_y = parent.center_y
         self.update()
                                
+    # TODO: don't remove points, but make them drag'n'droppable!
     def on_touch_down(self, touch):
         self.fit_plot.append([touch.x, touch.y])
         
@@ -412,3 +427,92 @@ class CurveWidget(Widget):
 
         return np.clip(pars[0] + pars[1]*x + pars[2]*x*x + pars[3]*np.sin(pars[4]*x + pars[5]) + pars[6]*np.exp(-pars[7]*x), 0, 1)
  
+
+class EditSynthDialog(ModalView):
+    synthNameInput = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        self.synth_name = kwargs.pop('synth_name')
+        self.synth_isdrum = kwargs.pop('is_drum')
+        super(EditSynthDialog, self).__init__(**kwargs)
+        self.synthNameInput.text = self.synth_name
+        self.synthNameInput.select_all()
+        
+        self.root = App.get_running_app().root
+
+    def synthChangeName(self, name):
+        self.root.synthChangeName(name, drum = self.synth_isdrum)
+
+    def synthDeactivate(self):
+        self.root.synthDeactivate(drum = self.synth_isdrum)
+
+
+class ImportPatternDialog(ModalView):
+    importPatternFilenameInput = ObjectProperty(None)
+    importPatternList = ObjectProperty(None)
+    importPatternButton = ObjectProperty(None)
+
+    return_pattern = None
+
+    def __init__(self, **kwargs):
+        super(ImportPatternDialog, self).__init__(**kwargs)
+
+    def parseFile(self):
+        XML_filename = self.importPatternFilenameInput.text
+        try:
+            open(XML_filename, 'r').close()
+        except FileNotFoundError:
+            self.importPatternList.data = self.importPatternList.empty_data
+            self.importPatternFilenameInput.text = "FILE NOT FOUND (i guess you're one of the dumber ones)"
+            self.importPatternFilenameInput.select_all()
+            return
+        
+        XML_root = ET.parse(XML_filename).getroot()
+        pattern_data = []
+        for element in XML_root.iter():
+                if element.tag == 'pattern':
+                        elem_name = element.attrib['name']
+                        elem_pos = float(element.attrib['pos'])/LMMS_scalenotes
+                        pattern_data.append({'text': elem_name + ' @ ' + strfloat(elem_pos+1), 'element': element})
+
+        self.importPatternList.data = pattern_data
+
+    def clearFile(self):
+        self.importPatternList.data = self.importPatternList.empty_data
+        self.importPatternFilenameInput.text = ""
+        self.importPatternFilenameInput.focus = True
+
+    def parsePattern(self):
+        if not self.importPatternList.data: return
+
+        XML_data = self.importPatternList.getSelectedData()
+        print(XML_data)
+        if not XML_data or not XML_data['text']:
+            return
+
+        self.return_pattern = Pattern(name = XML_data['text'], synth_type = 'I')
+        pattern_length = 1
+
+        for elem_note in XML_data['element']:
+            print(elem_note.tag, elem_note.attrib, end='')
+            if elem_note.tag == 'note':
+                note_on = float(elem_note.attrib['pos'])/LMMS_scalenotes
+                note_len = float(elem_note.attrib['len'])/LMMS_scalenotes
+                self.return_pattern.notes.append(
+                    Note(
+                        note_on    = note_on,
+                        note_len   = note_len,
+                        note_pitch = int(float(elem_note.attrib['key'])),
+                        note_pan   = int(float(elem_note.attrib['pan'])),
+                        note_vel   = int(float(elem_note.attrib['vol'])),
+                        note_slide = 0)
+                    )
+                pattern_length = max(pattern_length, ceil(note_on + note_len))
+                print(' --> read', end='')
+            print()
+        self.return_pattern.length = pattern_length
+
+        self.dismiss()
+
+class ExportPatternDialog(ModalView):
+    pass
