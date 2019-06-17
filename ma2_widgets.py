@@ -31,10 +31,14 @@ LMMS_scalebars = 4
 class TrackWidget(Widget):
     active = BooleanProperty(True)
 
+    marker_list = {}
+    scale_h = 1
+    scale_v = 1
+    offset_h = 0
+    offset_v = 0
+
     def __init__(self, **kwargs):
         super(TrackWidget, self).__init__(**kwargs)
-
-    marker_list = {}
 
     def drawTrackList(self, parent):
 
@@ -43,15 +47,20 @@ class TrackWidget(Widget):
 
         pad_l = 10
         pad_r = 20
-        pad_t = 15
-        row_h = 22
+        pad_t = 9
+        row_h = int(22 * self.scale_v)
         gap_h = 4
-        beat_w = 20
+        beat_w = int(20 * self.scale_h)
         
         font_size = 16
         char_w = 10
         chars_name = 16
         chars_synth = 10
+        font_size_small = int(10 * min(self.scale_v, self.scale_h))
+
+        max_visible_tracks = int(260 / (row_h + gap_h))
+        number_visible_tracks = min(len(tracklist), max_visible_tracks)
+        self.offset_v = min(self.offset_v, len(tracklist) - max_visible_tracks)
 
         # TODO: fixed size for now (15 tracks, 64 modules).. extend when it becomes necessary
 
@@ -67,12 +76,13 @@ class TrackWidget(Widget):
                 Color(1.,0.,1,.5)
                 Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 7], width = 1.5)
             
-            for i,t in enumerate(tracklist[0:15]):
+            for i,t in enumerate(tracklist[self.offset_v:self.offset_v+number_visible_tracks]):
+                index = i + self.offset_v
                 #height: 375
                 draw_x = self.x + pad_l
                 draw_y = self.top - pad_t - (i+1) * row_h - i * gap_h
                 
-                Color(*((.2,.2,.2) if i != current_track else (.5,.2,.2)))
+                Color(*((.2,.2,.2) if index != current_track else (.5,.2,.2)))
                 Rectangle(pos = (draw_x, draw_y), size = (char_w*chars_name + 4,row_h))
 
                 ### TRACK NAME ###
@@ -91,7 +101,7 @@ class TrackWidget(Widget):
                                 
                 ### GRID ###
                 draw_x = grid_l
-                Color(*((.2,.2,.2) if i != current_track else (.5,.2,.2)), 1 - 0.5 * t.mute)
+                Color(*((.2,.2,.2) if index != current_track else (.5,.2,.2)), 1 - 0.5 * t.mute)
                 while draw_x + beat_w <= self.right - pad_r:
                     Rectangle(pos = (draw_x, draw_y), size = (beat_w-1,row_h))
                     draw_x += beat_w
@@ -109,22 +119,22 @@ class TrackWidget(Widget):
                     Rectangle(pos=(grid_l + beat_w * m.mod_on, draw_y), size=(beat_w * m.pattern.length - 1,row_h))
                     
                     Color(*(0.5+0.5*c for c in m.pattern.color),1)
-                    label = CoreLabel(text = m.pattern.name[0:3*int(m.pattern.length)], font_size = 10, font_name = self.font_name)
+                    label = CoreLabel(text = m.pattern.name[0:3*int(m.pattern.length)], font_size = font_size_small, font_name = self.font_name)
                     label.refresh()
                     Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y-1), texture = label.texture)
                     
                     if m.transpose != 0:
-                        label = CoreLabel(text = "%+d" % m.transpose, font_size = 10, font_name = self.font_name)
+                        label = CoreLabel(text = "%+d" % m.transpose, font_size = font_size_small, font_name = self.font_name)
                         label.refresh()
                         Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y + row_h/2 - 2), texture = label.texture)
 
-                    if m == t.getModule() and i == current_track:
+                    if m == t.getModule() and index == current_track:
                         Color(1,.5,.5,.8)
                         Line(rectangle = (grid_l + beat_w * m.mod_on - 1 , draw_y - 1, beat_w * m.pattern.length, row_h + 2), width = 1.5)
 
 
             draw_x = grid_l
-            draw_y = self.top - pad_t - (len(tracklist)+.5)*(row_h+gap_h) - 4
+            draw_y = self.top - pad_t - (number_visible_tracks+.5)*(row_h+gap_h) - 4
 
             beat_max = (self.right - pad_r - draw_x) // beat_w
             
@@ -132,7 +142,7 @@ class TrackWidget(Widget):
                 Color(.6,.8,.8)
                 label = CoreLabel(text = str(i), font_size = 12, font_name = self.font_name)
                 label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y), texture = label.texture)
+                Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y+4), texture = label.texture)
                 
                 draw_x += beat_w
             
@@ -153,13 +163,31 @@ class TrackWidget(Widget):
         markers_to_remove = {l:p for l,p in self.marker_list.items() if p<=0}
         for m in markers_to_remove:
             del self.marker_list[m]
+
+    def scroll(self, axis, inc):
+        if axis == 'horizontal':
+            self.offset_h = max(0, self.offset_h + inc)
+        elif axis == 'vertical':
+            self.offset_v = max(0, self.offset_v + inc)
+        else:
+            print("tried scrolling on some weird axis:", axis)
+
+    def scaleByFactor(self, axis, factor):
+        if axis == 'horizontal':
+            self.scale_h = round(self.scale_h * factor, 2)
+        elif axis == 'vertical':
+            self.scale_v = round(self.scale_v * factor, 2)
+        else:
+            print("tried scaling by some weird axis:", axis)
     
 class PatternWidget(Widget):
     active = BooleanProperty(False)
 
     drumkit = []
     scale_h = 1
-    scale_v = 1 
+    scale_v = 1
+    offset_h = 0
+    offset_v = 12
     # TODO: before automatic scrolling: prompt to enter offset_h, offset_v, scale_h, scale_v; AND also cut off everything not on screen
     
     def __init__(self, **kwargs):
@@ -167,13 +195,6 @@ class PatternWidget(Widget):
 
     def updateDrumkit(self, drumkit):
         self.drumkit = drumkit
-
-    def updateScale(self, scale_v = None, scale_h = None, delta_h = 0, delta_v = 0):
-        if scale_v and scale_v > 0: self.scale_v = scale_v
-        if scale_h and scale_h > 0: self.scale_h = scale_h
-        if delta_h > 0: self.scale_v += delta_h
-        if delta_v > 0: self.scale_h += delta_v
-        # not accessible yet, but probably implemented :)
 
     claviature = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     def isKeyBlack(self, key): return '#' in self.claviature[key % 12]
@@ -191,26 +212,25 @@ class PatternWidget(Widget):
         pad_r = 20
         pad_t = 5
         pad_b = 22
-        key_h = 9 * self.scale_v * (1 if not isDrum else 3)
-        key_w = 32 * self.scale_h
-        font_size = 11 * self.scale_v
-        bars = 4 * (0 if not pattern else pattern.length)
-        bar_w = 48 * self.scale_h
+        key_h = int(9 * self.scale_v * (1 if not isDrum else 3))
+        key_w = int(32 * self.scale_h)
+        font_size = int(11 * min(self.scale_h, self.scale_v))
+        bars = 4 * (0 if not pattern else max(0, pattern.length - self.offset_h))
+        bar_w = int(48 * self.scale_h)
         #for now: no length > 16 bars! TODO
 
         #all the note_visible functions!
         #function to clearly calculate position of note TODO, draw current note, draw grid TODO but this time, respect pattern length!
 
-        offset_v = 12
-        offset_h = 0
-
         draw_y = self.y + pad_b
-        key = offset_v
 
         if isDrum:
             offset_v = 0
             key = 0
             transpose = 0
+        else:
+            offset_v = self.offset_v
+            key = self.offset_v
 
 
         self.canvas.clear()
@@ -232,28 +252,52 @@ class PatternWidget(Widget):
 
                 if pattern and pattern.notes and key == (pattern.getNote().note_pitch + transpose) % (len(self.drumkit) if isDrum else 100):
                     Color(.7,1,.3,.6)
-                    Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not isKeyBlack(key))))
+                    Rectangle(pos = (draw_x, draw_y), size = (key_w, key_h + 0.5 * (not isKeyBlack(key))))
 
                 Color(*((1,1,1) if isKeyBlack(key) else (.3,.3,.3)),1)
                 if not isDrum:
                     label = CoreLabel(text = self.claviature[key % 12] + str(key//12), font_size = font_size, font_name = self.font_name)
                     label.refresh()
-                    Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-2.5), texture = label.texture)                
-                    Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-3), texture = label.texture)                
+                    Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-2.5), texture = label.texture)
+                    Rectangle(size = label.texture.size, pos = (draw_x+2, draw_y-3), texture = label.texture)
                 else:
                     label_len = len(self.drumkit[key])
-                    label1 = CoreLabel(text = self.drumkit[key][0:4], font_size = font_size, font_name = self.font_name)
-                    label1.refresh()
                     if label_len < 5:
-                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-1.5 + .5*label1.height), texture = label1.texture)                
-                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-2 + .5*label1.height), texture = label1.texture)
-                    else:
+                        label1 = CoreLabel(text = self.drumkit[key][0:4], font_size = font_size, font_name = self.font_name)
+                        label1.refresh()
+                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-1 + .5*label1.height), texture = label1.texture)
+                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-1.5 + .5*label1.height), texture = label1.texture)
+                    elif label_len < 9:
+                        label1 = CoreLabel(text = self.drumkit[key][0:4], font_size = font_size, font_name = self.font_name)
+                        label1.refresh()
                         label2 = CoreLabel(text = self.drumkit[key][4:8], font_size = font_size, font_name = self.font_name)
                         label2.refresh()
-                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-3.5 + label1.height), texture = label1.texture)                
-                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-4 + label1.height), texture = label1.texture)
-                        Rectangle(size = label2.texture.size, pos = (draw_x+2, draw_y-1.5), texture = label2.texture)                
-                        Rectangle(size = label2.texture.size, pos = (draw_x+2, draw_y-2), texture = label2.texture)                
+                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-2 + label1.height), texture = label1.texture)
+                        Rectangle(size = label1.texture.size, pos = (draw_x+2, draw_y-2.5 + label1.height), texture = label1.texture)
+                        Rectangle(size = label2.texture.size, pos = (draw_x+2, draw_y), texture = label2.texture)
+                        Rectangle(size = label2.texture.size, pos = (draw_x+2, draw_y-.5), texture = label2.texture)
+                    elif label_len < 11:
+                        label1 = CoreLabel(text = self.drumkit[key][0:5], font_size = font_size-1, font_name = self.font_name)
+                        label1.refresh()
+                        label2 = CoreLabel(text = self.drumkit[key][5:10], font_size = font_size-1, font_name = self.font_name)
+                        label2.refresh()
+                        Rectangle(size = label1.texture.size, pos = (draw_x+1, draw_y-1.5 + label1.height), texture = label1.texture)
+                        Rectangle(size = label1.texture.size, pos = (draw_x+1, draw_y-2 + label1.height), texture = label1.texture)
+                        Rectangle(size = label2.texture.size, pos = (draw_x+1, draw_y+.5), texture = label2.texture)
+                        Rectangle(size = label2.texture.size, pos = (draw_x+1, draw_y), texture = label2.texture)
+                    else:
+                        label1 = CoreLabel(text = self.drumkit[key][0:5], font_size = font_size-1, font_name = self.font_name)
+                        label1.refresh()
+                        label2 = CoreLabel(text = self.drumkit[key][5:10], font_size = font_size-1, font_name = self.font_name)
+                        label2.refresh()
+                        label3 = CoreLabel(text = self.drumkit[key][10:15], font_size = font_size-1, font_name = self.font_name)
+                        label3.refresh()
+                        Rectangle(size = label1.texture.size, pos = (draw_x+1, draw_y-11.5 + 2*label1.height), texture = label1.texture)
+                        Rectangle(size = label1.texture.size, pos = (draw_x+1, draw_y-11 + 2*label1.height), texture = label1.texture)
+                        Rectangle(size = label2.texture.size, pos = (draw_x+1, draw_y-7 + label2.height), texture = label2.texture)
+                        Rectangle(size = label2.texture.size, pos = (draw_x+1, draw_y-6.5 + label2.height), texture = label2.texture)
+                        Rectangle(size = label3.texture.size, pos = (draw_x+1, draw_y-3), texture = label3.texture)
+                        Rectangle(size = label3.texture.size, pos = (draw_x+1, draw_y-2.5), texture = label3.texture)
 
                 draw_x += 2 + key_w
                 Color(*((.1,.1,.1) if isKeyBlack(key) else (.1,.3,.2)))
@@ -270,7 +314,7 @@ class PatternWidget(Widget):
 
             ### GRID ###
             Color(.6,.8,.8)
-            label = CoreLabel(text = "0.00", font_size = 12, font_name = self.font_name)
+            label = CoreLabel(text = "%.2f" % self.offset_h, font_size = 12, font_name = self.font_name)
             label.refresh()
             Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y - label.height), texture = label.texture)
             for b in range(int(bars)):
@@ -283,7 +327,7 @@ class PatternWidget(Widget):
                 draw_x += bar_w
 
                 Color(.6,.8,.8)
-                label = CoreLabel(text = "%.2f" % (.25*(b+1)), font_size = 12, font_name = self.font_name)
+                label = CoreLabel(text = "%.2f" % (.25*(b + 1) + self.offset_h), font_size = 12, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y - label.height), texture = label.texture)
 
@@ -303,9 +347,13 @@ class PatternWidget(Widget):
                         break
 
                 for n in pattern.notes:
-                    Color(*pattern.color,.55) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER (TODO)
-                    draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * n.note_on
+                    note_on = n.note_on - self.offset_h
+                    draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * note_on
                     draw_y = self.y + pad_b + (key_h + 1) * ((n.note_pitch + transpose - offset_v) if not isDrum else (n.note_pitch % len(self.drumkit)))
+
+                    if note_on < 0 or draw_x > self.right - pad_r: continue
+
+                    Color(*pattern.color,.55) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER (TODO)
                     Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.note_len - 2, key_h))
 
                     if n == pattern.getNote():
@@ -345,6 +393,31 @@ class PatternWidget(Widget):
             label = CoreLabel(text = parent.numberInput, font_size = 12, font_name = self.font_name)
             label.refresh()
             Rectangle(size = label.texture.size, pos = (self.x + self.width - pad_r - label.width, self.y + pad_b - label.height), texture = label.texture)
+
+    def scroll(self, axis, inc):
+        if axis == 'horizontal':
+            self.offset_h = max(0, self.offset_h + inc)
+        elif axis == 'vertical':
+            self.offset_v = max(0, self.offset_v + inc)
+        else:
+            print("tried scrolling on some weird axis:", axis)
+
+    def scaleByFactor(self, axis, factor):
+        if axis == 'horizontal':
+            self.scale_h = round(self.scale_h * factor, 2)
+        elif axis == 'vertical':
+            self.scale_v = round(self.scale_v * factor, 2)
+        else:
+            print("tried scaling by some weird axis:", axis)
+
+#    def updateScale(self, scale_v = None, scale_h = None, delta_h = 0, delta_v = 0):
+#        if scale_v and scale_v > 0: self.scale_v = scale_v
+#        if scale_h and scale_h > 0: self.scale_h = scale_h
+#        if delta_h > 0: self.scale_v += delta_h
+#        if delta_v > 0: self.scale_h += delta_v
+#        # not accessible yet, but probably implemented :)
+
+
 
 class CurveWidget(Widget):
 

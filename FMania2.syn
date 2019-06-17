@@ -249,7 +249,21 @@ maindrum SNR src=snr
 filter snrrev shape=reverb src=snr iir_gain=0.15 iir_delay1=0.000297 iir_delay2=0.000371 iir_delay3=0.000411 iir_delay4=0.000437 ap_gain=0.2 ap_delay1=0.000017 ap_delay2=0.00005
 maindrum RVRBSNER src=snrrev release=1
 
-maindrum empty src=0
+maindrum emptyschmentieh src=0
 
 drum explosion shape=bitexplosion nvar=1 freqvar=2 twostepvar=2 var1=1.5 var2=2 var3=1 decay=1 
-maindrum EXPL src=explosion release=.5
+maindrum EXPLOSION src=explosion release=.5
+
+
+maindrum empt1 src=0
+maindrum empt2 src=0
+maindrum empt3 src=0
+maindrum empt4 src=0
+maindrum empt5 src=0
+maindrum empt6 src=0
+maindrum empt7 src=0
+maindrum empt8 src=0
+maindrum empt9 src=0
+maindrum empt10 src=0
+maindrum empt11 src=0
+maindrum empt12 src=0

@@ -2,7 +2,7 @@ import os
 #os.environ['KIVY_NO_CONSOLELOG'] = '1'
 
 import kivy
-kivy.require('1.10.0') # replace with your current kivy version !
+kivy.require('1.10.1') # replace with your current kivy version !
 
 from kivy.app import App
 from kivy.uix.label import Label
@@ -41,9 +41,10 @@ from SFXGLWidget import *
 
 GLfloat = lambda f: str(int(f))  + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
 
-Config.set('graphics', 'width', '1600')
-Config.set('graphics', 'height', '1000')
+#Config.set('graphics', 'width', '1600')
+#Config.set('graphics', 'height', '1000')
 #Config.set('kivy', 'log_level', 'warning')
+Window.size = (1600, 1000)
 
 def_synfile = 'default.syn'
 def_synths = ['D_Drums', 'G_GFX', '__None']
@@ -139,26 +140,26 @@ class Ma2Widget(Widget):
     def __init__(self, **kwargs):
         super(Ma2Widget, self).__init__(**kwargs)
         self._keyboard_request()
-
         self.setupInit()
         Clock.schedule_once(self.update, 0)
 
     def _keyboard_request(self, *args):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down = self._on_keyboard_down)        
+        self._keyboard.bind(on_key_down = self._on_keyboard_down)
         
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down = self._on_keyboard_down)
         self._keyboard = None
         
     def _on_keyboard_down(self, keyboard, keycode, keytext, modifiers):
-        
         if self.stateChanged:
             self.handleUndoStack()
             self.stateChanged = False
 
         k = keycode[1]
         keytext = correctForNumpad(keytext, k)
+
+        if k == 'tab' and 'alt' in modifiers: return
 
         action = interpretKeypress(k, modifiers, self.theTrkWidget.active, self.thePtnWidget.active)
 
@@ -219,6 +220,14 @@ class Ma2Widget(Widget):
             elif action == 'DEBUG PRINT PATTERNS':      self.printPatterns()
             elif action == 'SYNTH CLONE HARD':          self.synthClone(hard = True)
             elif action == 'SYNTH EDIT':                self.editSynth()
+            elif action == 'SCROLL UP':                 self.theTrkWidget.scroll(axis = 'vertical', inc = -1)
+            elif action == 'SCROLL DOWN':               self.theTrkWidget.scroll(axis = 'vertical', inc = +1)
+            elif action == 'SCROLL LEFT':               self.theTrkWidget.scroll(axis = 'horizontal', inc = -1)
+            elif action == 'SCROLL RIGHT':              self.theTrkWidget.scroll(axis = 'horizontal', inc = +1)
+            elif action == 'ZOOM VERT IN':              self.theTrkWidget.scaleByFactor(axis = 'vertical', factor = 1.1)
+            elif action == 'ZOOM VERT OUT':             self.theTrkWidget.scaleByFactor(axis = 'vertical', factor = .91)
+            elif action == 'ZOOM HORZ OUT':             self.theTrkWidget.scaleByFactor(axis = 'horizontal', factor = .91)
+            elif action == 'ZOOM HORZ IN':              self.theTrkWidget.scaleByFactor(axis = 'horizontal', factor = 1.1)
 
         if(self.thePtnWidget.active) and self.getPattern():
             if   action == 'PATTERN LONGER STRETCH':    self.getPattern().stretchPattern(+inc_step, scale = True) 
@@ -256,6 +265,14 @@ class Ma2Widget(Widget):
             elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()
             elif action == 'DRUMSYNTH CLONE HARD':      self.synthClone(drum = True, hard = True)
             elif action == 'DRUMSYNTH EDIT':            self.editSynth(drum = True)
+            elif action == 'SCROLL UP':                 self.thePtnWidget.scroll(axis = 'vertical', inc = +1)
+            elif action == 'SCROLL DOWN':               self.thePtnWidget.scroll(axis = 'vertical', inc = -1)
+            elif action == 'SCROLL LEFT':               self.thePtnWidget.scroll(axis = 'horizontal', inc = -1)
+            elif action == 'SCROLL RIGHT':              self.thePtnWidget.scroll(axis = 'horizontal', inc = +1)
+            elif action == 'ZOOM VERT IN':              self.thePtnWidget.scaleByFactor(axis = 'vertical', factor = 1.1)
+            elif action == 'ZOOM VERT OUT':             self.thePtnWidget.scaleByFactor(axis = 'vertical', factor = .91)
+            elif action == 'ZOOM HORZ OUT':             self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = .91)
+            elif action == 'ZOOM HORZ IN':              self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = 1.1)
       
             if keytext:
                 if keytext.isdigit() or keytext in ['.', '-']:

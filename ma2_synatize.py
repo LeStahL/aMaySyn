@@ -502,7 +502,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
             sources = split_if_not_quoted(form_main['src'], ',')
             if actually_used_drums is None or drumcount in actually_used_drums:
                 synatized_src = ''
-                drumsyncodeL = ''
+                drumsyncodeL = 'vel*'
                 for term in sources:
                     instance_src = instance(term)
                     synatized_src += instance_src + ('+' if term != sources[-1] else '')
