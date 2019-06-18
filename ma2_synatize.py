@@ -60,7 +60,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
         arg = line[2:]
         
         # some convenience parsing...
-        form = {'id':cid, 'type':cmd, 'mode':''}
+        form = {'id': cid, 'type': cmd, 'mode': ''}
         for a in arg[:]:
             if a[0] == '!':
                 arg.remove(a)
@@ -72,7 +72,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
                 form.update({key : val})
                 arg.remove(a)
                 
-            elif cmd == 'form' and a == arg[:][0]: #minor exception: don't need op= in forms 
+            elif cmd == 'form' and a == arg[:][0]: #minor convenience: don't need op= in forms 
                 form.update({'op': a})
                 arg.remove(a)
                 
@@ -304,8 +304,8 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                         freq_0 = instance(form['freq0'])
                         freq_1 = instance(form['freq1'])
                         freq_2 = instance(form['freq2'])
-                        fdec01 = instance(form['freqdecay1'])
-                        fdec12 = instance(form['freqdecay2'])
+                        fdec01 = instance(form['freqdecay0'])
+                        fdec12 = instance(form['freqdecay1'])
                         envdec = instance(form['decay'])
                         envsus = instance(form['sustain'])
                         envrel = instance(form['release'])

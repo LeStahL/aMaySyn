@@ -45,7 +45,7 @@ def set_remaining_defaults(cid, cmd, form):
             elif form['shape'] == 'kick2': # TODO: CALIBRATE (might need resonance? idk)
                 defaults.update({'sq_phase':'5', 'sq_nmax':'10', 'sq_mix':'.8', 'sq_inr':'1', 'sq_ndecay':'1', 'sq_res':'1', 'sq_resq':'1', 'sq_detune':'0'})
             elif form['shape'] == 'snare': # TODO: CALIBRATE
-                defaults.update({'freq0':'6000', 'freq1':'800', 'freq2':'350', 'freqdecay1':'.01', 'freqdecay2':'.01', 'decay':'.25', 'sustain':'.3', 'release':'.1', \
+                defaults.update({'freq0':'6000', 'freq1':'800', 'freq2':'350', 'freqdecay0':'.01', 'freqdecay1':'.01', 'decay':'.25', 'sustain':'.3', 'release':'.1', \
                                  'noise_amount':'.7', 'noise_attack':'.05', 'noise_decay':'.3', 'noise_sustain':'.3', 'overdrive':'0.6'})
             elif form['shape'] == 'bitexplosion':
                 defaults.update({'nvar':'0', 'freqvar':'1', 'twostepvar':'1', 'var1':'1', 'var2':'1', 'var3':'1', 'decay':'1'})

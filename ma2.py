@@ -78,6 +78,7 @@ class Ma2Widget(Widget):
     MODE_debug = False
     MODE_numberInput = False
     numberInput = ''
+    lastNumberInput = ''
 
     #first idea for undo: save state at EVERY action
     undo_stack = []
@@ -217,7 +218,6 @@ class Ma2Widget(Widget):
             elif action == 'TRACK RENAME':              self.renameTrack()
             elif action == 'TRACK CHANGE PARAMETERS':   self.changeTrackParameters()
             elif action == 'TRACK MUTE':                self.getTrack().setParameters(mute = not self.getTrack().mute)
-            elif action == 'DEBUG PRINT PATTERNS':      self.printPatterns()
             elif action == 'SYNTH CLONE HARD':          self.synthClone(hard = True)
             elif action == 'SYNTH EDIT':                self.editSynth()
             elif action == 'SCROLL UP':                 self.theTrkWidget.scroll(axis = 'vertical', inc = -1)
@@ -258,21 +258,21 @@ class Ma2Widget(Widget):
             elif action == 'NOTE DELETE':               self.getPattern().delNote()                                
             elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)         
             elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)         
-            elif action == 'NOTE SET PAN':              self.getPattern().getNote().setPan(self.numberInput)
-            elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput)  
-            elif action == 'NOTE SET SLIDE':            self.getPattern().getNote().setSlide(self.numberInput)
+            elif action == 'NOTE SET PAN':              self.getPattern().getNote().setPan(self.numberInput or self.lastNumberInput)
+            elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput or self.lastNumberInput)
+            elif action == 'NOTE SET SLIDE':            self.getPattern().getNote().setSlide(self.numberInput or self.lastNumberInput)
             elif action == 'PATTERN RENAME':            self.renamePattern()                                       
             elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()
             elif action == 'DRUMSYNTH CLONE HARD':      self.synthClone(drum = True, hard = True)
             elif action == 'DRUMSYNTH EDIT':            self.editSynth(drum = True)
-            elif action == 'SCROLL UP':                 self.thePtnWidget.scroll(axis = 'vertical', inc = +1)
-            elif action == 'SCROLL DOWN':               self.thePtnWidget.scroll(axis = 'vertical', inc = -1)
-            elif action == 'SCROLL LEFT':               self.thePtnWidget.scroll(axis = 'horizontal', inc = -1)
-            elif action == 'SCROLL RIGHT':              self.thePtnWidget.scroll(axis = 'horizontal', inc = +1)
-            elif action == 'ZOOM VERT IN':              self.thePtnWidget.scaleByFactor(axis = 'vertical', factor = 1.1)
-            elif action == 'ZOOM VERT OUT':             self.thePtnWidget.scaleByFactor(axis = 'vertical', factor = .91)
-            elif action == 'ZOOM HORZ OUT':             self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = .91)
-            elif action == 'ZOOM HORZ IN':              self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = 1.1)
+            elif action == 'SCROLL UP':                 self.thePtnWidget.scroll(axis = 'vertical', inc = +1, is_drum = self.isDrumTrack())
+            elif action == 'SCROLL DOWN':               self.thePtnWidget.scroll(axis = 'vertical', inc = -1, is_drum = self.isDrumTrack())
+            elif action == 'SCROLL LEFT':               self.thePtnWidget.scroll(axis = 'horizontal', inc = -1, is_drum = self.isDrumTrack())
+            elif action == 'SCROLL RIGHT':              self.thePtnWidget.scroll(axis = 'horizontal', inc = +1, is_drum = self.isDrumTrack())
+            elif action == 'ZOOM VERT IN':              self.thePtnWidget.scaleByFactor(axis = 'vertical', factor = 1.1, is_drum = self.isDrumTrack())
+            elif action == 'ZOOM VERT OUT':             self.thePtnWidget.scaleByFactor(axis = 'vertical', factor = .91, is_drum = self.isDrumTrack())
+            elif action == 'ZOOM HORZ OUT':             self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = .91, is_drum = self.isDrumTrack())
+            elif action == 'ZOOM HORZ IN':              self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = 1.1, is_drum = self.isDrumTrack())
       
             if keytext:
                 if keytext.isdigit() or keytext in ['.', '-']:
@@ -489,6 +489,7 @@ class Ma2Widget(Widget):
     def setNumberInput(self, key):
         if not key:
             self.MODE_numberInput = False
+            self.lastNumberInput = self.numberInput
 
         if not self.MODE_numberInput:
             self.numberInput = ''
@@ -565,6 +566,7 @@ class Ma2Widget(Widget):
         print("New", synfile, "copied from", def_synfile, "and old version kept as", synfile + '.bak')
 
     def synthClone(self, hard = False, drum = False):
+        self.loadSynths()
         if not self.synatized_code_syn:
             print("No code in memory! Compile once before you clone!")
             return
@@ -588,7 +590,8 @@ class Ma2Widget(Widget):
             oldID = self.getTrack().getSynthName()
             while True:
                 formID = oldID + '.' + str(count)
-                if formID not in synths: break
+                print("TRYING", formID, synths)
+                if 'I_' + formID not in synths: break
                 count += 1
 
         try:

@@ -48,7 +48,7 @@ class TrackWidget(Widget):
         pad_l = 10
         pad_r = 20
         pad_t = 9
-        row_h = int(22 * self.scale_v)
+        row_h = int(21 * self.scale_v)
         gap_h = 4
         beat_w = int(20 * self.scale_h)
         
@@ -60,7 +60,7 @@ class TrackWidget(Widget):
 
         max_visible_tracks = int(260 / (row_h + gap_h))
         number_visible_tracks = min(len(tracklist), max_visible_tracks)
-        self.offset_v = min(self.offset_v, len(tracklist) - max_visible_tracks)
+        self.offset_v = min(self.offset_v, abs(len(tracklist) - max_visible_tracks))
 
         # TODO: fixed size for now (15 tracks, 64 modules).. extend when it becomes necessary
 
@@ -138,12 +138,13 @@ class TrackWidget(Widget):
 
             beat_max = (self.right - pad_r - draw_x) // beat_w
             
+            # BEAT ENUMERATION
             for i in range(beat_max+1):
                 Color(.6,.8,.8)
                 label = CoreLabel(text = str(i), font_size = 12, font_name = self.font_name)
                 label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y+4), texture = label.texture)
-                
+                Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y+2), texture = label.texture)
+
                 draw_x += beat_w
             
             for m in self.marker_list:
@@ -188,6 +189,10 @@ class PatternWidget(Widget):
     scale_v = 1
     offset_h = 0
     offset_v = 12
+    scale_drum_h = 1
+    scale_drum_v = 1
+    offset_drum_h = 0
+    offset_drum_v = 0
     # TODO: before automatic scrolling: prompt to enter offset_h, offset_v, scale_h, scale_v; AND also cut off everything not on screen
     
     def __init__(self, **kwargs):
@@ -204,34 +209,44 @@ class PatternWidget(Widget):
         pattern = parent.getPattern()
         transpose = parent.getModuleTranspose()
         isDrum = parent.isDrumTrack()
-        # cursor = parent.getCursor()
 
         def isKeyBlack(key): return self.isKeyBlack(key) if not isDrum else (key % 2 == 0)
-        
+
+        if isDrum:
+            offset_v = self.offset_drum_v
+            offset_h = self.offset_drum_h
+            scale_v = self.scale_drum_v
+            scale_h = self.scale_drum_h
+            key = offset_v
+            transpose = 0
+        else:
+            offset_v = self.offset_v
+            offset_h = self.offset_h
+            scale_v = self.scale_v
+            scale_h = self.scale_h
+            key = offset_v
+
         pad_l = 10
         pad_r = 20
         pad_t = 5
         pad_b = 22
-        key_h = int(9 * self.scale_v * (1 if not isDrum else 3))
-        key_w = int(32 * self.scale_h)
-        font_size = int(11 * min(self.scale_h, self.scale_v))
-        bars = 4 * (0 if not pattern else max(0, pattern.length - self.offset_h))
-        bar_w = int(48 * self.scale_h)
+        key_h = int(9 * scale_v * (1 if not isDrum else 3))
+        key_w = int(32 * scale_h)
+        font_size = int(11 * min(scale_h, scale_v))
+        bars = 4 * (0 if not pattern else max(0, pattern.length - offset_h))
+        bar_w = int(48 * scale_h)
         #for now: no length > 16 bars! TODO
 
         #all the note_visible functions!
         #function to clearly calculate position of note TODO, draw current note, draw grid TODO but this time, respect pattern length!
 
         draw_y = self.y + pad_b
+        number_keys_visible = int((self.top - pad_t - self.y - pad_b)/(key_h+1))
 
         if isDrum:
-            offset_v = 0
-            key = 0
-            transpose = 0
-        else:
-            offset_v = self.offset_v
-            key = self.offset_v
-
+            self.offset_drum_v = min(self.offset_drum_v, len(self.drumkit) - number_keys_visible)
+            offset_v = self.offset_drum_v
+            key = offset_v
 
         self.canvas.clear()
         with self.canvas:
@@ -314,7 +329,7 @@ class PatternWidget(Widget):
 
             ### GRID ###
             Color(.6,.8,.8)
-            label = CoreLabel(text = "%.2f" % self.offset_h, font_size = 12, font_name = self.font_name)
+            label = CoreLabel(text = "%.2f" % offset_h, font_size = 12, font_name = self.font_name)
             label.refresh()
             Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y - label.height), texture = label.texture)
             for b in range(int(bars)):
@@ -327,7 +342,7 @@ class PatternWidget(Widget):
                 draw_x += bar_w
 
                 Color(.6,.8,.8)
-                label = CoreLabel(text = "%.2f" % (.25*(b + 1) + self.offset_h), font_size = 12, font_name = self.font_name)
+                label = CoreLabel(text = "%.2f" % (.25*(b + 1) + offset_h), font_size = 12, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y - label.height), texture = label.texture)
 
@@ -347,11 +362,12 @@ class PatternWidget(Widget):
                         break
 
                 for n in pattern.notes:
-                    note_on = n.note_on - self.offset_h
+                    note_on = n.note_on - offset_h
                     draw_x = self.x + pad_l + key_w + 2 + 4 * bar_w * note_on
-                    draw_y = self.y + pad_b + (key_h + 1) * ((n.note_pitch + transpose - offset_v) if not isDrum else (n.note_pitch % len(self.drumkit)))
+                    draw_y = self.y + pad_b + (key_h + 1) * ((n.note_pitch + transpose - offset_v) if not isDrum else (n.note_pitch - offset_v))
 
                     if note_on < 0 or draw_x > self.right - pad_r: continue
+                    if draw_y < self.y + pad_b: continue
 
                     Color(*pattern.color,.55) # idea: current simultaneous notes in darker in the same pattern view --> makes editing WAY EASIER (TODO)
                     Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.note_len - 2, key_h))
@@ -394,21 +410,37 @@ class PatternWidget(Widget):
             label.refresh()
             Rectangle(size = label.texture.size, pos = (self.x + self.width - pad_r - label.width, self.y + pad_b - label.height), texture = label.texture)
 
-    def scroll(self, axis, inc):
-        if axis == 'horizontal':
-            self.offset_h = max(0, self.offset_h + inc)
-        elif axis == 'vertical':
-            self.offset_v = max(0, self.offset_v + inc)
+    def scroll(self, axis, inc, is_drum = False):
+        if is_drum:
+            if axis == 'horizontal':
+                self.offset_drum_h = max(0, self.offset_drum_h + inc)
+            elif axis == 'vertical':
+                self.offset_drum_v = max(0, self.offset_drum_v + inc)
+            else:
+                print("tried scrolling on some weird axis:", axis)            
         else:
-            print("tried scrolling on some weird axis:", axis)
+            if axis == 'horizontal':
+                self.offset_h = max(0, self.offset_h + inc)
+            elif axis == 'vertical':
+                self.offset_v = max(0, self.offset_v + inc)
+            else:
+                print("tried scrolling on some weird axis:", axis)
 
-    def scaleByFactor(self, axis, factor):
-        if axis == 'horizontal':
-            self.scale_h = round(self.scale_h * factor, 2)
-        elif axis == 'vertical':
-            self.scale_v = round(self.scale_v * factor, 2)
+    def scaleByFactor(self, axis, factor, is_drum = False):
+        if is_drum:
+            if axis == 'horizontal':
+                self.scale_drum_h = round(self.scale_drum_h * factor, 2)
+            elif axis == 'vertical':
+                self.scale_drum_v = round(self.scale_drum_v * factor, 2)
+            else:
+                print("tried scaling by some weird axis:", axis)
         else:
-            print("tried scaling by some weird axis:", axis)
+            if axis == 'horizontal':
+                self.scale_h = round(self.scale_h * factor, 2)
+            elif axis == 'vertical':
+                self.scale_v = round(self.scale_v * factor, 2)
+            else:
+                print("tried scaling by some weird axis:", axis)
 
 #    def updateScale(self, scale_v = None, scale_h = None, delta_h = 0, delta_v = 0):
 #        if scale_v and scale_v > 0: self.scale_v = scale_v

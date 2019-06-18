@@ -22,7 +22,7 @@ float fhelp(float x) { return 1. + .333*x; } // 1. + .33333*x + .1*x*x + .02381*
 const float BPS = BPM/60.;
 const float SPB = 60./BPM;
 
-const float Fsample = 48000.; // PRODUCTION: CHANGE THIS BACK TO 44100.
+const float Fsample = 44100.; // PRODUCTION: CHANGE THIS BACK TO 44100.
 const float Tsample = 1./Fsample;
 
 const float stereo_delay = 2e-4; //enhance the stereo feel - this is experimental since I included the stereo functionality
@@ -233,13 +233,13 @@ float protokick(float t, float f_start, float f_end, float fdecay, float hold, f
          + clamp(rev_drive*.5*(_sin(rev_phi)+_sin((1.-detune)*rev_phi)),-1.,1.) * exp(-max(t-rev_hold, 0.)/rev_decay);
 } 
 
-float bitexplosion(float time, float B, int dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decay)
+float bitexplosion(float time, float B, float dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decay)
 { // this still sounds very different on different systems...
     float snd = 0.;
-    float B2 = mod(B,2.);
+    float B2 = mod(B, 2.);
     float f = 60.*fvar;
 	float dt = var1 * 2.*PI/15. * B/sqrt(10.*var2-.5*var3*B);
-    int maxN = 10 + dmaxN;
+    int maxN = 10 + int(dmaxN);
     for(int i=0; i<2*maxN+1; i++)
     {
         float t = time + float(i - maxN)*dt;
@@ -340,7 +340,7 @@ vec2 mainSynth(float time)
                 if(syn == drum_index)
                 {
                     drum = int(note_pitch(_note));
-                    if(drum == 0) { sidechain = min(sidechain, 1. - clamp(1e4 * Bprog,0.,1.) + pow(Bprog/(L-rel),8.)); }
+                    if(drum == 0) { sidechain = min(sidechain, 1. - vel*(clamp(1e4 * Bprog,0.,1.) - pow(Bprog/(L-rel),8.))); }
                     //DRUMSYNCODE
                     dL += amtL * s_atan(trk_norm(trk) * amaydrumL * theta(Bprog));
                     dR += amtR * s_atan(trk_norm(trk) * amaydrumR * theta(Bprog));

@@ -9,8 +9,9 @@ global_keys  = {
                 'ctrl f5'           : 'SYNTH RELOAD NEW RANDOMS',
                 'f11'               : 'CURVE EDIT',
                 'f12'               : 'MUTE',
+                'enter'             : 'MUTE', 
                 'ctrl shift b'      : 'SHADER PLAY',
-                'ctrl enter'        : 'SHADER PLAY', #why not both? :)
+                'ctrl enter'        : 'SHADER PLAY',
 		        'ctrl shift enter'  : 'SHADER RENDER',
                 'ctrl n'            : 'SONG CLEAR',
                 'ctrl l'            : 'SONG LOAD',
@@ -58,7 +59,6 @@ track_keys   = {
                 'f6'               : 'TRACK RENAME',
                 'f7'               : 'TRACK CHANGE PARAMETERS',
                 'm'                : 'TRACK MUTE',
-                'f9'               : 'DEBUG PRINT PATTERNS',
                 'e'                : 'SYNTH EDIT',
                 'ctrl e'           : 'SYNTH CLONE HARD',
                }
