@@ -98,8 +98,8 @@ class Track():
 
     def moveAllModules(self, inc):
         if self.modules:
-            if (self.getFirstModuleOn() + inc < 0): return
-        
+            if (self.getFirstModuleOn() + inc < 0):
+                return
         for m in self.modules:
             m.mod_on += inc
         

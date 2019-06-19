@@ -196,6 +196,16 @@ class Pattern():
         self.current_note = self.getFirstTaggedNote()
         self.untagAllNotes()
 
+    def moveAllNotes(self, inc):
+        if not self.notes:
+            return
+        for n in self.notes:
+            if n.note_on + inc < 0 or n.note_off + inc > self.length:
+                return
+        for n in self.notes:
+            n.note_on += inc
+            n.note_off += inc
+
     def stretchPattern(self, inc, scale = False):
         if self.length + inc <= 0: return
     

@@ -122,6 +122,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
             continue
 
         if cmd == 'main' or cmd == 'maindrum':
+            print("FORM", form)
             main_list.append(form)
         else:
             form_list.append(form)
@@ -181,7 +182,8 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                 elif form['op'] == 'overdrive':
                     return 'clip(' + instance(form['gain']) + '*' + instance(form['src']) + ')'
                 elif form['op'] == 'chorus':
-                    return '(' + newlineplus.join([instance(form['src']).replace('_PROG','(_PROG-'+'{:.1e}'.format(i*float(form['step']))+'*(1.+'+instance(form['intensity'])    +'*_sin('+instance(form['rate'])+'*_PROG)))') for i in range(int(form['number']))]) + ')'
+                    return '(' + newlineplus.join([instance(form['src']).replace('_PROG','(_PROG-'+'{:.1e}'.format(i*float(form['step']))+'*(1.+'+instance(form['intensity'])
+                        +'*_sin('+instance(form['rate'])+'*_PROG)))') for i in range(int(form['number']))]) + ')'
                 elif form['op'] == 'delay':
                     tvar = '_PROG' if not 'beat' in form['mode'] else '_BPROG'
                     return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['gain']),i)) + '*' + \

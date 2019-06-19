@@ -37,8 +37,10 @@ global_keys  = {
                }
 
 track_keys   = {
-                'ctrl shift left'  : 'TRACK SHIFT LEFT',
-                'ctrl shift right' : 'TRACK SHIFT RIGHT',
+                'ctrl shift left'  : 'TRACK SHIFT ALL LEFT',
+                'ctrl shift right' : 'TRACK SHIFT ALL RIGHT',
+                'ctrl left'        : 'TRACK SHIFT LEFT',
+                'ctrl right'       : 'TRACK SHIFT RIGHT',
                 'shift up'         : 'MOD TRANSPOSE UP',
                 'shift down'       : 'MOD TRANSPOSE DOWN',
                 'shift left'       : 'MOD SHIFT LEFT',
@@ -68,6 +70,8 @@ pattern_keys = {
                 'ctrl shift pagedown' : 'PATTERN SHORTER STRETCH',
                 'ctrl shift up'       : 'NOTE TRANSPOSE OCT UP',
                 'ctrl shift down'     : 'NOTE TRANSPOSE OCT DOWN',
+                'ctrl shift left'     : 'NOTE SHIFT ALL LEFT',
+                'ctrl shift right'    : 'NOTE SHIFT ALL RIGHT',
                 'shift left'          : 'NOTE SHORTER',
                 'shift right'         : 'NOTE LONGER',
                 'shift up'            : 'NOTES TRANSPOSE ALL UP',

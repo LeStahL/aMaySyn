@@ -557,22 +557,28 @@ class ImportPatternDialog(ModalView):
     importPatternList = ObjectProperty(None)
     importPatternButton = ObjectProperty(None)
 
+    XML_filename = None
     return_pattern = None
 
     def __init__(self, **kwargs):
+        lastFilename = kwargs.pop('filename')
         super(ImportPatternDialog, self).__init__(**kwargs)
+        if lastFilename:
+            self.importPatternFilenameInput.text = lastFilename
+            self.parseFile()
 
     def parseFile(self):
-        XML_filename = self.importPatternFilenameInput.text
+        self.XML_filename = self.importPatternFilenameInput.text
         try:
-            open(XML_filename, 'r').close()
+            open(self.XML_filename, 'r').close()
         except FileNotFoundError:
             self.importPatternList.data = self.importPatternList.empty_data
             self.importPatternFilenameInput.text = "FILE NOT FOUND (i guess you're one of the dumber ones)"
             self.importPatternFilenameInput.select_all()
+            self.XML_filename = None
             return
         
-        XML_root = ET.parse(XML_filename).getroot()
+        XML_root = ET.parse(self.XML_filename).getroot()
         pattern_data = []
         for element in XML_root.iter():
                 if element.tag == 'pattern':

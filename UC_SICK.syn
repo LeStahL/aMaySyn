@@ -215,6 +215,69 @@ main M8_ILike2 src=A24_someenv*A24_someenv2*A24_lp release=.01
 # macesaw(t, f, filterCO, Q, 0.010, 0.020, 0.015, 3.);
 # osc A16_osc1 madd f 0 200 1 -1 filterCO Q filterRes filterResQ detune PW
 
+# float MADD(float t, float f, float phase, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW, int keyF)
+#                 defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'q':'3', 'res':'0', 'resq': '3', 'detune':'1e-3', 'pw':'0'})
+
+random qmattack     min=1e-3    max=3e-2    digits=3    store
+random qmrelease    min=1e-3    max=1e-2    digits=3    store
+random qmlfoscale   min=200     max=950     digits=0    store
+random qmlfoshift   min=1000    max=2000    digits=0    store
+random qmndecay     min=1       max=16      digits=0    store
+random qmres        min=0       max=10      digits=2    store
+random qmresq       min=1e-2    max=10      digits=2    store
+random qmdetune     min=0       max=0.02    digits=3    store
+osc macebace_syn shape=madd freq=f nmax=256 ninc=2 mix=1+.9*macebace_synlfo cutoff=macebace_lfo q=qmndecay res=qmres resq=qmresq pw=0.4*macebace_synlfo detune=qmdetune
+form macebace_synOD overdrive src=macebace_syn gain=2*macebace_synlfo
+lfo macebace_synlfo shape=sin freq=4 phase=0 scale=.4 shift=.55 overdrive=1 mode=global
+lfo macebace_lfo shape=sin freq=2 phase=.4 scale=qmlfoscale shift=qmlfoshift mode=global
+env macebace_env shape=adsr attack=qmattack decay=0.01 sustain=1 release=qmrelease
+main macebace src=macebace_env*macebace_synOD release=1e-2
+
+random qlev1 min=0 max=127 digits=0 store
+random qlev2 min=0 max=127 digits=0 store
+random qlev3 min=0 max=127 digits=0 store
+random qlev4 min=0 max=127 digits=0 store
+random qalg0 min=1 max=11  digits=0 store
+random qfbk1 min=0 max=127 digits=0 store
+random qfbk2 min=0 max=127 digits=0 store
+random qfbk3 min=0 max=127 digits=0 store
+random qfbk4 min=0 max=127 digits=0 store
+random qatt0 min=0 max=0.1 digits=3 store
+random qhld0 min=0 max=0.1 digits=3 store
+random qdec0 min=0 max=0.2 digits=3 store
+random qsus0 min=0 max=1   digits=3 store
+random qrel0 min=0 max=.2  digits=3 store
+osc    QFManiaA shape=fm freq=f lv1=qlev1 lv2=qlev2 lv3=qlev3 lv4=qlev4 fr1=.5 fr3=1.001 fb1=qfbk1 fb2=qfbk2 fb3=qfbk3 fb4=qfbk4 algo=qalg0 parscale=127
+lfo    QFManiaLFO shape=sin freq=.4 scale=.5 shift=.5 mode=global
+form   QFManiaB waveshape src=QFManiaA amount=QFManiaLFO a=.05 b=.46 c=.3 d=.7 e=.8
+osc    QFManiaC shape=fm freq=f lv1=qlev1 lv2=qlev2 lv3=qlev3 lv4=qlev4 fr1=.5 fr3=1.001 fb1=qfbk1 fb2=qfbk2 fb3=qfbk3 fb4=qfbk4 algo=qalg0 parscale=127
+form   QFManiaD quantize src=QFManiaC bits=8000
+form   QFManiaE op=chorus src=QFManiaD number=2 step=.002 intensity=5. rate=5.5
+main   FQMbace  src=vel*QFManiaC*macebace_env release=.2 slidetime=.6
+
+random qlfo1frq min=0.001 max=1 digits=3 store !.320
+random qlfo2frq min=0.001 max=1 digits=3 store !.761
+random qlfo3frq min=0.001 max=1 digits=3 store !.115
+random qlfo4frq min=0.001 max=1 digits=3 store !.362
+random qlfo5frq min=0.001 max=1 digits=3 store !.431
+random qlfo1amt min=.01 max=.5 digits=3 store
+random qlfo2amt min=.01 max=.5 digits=3 store
+random qlfo3amt min=.01 max=.5 digits=3 store
+random qlfo4amt min=.01 max=.5 digits=3 store
+lfo    QFMhighLFO1 shape=sin freq=qlfo1frq scale=qlfo1amt shift=1 mode=global
+lfo    QFMhighLFO2 shape=sin freq=qlfo1frq scale=qlfo2amt shift=1 mode=global
+lfo    QFMhighLFO3 shape=sin freq=qlfo1frq scale=qlfo3amt shift=1 mode=global
+lfo    QFMhighLFO4 shape=sin freq=qlfo1frq scale=qlfo4amt shift=1 mode=global
+lfo    QFMhighLFO5 shape=sin freq=qlfo1frq scale=.5 shift=.5 mode=global
+
+osc    QFMhighA shape=fm freq=f lv1=qlev1*QFMhighLFO1 lv2=qlev2*QFMhighLFO2 lv3=qlev3*QFMhighLFO3 lv4=qlev4*QFMhighLFO4 fr1=1 fr3=1.001 fr2=0.998 fb1=qfbk1 fb2=qfbk2 fb3=qfbk3 fb4=qfbk4 algo=qalg0 parscale=127
+form   QFMhighB waveshape src=QFMhighA amount=QFMhighLFO5 a=.05 b=.46 c=.3 d=.7 e=.8
+env    FQMhigh_env shape=ahdsr attack=1e-3 hold=.15 decay=0.15 sustain=.04 release=.6
+main   FQMhigh src=.5*vel*QFMhighB*FQMhigh_env release=.6
+env    FQMimp_env shape=adsr attack=0.2 decay=0.01 sustain=1 release=.05
+osc    FQMhigh_sub shape=sin freq=f phase=0 overdrive=2
+main   FQMimp src=vel*QFManiaB*FQMimp_env+vel*FQMhigh_sub release=.05
+
 ########### DRUMS ###########
 
 random f0 min=50  max=80  digits=1
@@ -251,7 +314,6 @@ maindrum RVRBSNER src=snrrev release=1
 
 drum explosion shape=bitexplosion nvar=1 freqvar=2 twostepvar=2 var1=1.5 var2=2 var3=1 decay=1 
 #maindrum EXPLOSION src=explosion release=.5
-
 
 #maindrum    NDV.D6      src="((clamp(1.43*_tri(drop_phase(_t,.182,153.909,76.006)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_t-.152))+1.428*clamp(.707*_tri(drop_phase(_t,.182,153.909,76.006)+1.428*lpnoise(_t,760.989)),-1.,1.)*exp(-8.556*_t)+.066*lpnoise(_t,13562.653)*(1.-smoothstep(0.,.24,_t-.088))+.724*lpnoise(_t,4127.819)*exp(-_t*3.662)+.295*lpnoise(_t,7269.681)*exp(-_t*2.313))*smoothstep(0.,.05,_t))"
 #maindrum    NDV.D23     src="(.837*(.541*lpnoise(_t,2041.774)+.798*lpnoise(_t,8260.482)+.931*lpnoise(_t,8317.984))*(smoothstep(0.,.007,_t)-smoothstep(0.,.37,_t-.05))+_sin(drop_phase(_t,.033,464.443,270.029))*exp(-_t*32.249)*.841+_sin(drop_phase(_t*659.983,.033,464.443,270.029))*exp(-_t*33.)*.618)"
@@ -291,11 +353,6 @@ random xvar3 min=0.1 max=10 digits=2 store
 random xdcay min=0.01 max=1 digits=2 store
 drum xplosion shape=bitexplosion nvar=xnvar freqvar=xfrqv twostepvar=xtsvr var1=xvar1 var2=xvar2 var3=xvar3 decay=xdcay
 maindrum XPLO src=xplosion release=.5
-
-#maindrum    XPLO0    src="bitexplosion(_PROG,_BPROG,18.,1.5,4.3,2.21,1.35,2.69,2.02)" release=.5 relpower=1 slidetime=.125
-#maindrum    XPLO1    src="bitexplosion(_PROG,_BPROG,12.,27.9,13.7,.41,4.28,7.68,.16)" release=.5 relpower=1 slidetime=.125
-#maindrum    XPLO2    src="bitexplosion(_PROG,_BPROG,24.,4.4,10.6,1.41,9.8,1.36,.37)" release=.5 relpower=1 slidetime=.125
-#maindrum    XPLO3    src="bitexplosion(_PROG,_BPROG,13.,2.1,1.7,8.68,3.48,.93,.58)" release=.5 relpower=1 slidetime=.125
 
 random pfreq0 min=150 max=300 digits=0 store
 random pfreq1 min=40 max=150 digits=0 store
@@ -361,16 +418,16 @@ random arev2_exp        min=1       max=30      digits=2    store
 random arev3_amt        min=0       max=1       digits=2    store
 random arev3_tone       min=500     max=9999    digits=0    store
 random arev3_exp        min=1       max=30      digits=2    store
-random anoise_amt       min=0       max=1       digits=2    store
+random anoise_amt       min=0       max=0.1     digits=2    store
 random anoise_hold      min=.01     max=.99     digits=2    store
 random anoise_decay     min=.01     max=.99     digits=2    store
 random anoise_tone      min=999     max=19999   digits=0    store
 drum protkickass shape=protokickass freq0=afreq0 freq1=afreq1 freqdecay=afreqdecay attack=aattack decay=adecay drive=adrive rev1_amt=arev1_amt rev2_amt=arev2_amt rev3_amt=arev3_amt rev1_tone=arev1_tone rev2_tone=arev2_tone rev3_tone=arev3_tone rev1_exp=arev1_exp rev2_exp=arev2_exp rev3_exp=arev3_exp rev1_drive=arev1_drive noise_amt=anoise_amt noise_hold=anoise_hold noise_decay=anoise_decay noise_tone=anoise_tone
-maindrum ASSK src=protkickass release=.4
+maindrum ASSK src=protkickass release=.00
 
-random shkamp           min=.1      max=3       digits=2    store
+random shkamp           min=2      max=20       digits=2    store
 random shktimbre        min=.1      max=9       digits=2    store
-random shkdecay         min=.005    max=.3      digits=3    store
+random shkdecay         min=.005    max=.02     digits=3    store
 random shkrelease       min=0       max=.03     digits=3    store
 drum protshake shape=protoshake amp=shkamp timbre=shktimbre decay=shkdecay release=shkrelease
 maindrum SHAG src=protshake release=0
@@ -379,5 +436,53 @@ maindrum    ASSK0    src="(clamp(4.63*_tri(drop_phase(_PROG,.04,245.,72.)),-1.,1
 maindrum    SHAG0    src=".54*lpnoise(_PROG,1.+5.51*_PROG)*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,.016,_PROG-.274))" release=0 relpower=1 slidetime=.125
 maindrum    ASSK1    src="(clamp(1.53*_tri(drop_phase(_PROG,.08,213.,103.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.99))+.91*clamp(.16*_tri(drop_phase(_PROG,.08,213.,103.)+.91*lpnoise(_PROG,7763.)),-1.,1.)*exp(-21.58*_PROG)+.65*lpnoise(_PROG,7650.)*(1.-smoothstep(0.,.98,_PROG-.26))+.37*lpnoise(_PROG,8300.)*exp(-_PROG*21.35)+.8*lpnoise(_PROG,8062.)*exp(-_PROG*1.14))*smoothstep(0.,.008,_PROG)" release=.4 relpower=1 slidetime=.125
 maindrum    ASSK2    src="(clamp(.72*_tri(drop_phase(_PROG,.07,227.,107.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.69*clamp(.94*_tri(drop_phase(_PROG,.07,227.,107.)+.69*lpnoise(_PROG,8709.)),-1.,1.)*exp(-13.89*_PROG)+.06*lpnoise(_PROG,18745.)*(1.-smoothstep(0.,.67,_PROG-.17))+.28*lpnoise(_PROG,7506.)*exp(-_PROG*12.44)+.82*lpnoise(_PROG,2600.)*exp(-_PROG*17.54))*smoothstep(0.,.004,_PROG)" release=.4 relpower=1 slidetime=.125
+#maindrum    SHAG1    src=".79*lpnoise(_PROG,1.+3.31*_PROG)*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,.018,_PROG-.196))" release=0 relpower=1 slidetime=.125
 maindrum    SHAG1    src=".79*lpnoise(_PROG,1.+3.31*_PROG)*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,.018,_PROG-.196))" release=0 relpower=1 slidetime=.125
 maindrum    ASS-SNR3 src="(clamp(1.09*_tri(drop_phase(_PROG,.08,249.,77.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.04))+.97*clamp(.99*_tri(drop_phase(_PROG,.08,249.,77.)+.97*lpnoise(_PROG,9855.)),-1.,1.)*exp(-21.22*_PROG)+.03*lpnoise(_PROG,10655.)*(1.-smoothstep(0.,.58,_PROG-.81))+.71*lpnoise(_PROG,7520.)*exp(-_PROG*16.22)+.57*lpnoise(_PROG,4386.)*exp(-_PROG*29.48))*smoothstep(0.,.005,_PROG)" release=.4 relpower=1 slidetime=.125
+
+maindrum    ASS-SNR4 src="(clamp(1.09*_tri(drop_phase(_PROG,.08,249.,77.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.04))+.97*clamp(.99*_tri(drop_phase(_PROG,.08,249.,77.)+.97*lpnoise(_PROG,9855.)),-1.,1.)*exp(-21.22*_PROG)+.03*lpnoise(_PROG,10655.)*(1.-smoothstep(0.,.58,_PROG-.81))+.71*lpnoise(_PROG,7520.)*exp(-_PROG*16.22)+.57*lpnoise(_PROG,4386.)*exp(-_PROG*29.48))*smoothstep(0.,.005,_PROG)" release=.4 relpower=1 slidetime=.125
+maindrum    PKIK7    src="protokick(_PROG,218.,57.,.02,.09,.16,7.16,.0095,.53,.02,.77,2.35)" release=.2 relpower=1 slidetime=.125
+
+main    FQMbace.0    src="vel*QFM(_PROG,f,0.,.00787*94.,.00787*6.,.00787*38.,.00787*89.,.5,1.,1.001,1.,.00787*76.,.00787*63.,.00787*63.,.00787*82.,5.)*env_AHDSR(_PROG,tL,.029,0.,.01,1.,.01)" release=.4 slidetime=.6 relpower=1
+main    FQMbace.1    src="vel*supershape(QFM(_PROG,f,0.,.00787*0.,.00787*42.,.00787*119.,.00787*36.,.5,1.,1.001,1.,.00787*53.,.00787*21.,.00787*7.,.00787*16.,3.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.012,0.,.01,1.,.003)" release=.4 slidetime=.6 relpower=1
+main    FQMbace.2    src="vel*supershape(QFM(_PROG,2.*f,0.,.00787*92.,.00787*44.,.00787*21.,.00787*37.,.5,1.,1.001,1.,.00787*66.,.00787*32.,.00787*105.,.00787*37.,5.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.022,0.,.01,1.,.007)" release=.4 slidetime=.6 relpower=1
+main    FQMbace.3    src="vel*supershape(QFM(_PROG,2.*f,0.,.00787*4.,.00787*91.,.00787*111.,.00787*27.,.5,1.,1.001,1.,.00787*28.,.00787*32.,.00787*21.,.00787*115.,7.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.017,0.,.01,1.,.005)+vel*(floor(256.*QFM((_PROG-0.0e+00*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*4.,.00787*91.,.00787*111.,.00787*27.,.5,1.,1.001,1.,.00787*28.,.00787*32.,.00787*21.,.00787*115.,7.)+.5)*3.9e-03+floor(256.*QFM((_PROG-4.0e-03*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*4.,.00787*91.,.00787*111.,.00787*27.,.5,1.,1.001,1.,.00787*28.,.00787*32.,.00787*21.,.00787*115.,7.)+.5)*3.9e-03+floor(256.*QFM((_PROG-8.0e-03*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*4.,.00787*91.,.00787*111.,.00787*27.,.5,1.,1.001,1.,.00787*28.,.00787*32.,.00787*21.,.00787*115.,7.)+.5)*3.9e-03)*env_AHDSR(_PROG,tL,.017,0.,.01,1.,.005)" release=.4 slidetime=.6 relpower=1
+main    macebace.0    src="env_AHDSR(_PROG,tL,.015,0.,.01,1.,.004)*clip(2.*(.55+(.4*clip((1.+1.)*_sin(4.*B))))*MADD(_PROG,f,0.,256,2,1+.9*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),(1612.+(315.*_sin_(2.*B,.4))),6.,9.16,8.46,0.,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0))" release=1e-2 relpower=1 slidetime=.125
+main    macebace.1    src="env_AHDSR(_PROG,tL,.029,0.,.01,1.,.006)*clip(2.*(.55+(.4*clip((1.+1.)*_sin(4.*B))))*MADD(_PROG,f,0.,256,2,1+.9*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),(1499.+(380.*_sin_(2.*B,.4))),9.,6.32,1.42,.014,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0))" release=1e-2 relpower=1 slidetime=.125
+maindrum    ASSK3    src="(clamp(2.71*_tri(drop_phase(_PROG,.04,198.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.07))+.24*clamp(.38*_tri(drop_phase(_PROG,.04,198.,80.)+.24*lpnoise(_PROG,5479.)),-1.,1.)*exp(-9.66*_PROG)+.98*lpnoise(_PROG,15335.)*(1.-smoothstep(0.,.63,_PROG-.32))+.63*lpnoise(_PROG,8519.)*exp(-_PROG*29.69)+.65*lpnoise(_PROG,976.)*exp(-_PROG*10.68))*smoothstep(0.,.008,_PROG)" release=.4 relpower=1 slidetime=.125
+maindrum    ASSK4    src="(clamp(1.54*_tri(drop_phase(_PROG,.06,254.,67.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.25))+.48*clamp(.83*_tri(drop_phase(_PROG,.06,254.,67.)+.48*lpnoise(_PROG,1022.)),-1.,1.)*exp(-18.09*_PROG)+.39*lpnoise(_PROG,14859.)*(1.-smoothstep(0.,.51,_PROG-.47))+.25*lpnoise(_PROG,2739.)*exp(-_PROG*22.61)+.34*lpnoise(_PROG,5121.)*exp(-_PROG*23.75))*smoothstep(0.,.003,_PROG)" release=.4 relpower=1 slidetime=.125
+
+maindrum    ASSK5    src="(clamp(2.24*_tri(drop_phase(_PROG,.08,217.,64.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.29))+.7*clamp(.84*_tri(drop_phase(_PROG,.08,217.,64.)+.7*lpnoise(_PROG,1936.)),-1.,1.)*exp(-23.11*_PROG)+.08*lpnoise(_PROG,5166.)*(1.-smoothstep(0.,.16,_PROG-.55))+.77*lpnoise(_PROG,6784.)*exp(-_PROG*29.89)+.53*lpnoise(_PROG,4404.)*exp(-_PROG*24.64))*smoothstep(0.,.002,_PROG)" release=.00 relpower=1 slidetime=.125
+maindrum    PSNR2    src=".57*(0.*lpnoise(_PROG,981.)+0.*lpnoise(_PROG,950.)+0.*lpnoise(_PROG,2937.))*(smoothstep(0.,0.,_PROG)-smoothstep(0.,.13,_PROG-.76))+_sin(drop_phase(_PROG,.04,607.,288.))*exp(-_PROG*4.5)*.46+_sin(drop_phase(_PROG*1076.,.04,607.,288.))*exp(-_PROG*9.6)*.49" release=.15 relpower=1 slidetime=.125
+
+main    FQMbace.4    src="0.*vel*supershape(QFM(_PROG,4.*f,0.,.00787*5.,.00787*81.,.00787*61.,.00787*46.,.5,1.,1.001,1.,.00787*106.,.00787*53.,.00787*78.,.00787*91.,1.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.022,0.,.01,1.,.004)+vel*QFM(_PROG,f,0.,.00787*5.,.00787*81.,.00787*61.,.00787*46.,.5,1.,1.001,1.,.00787*106.,.00787*53.,.00787*78.,.00787*91.,1.)*env_AHDSR(_PROG,tL,.022,0.,.01,1.,.004)" release=.2 slidetime=.6 relpower=1
+main    FQMimp.0    src=".7*vel*supershape(QFM(_PROG,4.*f,0.,.00787*43.,.00787*94.,.00787*121.,.00787*41.,.5,1.,1.001,1.,.00787*81.,.00787*62.,.00787*65.,.00787*61.,1.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.2,0.,.01,1.,.05)+clip((1.+2.)*_sin(f*_PROG))" release=.07 relpower=1 slidetime=.125
+main    FQMhigh.0    src=".5*vel*supershape(QFM(_PROG,f,0.,.00787*92.*(.6+(.3*_sin(.32*B))),.00787*87.*(.6+(.3*_sin(.761*B))),.00787*112.*(.6+(.3*_sin(.115*B))),.00787*57.*(.6+(.3*_sin(.362*B))),1.,.998,1.001,1.,.00787*9.,.00787*78.,.00787*115.,.00787*27.,9.),(.5+(.5*_sin(.431*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.2,.04,.8)" release=.8 relpower=1 slidetime=.125
+main    FQMhigh.1    src=".5*vel*supershape(QFM(_PROG,f,0.,.00787*118.*(.6+(.3*_sin(.412*B))),.00787*98.*(.6+(.3*_sin(.412*B))),.00787*65.*(.6+(.3*_sin(.412*B))),.00787*86.*(.6+(.3*_sin(.412*B))),1.,.998,1.001,1.,.00787*57.,.00787*54.,.00787*108.,.00787*113.,10.),(.5+(.5*_sin(.412*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+main    FQMhigh.2    src=".5*vel*supershape(QFM(_PROG,f,0.,.00787*60.*(.6+(.3*_sin(.687*B))),.00787*92.*(.6+(.3*_sin(.687*B))),.00787*41.*(.6+(.3*_sin(.687*B))),.00787*74.*(.6+(.3*_sin(.687*B))),1.,.998,1.001,1.,.00787*56.,.00787*62.,.00787*44.,.00787*88.,3.),(.5+(.5*_sin(.687*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+main    FQMhigh.3    src=".5*vel*supershape(QFM(_PROG,f,0.,.00787*45.*(1.+(.49*_sin(.87*B))),.00787*125.*(1.+(.091*_sin(.87*B))),.00787*127.*(1.+(.462*_sin(.87*B))),.00787*33.*(1.+(.304*_sin(.87*B))),1.,.998,1.001,1.,.00787*86.,.00787*37.,.00787*26.,.00787*121.,5.),(.5+(.5*_sin(.87*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+
+maindrum    XPLO0    src="bitexplosion(_PROG,_BPROG,18.,1.5,4.3,2.21,1.35,2.69,2.02)" release=.5 relpower=1 slidetime=.125
+maindrum    XPLO1    src="bitexplosion(_PROG,_BPROG,12.,27.9,13.7,.41,4.28,7.68,.16)" release=.5 relpower=1 slidetime=.125
+maindrum    XPLO2    src="bitexplosion(_PROG,_BPROG,24.,4.4,10.6,1.41,9.8,1.36,.37)" release=.5 relpower=1 slidetime=.125
+maindrum    XPLO3    src="bitexplosion(_PROG,_BPROG,13.,2.1,1.7,8.68,3.48,.93,.58)" release=.5 relpower=1 slidetime=.125
+
+main    FQMhigh.4    src=".5*vel*supershape(QFM(_PROG,f,0.,.00787*115.*(1.+(.225*_sin(.861*B))),.00787*36.*(1.+(.26*_sin(.861*B))),.00787*51.*(1.+(.309*_sin(.861*B))),.00787*34.*(1.+(.199*_sin(.861*B))),1.,.998,1.001,1.,.00787*93.,.00787*36.,.00787*98.,.00787*98.,5.),(.5+(.5*_sin(.861*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+
+random chpattack    min=0       max=3e-3    digits=3    store
+random chpdecay     min=0.05    max=0.2     digits=3    store
+random chpsustain   min=0.05    max=.95     digts=3     store
+random chprelease   min=1e-3    max=4e-2    digits=3    store
+random chplfoscale  min=200     max=950     digits=0    store
+random chplfoshift  min=1000    max=2000    digits=0    store
+random chpndecay    min=1       max=32      digits=0    store
+random chpres       min=0       max=50      digits=3    store
+random chpresq      min=1e-2    max=30      digits=2    store
+random chpdetune    min=0       max=0.025   digits=3    store
+random chpshape     min=-1      max=2       digits=2    store
+osc chippy_syn shape=madd freq=f nmax=128 ninc=1 mix=chpshape cutoff=chippy_lfo q=chpndecay res=chpres resq=chpresq pw=0.4*chippy_synlfo detune=chpdetune
+#form macebace_synOD overdrive src=macebace_syn gain=2*macebace_synlfo
+lfo chippy_synlfo shape=sin freq=4 phase=0 scale=.4 shift=.55 overdrive=1 mode=global
+lfo chippy_lfo shape=sin freq=2 phase=.4 scale=chplfoscale shift=chplfoshift mode=global
+env chippy_env shape=adsr attack=qmattack decay=chpdecay sustain=chpsustain release=chprelease
+main chippy src=chippy_env*chippy_syn release=4e-2

@@ -92,6 +92,8 @@ class Ma2Widget(Widget):
     MODE_headless = False
     outdir = 'out/'
 
+    lastImportPatternFilename = ''
+
     #helpers...
     def getTrack(self):                 return self.tracks[self.current_track] if self.current_track is not None else None
     def getLastTrack(self):             return self.tracks[-1] if self.tracks else None
@@ -196,8 +198,10 @@ class Ma2Widget(Widget):
         elif action == 'SYNTH FILE RESET DEFAULT':      self.resetSynthsToDefault()
 
         if(self.theTrkWidget.active):
-            if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)     
-            elif action == 'TRACK SHIFT RIGHT':         self.getTrack().moveAllModules(+inc_step)     
+            if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)
+            elif action == 'TRACK SHIFT RIGHT':         self.getTrack().moveAllModules(+inc_step)
+            elif action == 'TRACK SHIFT ALL LEFT':      self.moveAllTracks(-inc_step)
+            elif action == 'TRACK SHIFT ALL RIGHT':     self.moveAllTracks(+inc_step)
             elif action == 'MOD TRANSPOSE UP':          self.getTrack().transposeModule(+1)                
             elif action == 'MOD TRANSPOSE DOWN':        self.getTrack().transposeModule(-1)                
             elif action == 'MOD SHIFT LEFT':            self.getTrack().moveModule(-inc_step)              
@@ -238,7 +242,9 @@ class Ma2Widget(Widget):
             elif action == 'NOTES TRANSPOSE ALL DOWN':  self.getPattern().shiftAllNotes(-1)         
             elif action == 'PATTERN LONGER':            self.getPattern().stretchPattern(+inc_step) 
             elif action == 'PATTERN SHORTER':           self.getPattern().stretchPattern(-inc_step) 
-            elif action == 'NOTE GAP ZERO':             self.getPattern().setGap(to = 0)                  
+            elif action == 'NOTE GAP ZERO':             self.getPattern().setGap(to = 0)         
+            elif action == 'NOTE SHIFT ALL LEFT':       self.getPattern().moveAllNotes(-inc_step/8)
+            elif action == 'NOTE SHIFT ALL RIGHT':      self.getPattern().moveAllNotes(+inc_step/8)
             elif action == 'NOTE SHIFT LEFT':           self.getPattern().moveNote(-inc_step/8)      
             elif action == 'NOTE SHIFT RIGHT':          self.getPattern().moveNote(+inc_step/8)      
             elif action == 'NOTE TRANSPOSE OCT UP':     self.getPattern().shiftNote(+12)             
@@ -258,9 +264,9 @@ class Ma2Widget(Widget):
             elif action == 'NOTE DELETE':               self.getPattern().delNote()                                
             elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)         
             elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)         
-            elif action == 'NOTE SET PAN':              self.getPattern().getNote().setPan(self.numberInput or self.lastNumberInput)
-            elif action == 'NOTE SET VELOCITY':         self.getPattern().getNote().setVelocity(self.numberInput or self.lastNumberInput)
-            elif action == 'NOTE SET SLIDE':            self.getPattern().getNote().setSlide(self.numberInput or self.lastNumberInput)
+            elif action == 'NOTE SET PAN':              self.setParameterFromNumberInput('pan')
+            elif action == 'NOTE SET VELOCITY':         self.setParameterFromNumberInput('velocity')
+            elif action == 'NOTE SET SLIDE':            self.setParameterFromNumberInput('slide')
             elif action == 'PATTERN RENAME':            self.renamePattern()                                       
             elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()
             elif action == 'DRUMSYNTH CLONE HARD':      self.synthClone(drum = True, hard = True)
@@ -369,7 +375,7 @@ class Ma2Widget(Widget):
         try:    self.setInfo('B_offset', float(pars[1]))
         except: self.setInfo('B_offset', 0)
             
-        self.theTrkWidget.updateMarker('OFFSET',float(pars[1]))
+        self.theTrkWidget.updateMarker('OFFSET',self.getInfo('B_offset'))
         self.update()
 
     def renameTrack(self):
@@ -409,6 +415,13 @@ class Ma2Widget(Widget):
             if len(self.tracks) == 1: self.tracks.append(Track(synths)) # have to have one
             del self.tracks[self.current_track]
             self.current_track = min(self.current_track, len(self.tracks)-1)
+
+    def moveAllTracks(self, inc):
+        for t in self.tracks:
+            if t.modules and t.getFirstModuleOn() + inc < 0:
+                return
+        for t in self.tracks:
+            t.moveAllModules(inc)
 
     def getPattern(self, offset=0):
         if self.patterns and self.getModulePattern():
@@ -480,7 +493,7 @@ class Ma2Widget(Widget):
         self.tracks = [Track(synths = ['__None'], name = 'NJU TREK')]
         self.patterns = [Pattern()]
         self.tracks[0].addModule(0, self.patterns[0])
-        
+
         self.current_track = 0
 
         if not no_renaming: self.renameSong()
@@ -489,7 +502,6 @@ class Ma2Widget(Widget):
     def setNumberInput(self, key):
         if not key:
             self.MODE_numberInput = False
-            self.lastNumberInput = self.numberInput
 
         if not self.MODE_numberInput:
             self.numberInput = ''
@@ -502,6 +514,19 @@ class Ma2Widget(Widget):
         elif key == '-':
             self.numberInput = ('-' + self.numberInput).replace('--','')
 
+    def setParameterFromNumberInput(self, parameter):
+        if self.numberInput:
+            self.lastNumberInput = self.numberInput
+
+        if parameter == 'pan':
+            self.getPattern().getNote().setPan(self.lastNumberInput)
+        elif parameter == 'velocity':
+            self.getPattern().getNote().setVelocity(self.lastNumberInput)
+        elif parameter == 'slide':
+            self.getPattern().getNote().setSlide(self.lastNumberInput)
+        else:
+            print("WARNING. TRIED TO PASS NUMBER INPUT TO NONEXISTENT PARAMETER:", parameter)
+        
     def setupInit(self):
 
         if '-headless' in sys.argv: self.MODE_headless = True
@@ -516,7 +541,6 @@ class Ma2Widget(Widget):
             with open('.last') as in_tmp:
                 self.setInfo('title', in_tmp.read())
 
-        #self.loadSynths() # TODO is this not redundant?
         Clock.schedule_once(self.loadCSV, 0)
 
         if self.MODE_headless:
@@ -537,7 +561,7 @@ class Ma2Widget(Widget):
         
         global synths, drumkit
         old_drumkit = drumkit
-        
+
         synfile = self.getInfo('title') + '.syn'
         if not os.path.exists(synfile): synfile = def_synfile
 
@@ -546,12 +570,12 @@ class Ma2Widget(Widget):
 
         synths = ['I_' + m['id'] for m in self.synatize_main_list if m['type']=='main']
         synths.extend(def_synths)
-        
+
         drumkit = def_drumkit + drumkit
         self.thePtnWidget.updateDrumkit(drumkit)
 
         #print('LOAD:', synths, drumkit)
-        
+
         if update:
             for t in self.tracks:
                 t.updateSynths(synths)
@@ -671,6 +695,13 @@ class Ma2Widget(Widget):
         popup.bind(on_dismiss = self.handlePopupDismiss)
         popup.open()
 
+    def purgeUnusedPatterns(self):
+        actually_used_patterns = [m.pattern for t in self.tracks for m in t.modules]
+        for p in self.patterns[:]:
+            if p not in actually_used_patterns:
+                print("PURGE EMPTY PATTERN:", p.name)
+                self.patterns.remove(p)
+
 ############### UGLY KIVY EXPORT FUNCTIONS #####################
 
     def loadCSV_prompt(self, no_prompt = False):
@@ -775,6 +806,8 @@ class Ma2Widget(Widget):
     def saveCSV(self):
         filename = self.getInfo('title') + '.may'
         
+        self.purgeUnusedPatterns()
+
         out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
@@ -847,18 +880,24 @@ class Ma2Widget(Widget):
 
         # get release times
         syn_rel = []
+        drum_rel = []
         max_rel = 0
         max_drum_rel = 0
         if self.MODE_debug: print(self.synatize_main_list)
         for m in self.synatize_main_list:
+            rel = float(m['release']) if 'release' in m else 0
             if m['type'] == 'main':
-                syn_rel.append((float(m['release']) if 'release' in m else 0))
+                syn_rel.append(rel)
                 if m['id'] in actually_used_synths:
-                    max_rel = max(max_rel, syn_rel[-1])
+                    max_rel = max(max_rel, rel)
             elif m['type'] == 'maindrum':
-                max_drum_rel = max(max_drum_rel, (float(m['release']) if 'release' in m else 0))
+                drum_rel.append(rel)
+                max_drum_rel = max(max_drum_rel, rel)
 
         syn_rel.append(max_drum_rel)
+
+        # number of drums - not required right now, maybe we need to add something later
+        nD = str(len(drum_rel))
 
         # get slide times
         syn_slide = []
@@ -871,6 +910,7 @@ class Ma2Widget(Widget):
         defcode += '#define NMOD ' + nM + '\n'
         defcode += '#define NPTN ' + nP + '\n'
         defcode += '#define NNOT ' + nN + '\n'
+        defcode += '#define NDRM ' + nD + '\n'
         
         #TODO: solve question - do I want max_mod_off here (perfect looping) or max_mod_off+max_rel (can listen to whole release decaying..)??
         seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
@@ -928,6 +968,8 @@ class Ma2Widget(Widget):
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_slide))
+        for d in drum_rel:
+            tex += pack(fmt, float(d))
                
         texlength = int(len(tex))
         while ((texlength % 4) != 0):
@@ -1103,7 +1145,7 @@ class Ma2Widget(Widget):
 ################### NOW THE MIGHTY SHIT ###################
 
     def importPattern(self):
-        popup = ImportPatternDialog()
+        popup = ImportPatternDialog(filename = self.lastImportPatternFilename)
         popup.bind(on_dismiss = self.handleImportPattern)
         popup.open()
     def handleImportPattern(self, *args):
@@ -1111,6 +1153,8 @@ class Ma2Widget(Widget):
             print("Imported Pattern:", args[0].return_pattern.name)
             self.patterns.append(args[0].return_pattern)
             self.patterns[-1].printNoteList()   
+            self.lastImportPatternFilename = args[0].XML_filename
+            print("... imported from", self.lastImportPatternFilename)
         self._keyboard_request()
         self.update()        
 

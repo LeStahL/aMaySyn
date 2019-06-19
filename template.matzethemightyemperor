@@ -1,6 +1,6 @@
 #define PI radians(180.)
 float clip(float a) { return clamp(a,-1.,1.); }
-float theta(float x) { return smoothstep(0.,1e-3,x); }
+float theta(float x) { return smoothstep(0.,1e-3,clamp(x,0.,1e-3)); }
 float _sin(float a) { return sin(2. * PI * mod(a,1.)); }
 float _sin_(float a, float p) { return sin(2. * PI * mod(a,1.) + p); }
 float _unisin(float a,float b) { return (.5*_sin(a) + .5*_sin((1.+b)*a)); }
@@ -276,6 +276,7 @@ float note_pitch(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+2*NNOT
 float note_pan(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+3*NNOT);}
 float note_vel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+4*NNOT);}
 float note_slide(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+5*NNOT);}
+float drum_rel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+6*NNOT);}
 
 vec2 mainSynth(float time)
 {
@@ -292,7 +293,7 @@ vec2 mainSynth(float time)
     float time2 = time - stereo_delay;
     float sidechain = 1.;
 
-    float amaysynL, amaysynR, amaydrumL, amaydrumR, B, Bon, Boff, Bprog, Bproc, L, tL, _t, _t2, vel, rel, f, amtL, amtR;
+    float amaysynL, amaysynR, amaydrumL, amaydrumR, B, Bon, Boff, Bprog, Bproc, L, tL, _t, _t2, vel, rel, f, amtL, amtR, env;
     int tsep0, tsep1, _modU, _modL, ptn, psep0, psep1, _noteU, _noteL, syn, drum;
 
     for(int trk = 0; trk < NTRK; trk++)
@@ -320,6 +321,12 @@ vec2 mainSynth(float time)
 
             for(int _note = _noteL; _note <= _noteU; _note++)
             {
+                if(syn == drum_index)
+                {
+                    drum = int(note_pitch(_note));
+                    rel = drum_rel(drum);
+                }
+
                 amaysynL  = 0.;
                 amaysynR  = 0.;
                 amaydrumL = 0.;
@@ -335,15 +342,15 @@ vec2 mainSynth(float time)
                 _t2   = _t - stereo_delay;
                 vel   = note_vel(_note);
                 amtL  = clamp(1. - note_pan(_note), 0., 1.);
-                amtR  = clamp(1. + note_pan(_note), 0., 1.); 
+                amtR  = clamp(1. + note_pan(_note), 0., 1.);
 
                 if(syn == drum_index)
                 {
-                    drum = int(note_pitch(_note));
-                    if(drum == 0) { sidechain = min(sidechain, 1. - vel*(clamp(1e4 * Bprog,0.,1.) - pow(Bprog/(L-rel),8.))); }
+                    env = trk_norm(trk) * theta(Bprog) * theta(L - Bprog);
+                    if(drum == 0) { sidechain = min(sidechain, 1. - vel * (clamp(1e4 * Bprog,0.,1.) - pow(Bprog/(L-rel),8.))); }
                     //DRUMSYNCODE
-                    dL += amtL * s_atan(trk_norm(trk) * amaydrumL * theta(Bprog));
-                    dR += amtR * s_atan(trk_norm(trk) * amaydrumR * theta(Bprog));
+                    dL += amtL * s_atan(env * amaydrumL);
+                    dR += amtR * s_atan(env * amaydrumR);
                 }
                 else
                 {
@@ -364,7 +371,7 @@ vec2 mainSynth(float time)
                         }
                     }
 
-                    float env = theta(Bprog) * (1. - smoothstep(Boff-rel, Boff, B));
+                    env = theta(Bprog) * (1. - smoothstep(Boff-rel, Boff, B));
                     //SYNCODE
                     sL += amtL * s_atan(trk_norm(trk) * clamp(env,0.,1.) * amaysynL);
                     sR += amtR * s_atan(trk_norm(trk) * clamp(env,0.,1.) * amaysynR);
