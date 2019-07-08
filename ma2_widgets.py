@@ -44,6 +44,8 @@ class TrackWidget(Widget):
 
         tracklist = parent.tracks
         current_track = parent.current_track
+        paramlist = parent.synatize_param_list
+        current_param = parent.current_param
 
         pad_l = 10
         pad_r = 20
@@ -51,14 +53,18 @@ class TrackWidget(Widget):
         row_h = int(21 * self.scale_v)
         gap_h = 4
         beat_w = int(20 * self.scale_h)
-        
+
+        pad_b = 10
+        paramview_h = 0 # 2 * row_h + 1 * gap_h
+        trackview_h = self.height - paramview_h - pad_b
+
         font_size = 16
         char_w = 10
         chars_name = 16
         chars_synth = 10
         font_size_small = int(10 * min(self.scale_v, self.scale_h))
 
-        max_visible_tracks = int(260 / (row_h + gap_h))
+        max_visible_tracks = int((trackview_h - font_size) / (row_h + gap_h))
         number_visible_tracks = min(len(tracklist), max_visible_tracks)
         self.offset_v = min(self.offset_v, abs(len(tracklist) - max_visible_tracks))
 
@@ -78,7 +84,6 @@ class TrackWidget(Widget):
             
             for i,t in enumerate(tracklist[self.offset_v:self.offset_v+number_visible_tracks]):
                 index = i + self.offset_v
-                #height: 375
                 draw_x = self.x + pad_l
                 draw_y = self.top - pad_t - (i+1) * row_h - i * gap_h
                 
@@ -108,7 +113,13 @@ class TrackWidget(Widget):
 
                 ### TRACK INFO ###
                 Color(1,1,1,.7)
-                volume_label = "MUTE" if t.mute else str(int(100 * t.par_norm)) + '%'
+                volume_label = str(int(100 * t.par_norm)) + '%'
+                if t.mute or parent.track_solo and parent.track_solo != i:
+                    volume_label = "MUTE"
+                elif parent.track_solo == i:
+                    Color(1,.4,.4,1)
+                    volume_label = "SOLO " + volume_label
+
                 label = CoreLabel(text = volume_label, font_size = font_size, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (self.right - pad_r - label.width, draw_y), texture = label.texture)
@@ -131,7 +142,6 @@ class TrackWidget(Widget):
                     if m == t.getModule() and index == current_track:
                         Color(1,.5,.5,.8)
                         Line(rectangle = (grid_l + beat_w * m.mod_on - 1 , draw_y - 1, beat_w * m.pattern.length, row_h + 2), width = 1.5)
-
 
             draw_x = grid_l
             draw_y = self.top - pad_t - (number_visible_tracks+.5)*(row_h+gap_h) - 4
@@ -157,6 +167,29 @@ class TrackWidget(Widget):
                 Rectangle(size = label.texture.size, pos = (draw_x - label.width/2, draw_y-10), texture = label.texture)
                 Rectangle(size = label.texture.size, pos = (draw_x - label.width/2 - .5, draw_y-10), texture = label.texture)
 
+#            ### PARAMETER VIEW ### -- damn, this makes little sense because I need so much information about the parameter segments themselves...
+#            Color(.5, .4, 0)
+#            draw_x = self.x + pad_l
+#            draw_y = self.top - self.height + pad_b            
+#            Rectangle(pos = (draw_x, draw_y), size = (char_w*chars_name + 4,paramview_h))
+#            draw_x += 2
+#            Color(1,1,1,1)
+#            label = CoreLabel(text = "PARAMETER", font_size = font_size, font_name = self.font_name)
+#            label.refresh()
+#            Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
+#            draw_x += char_w*(chars_name+1) + 4
+#            Color(.8,.8,.8,1)
+#            label = CoreLabel(text = paramlist[current_param]['id'], font_size = font_size, font_name = self.font_name)
+#            label.refresh()
+#            Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
+#                                
+#            ### GRID ###
+#            draw_x = grid_l
+#            Color(.25,.2,.0)
+#            while draw_x + beat_w <= self.right - pad_r:
+#                Rectangle(pos = (draw_x, draw_y), size = (beat_w-1,row_h))
+#                draw_x += beat_w
+
 
     def updateMarker(self, label, position):
         self.marker_list.update({label: position})
@@ -180,7 +213,8 @@ class TrackWidget(Widget):
             self.scale_v = round(self.scale_v * factor, 2)
         else:
             print("tried scaling by some weird axis:", axis)
-    
+
+
 class PatternWidget(Widget):
     active = BooleanProperty(False)
 
@@ -228,7 +262,7 @@ class PatternWidget(Widget):
 
         pad_l = 10
         pad_r = 20
-        pad_t = 5
+        pad_t = 8
         pad_b = 22
         key_h = int(9 * scale_v * (1 if not isDrum else 3))
         key_w = int(32 * scale_h)
@@ -256,7 +290,7 @@ class PatternWidget(Widget):
             
             if self.active:
                 Color(1.,0.,1,.5)
-                Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 7], width = 1.5)
+                Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 4], width = 1.5)
 
             ### KEYBOARD ###
             while draw_y + key_h <= self.top - pad_t:

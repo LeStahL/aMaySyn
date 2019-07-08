@@ -22,9 +22,11 @@ def set_remaining_defaults(cid, cmd, form):
 
         try:
             if form['shape'] == 'madd':
-                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'q':'3', 'res':'0', 'resq': '3', 'detune':'1e-3', 'pw':'0'})
+                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'q':'3', 'res':'0', 'resq': '3', 'detune':'1e-3'})
                 # TODO: calibrate q (and rename)
                 # TODO: calibrate (resQ)
+            if form['shape'] == 'badd':
+                defaults.update({'mix':'.5', 'amp':'1', 'peak':'500.', 'sigma':'200.', 'ncut': '3', 'detune':'1e-3'})
             elif form['shape'] == 'fm':
                 defaults.update({'lv1':'1', 'lv2':'0', 'lv3':'0', 'lv4':'0', 'fr1':'1', 'fr2':'1', 'fr3':'1', 'fr4':'1', 'fb1':'0', 'fb2':'0', 'fb3':'0', 'fb4':'0', 'algo':'0', 'parscale':'1'})
                 
@@ -82,7 +84,13 @@ def set_remaining_defaults(cid, cmd, form):
                 
         except:
             pass
+
+    elif cmd == 'seg':
+        defaults.update({'shape':'generic', 'src':'0', 'scale':'1', 'shift':'0', 'offset': '0'})
         
+        if form['shape'] == 'linear':
+            defaults.update({'from': '0,0', 'to': '1,0'})
+
     elif cmd == 'filter':
         requirements.extend(['shape', 'src'])
 
@@ -119,6 +127,9 @@ def set_remaining_defaults(cid, cmd, form):
                 
             elif form['op'] == 'quantize':
                 defaults.update({'bits':'32'})
+
+            elif form['op'] == 'modsync':
+                defaults.update({'freq':'1'})
                 
             elif form['op'] == 'overdrive':
                 defaults.update({'gain':'1.33'})
@@ -132,7 +143,10 @@ def set_remaining_defaults(cid, cmd, form):
                 
             elif form['op'] == 'waveshape':
                 defaults.update({'amount':'1', 'a':'0', 'b':'0', 'c':'0', 'd':'1', 'e':'1'})
-                
+
+            elif form['op'] == 'sinshape':
+                defaults.update({'amount':'1', 'parts':'3'})
+
             elif form['op'] == 'saturate':
                 defaults.update({'gain':'3'})
                 
@@ -141,7 +155,11 @@ def set_remaining_defaults(cid, cmd, form):
 
         except:
             pass
-        
+
+    elif cmd == 'param':
+        requirements.append('segments')
+        defaults.update({'default':'0'})
+
     for key in defaults:
         if key not in form:
             form[key] = defaults[key]

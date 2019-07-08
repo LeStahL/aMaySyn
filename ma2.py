@@ -41,9 +41,6 @@ from SFXGLWidget import *
 
 GLfloat = lambda f: str(int(f))  + '.' if f==int(f) else str(f)[0 if f>=1 or f<0 or abs(f)<1e-4 else 1:].replace('-0.','-.')
 
-#Config.set('graphics', 'width', '1600')
-#Config.set('graphics', 'height', '1000')
-#Config.set('kivy', 'log_level', 'warning')
 Window.size = (1600, 1000)
 
 def_synfile = 'default.syn'
@@ -65,11 +62,14 @@ class Ma2Widget(Widget):
     current_track = None
     tracks = []
     patterns = []
+    track_solo = None
+    current_param = 0
 
     synatize_form_list = []
     synatize_main_list = []
     last_synatized_forms = []
     stored_randoms = []
+    synatize_param_list = []
     synatized_code_syn = ''
     synatized_code_drum = ''
 
@@ -216,12 +216,13 @@ class Ma2Widget(Widget):
             elif action == 'MOD SELECT FIRST':          self.getTrack().switchModule(0, to = +0)      
             elif action == 'TRACK SELECT LAST':         self.switchTrack(-1)                                     
             elif action == 'TRACK SELECT NEXT':         self.switchTrack(+1)                                     
-            elif action == 'MOD ADD NEW':               self.addModuleWithNewPattern(self.getTrack().getLastModuleOff)
-            elif action == 'MOD ADD CLONE':             self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.getPattern(), transpose = self.getModuleTranspose())
+            elif action == 'MOD ADD NEW':               self.addModuleWithNewPattern()
+            elif action == 'MOD ADD CLONE':             self.getTrack().addModule(self.getPattern(), transpose = self.getModuleTranspose())
             elif action == 'MOD DELETE':                self.getTrack().delModule()
             elif action == 'TRACK RENAME':              self.renameTrack()
             elif action == 'TRACK CHANGE PARAMETERS':   self.changeTrackParameters()
             elif action == 'TRACK MUTE':                self.getTrack().setParameters(mute = not self.getTrack().mute)
+            elif action == 'TRACK SOLO':                self.setTrackSolo()
             elif action == 'SYNTH CLONE HARD':          self.synthClone(hard = True)
             elif action == 'SYNTH EDIT':                self.editSynth()
             elif action == 'SCROLL UP':                 self.theTrkWidget.scroll(axis = 'vertical', inc = -1)
@@ -234,40 +235,40 @@ class Ma2Widget(Widget):
             elif action == 'ZOOM HORZ IN':              self.theTrkWidget.scaleByFactor(axis = 'horizontal', factor = 1.1)
 
         if(self.thePtnWidget.active) and self.getPattern():
-            if   action == 'PATTERN LONGER STRETCH':    self.getPattern().stretchPattern(+inc_step, scale = True) 
-            elif action == 'PATTERN SHORTER STRETCH':   self.getPattern().stretchPattern(-inc_step, scale = True) 
-            elif action == 'NOTE SHORTER':              self.getPattern().stretchNote(-inc_step/8)  
-            elif action == 'NOTE LONGER':               self.getPattern().stretchNote(+inc_step/8)  
-            elif action == 'NOTES TRANSPOSE ALL UP':    self.getPattern().shiftAllNotes(+1)         
-            elif action == 'NOTES TRANSPOSE ALL DOWN':  self.getPattern().shiftAllNotes(-1)         
-            elif action == 'PATTERN LONGER':            self.getPattern().stretchPattern(+inc_step) 
-            elif action == 'PATTERN SHORTER':           self.getPattern().stretchPattern(-inc_step) 
-            elif action == 'NOTE GAP ZERO':             self.getPattern().setGap(to = 0)         
+            if   action == 'PATTERN LONGER STRETCH':    self.getPattern().stretchPattern(+inc_step, scale = True)
+            elif action == 'PATTERN SHORTER STRETCH':   self.getPattern().stretchPattern(-inc_step, scale = True)
+            elif action == 'NOTE SHORTER':              self.getPattern().stretchNote(-inc_step/8)
+            elif action == 'NOTE LONGER':               self.getPattern().stretchNote(+inc_step/8)
+            elif action == 'NOTES TRANSPOSE ALL UP':    self.getPattern().shiftAllNotes(+1)
+            elif action == 'NOTES TRANSPOSE ALL DOWN':  self.getPattern().shiftAllNotes(-1)
+            elif action == 'PATTERN LONGER':            self.getPattern().stretchPattern(+inc_step)
+            elif action == 'PATTERN SHORTER':           self.getPattern().stretchPattern(-inc_step)
+            elif action == 'NOTE GAP ZERO':             self.getPattern().setGap(to = 0)
             elif action == 'NOTE SHIFT ALL LEFT':       self.getPattern().moveAllNotes(-inc_step/8)
             elif action == 'NOTE SHIFT ALL RIGHT':      self.getPattern().moveAllNotes(+inc_step/8)
-            elif action == 'NOTE SHIFT LEFT':           self.getPattern().moveNote(-inc_step/8)      
-            elif action == 'NOTE SHIFT RIGHT':          self.getPattern().moveNote(+inc_step/8)      
-            elif action == 'NOTE TRANSPOSE OCT UP':     self.getPattern().shiftNote(+12)             
-            elif action == 'NOTE TRANSPOSE OCT DOWN':   self.getPattern().shiftNote(-12)             
-            elif action == 'PATTERN ADD NEW':           self.addPattern(select = True)                       
-            elif action == 'PATTERN ADD CLONE':         self.addPattern(select = True, clone_current = True) 
-            elif action == 'PATTERN DELETE':            self.delPattern()                                          
-            elif action == 'NOTE SELECT LEFT':          self.getPattern().switchNote(-1)                  
-            elif action == 'NOTE SELECT RIGHT':         self.getPattern().switchNote(+1)                  
-            elif action == 'NOTE SELECT FIRST':         self.getPattern().switchNote(0, to = 0)           
-            elif action == 'NOTE SELECT LAST':          self.getPattern().switchNote(0, to = -1)          
-            elif action == 'NOTE TRANSPOSE UP':         self.getPattern().shiftNote(+1)                   
-            elif action == 'NOTE TRANSPOSE DOWN':       self.getPattern().shiftNote(-1)                   
-            elif action == 'NOTE ADD NEW':              self.getPattern().addNote(self.getNote(), append = True)  
+            elif action == 'NOTE SHIFT LEFT':           self.getPattern().moveNote(-inc_step/8)
+            elif action == 'NOTE SHIFT RIGHT':          self.getPattern().moveNote(+inc_step/8)
+            elif action == 'NOTE TRANSPOSE OCT UP':     self.getPattern().shiftNote(+12)
+            elif action == 'NOTE TRANSPOSE OCT DOWN':   self.getPattern().shiftNote(-12)
+            elif action == 'PATTERN ADD NEW':           self.addPattern(select = True)
+            elif action == 'PATTERN ADD CLONE':         self.addPattern(select = True, clone_current = True)
+            elif action == 'PATTERN DELETE':            self.delPattern()
+            elif action == 'NOTE SELECT LEFT':          self.getPattern().switchNote(-1)
+            elif action == 'NOTE SELECT RIGHT':         self.getPattern().switchNote(+1)
+            elif action == 'NOTE SELECT FIRST':         self.getPattern().switchNote(0, to = 0)
+            elif action == 'NOTE SELECT LAST':          self.getPattern().switchNote(0, to = -1)
+            elif action == 'NOTE TRANSPOSE UP':         self.getPattern().shiftNote(+1)
+            elif action == 'NOTE TRANSPOSE DOWN':       self.getPattern().shiftNote(-1)
+            elif action == 'NOTE ADD NEW':              self.getPattern().addNote(self.getNote(), append = True)
             elif action == 'NOTE ADD CLONE':            self.getPattern().addNote(self.getNote(), append = True, clone = True)
-            elif action == 'NOTE CLONE SELECTION':      self.getPattern().fillNote(self.getNote())           
-            elif action == 'NOTE DELETE':               self.getPattern().delNote()                                
-            elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)         
-            elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)         
+            elif action == 'NOTE CLONE SELECTION':      self.getPattern().fillNote(self.getNote())
+            elif action == 'NOTE DELETE':               self.getPattern().delNote()
+            elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)
+            elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)
             elif action == 'NOTE SET PAN':              self.setParameterFromNumberInput('pan')
             elif action == 'NOTE SET VELOCITY':         self.setParameterFromNumberInput('velocity')
             elif action == 'NOTE SET SLIDE':            self.setParameterFromNumberInput('slide')
-            elif action == 'PATTERN RENAME':            self.renamePattern()                                       
+            elif action == 'PATTERN RENAME':            self.renamePattern()
             elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()
             elif action == 'DRUMSYNTH CLONE HARD':      self.synthClone(drum = True, hard = True)
             elif action == 'DRUMSYNTH EDIT':            self.editSynth(drum = True)
@@ -423,6 +424,13 @@ class Ma2Widget(Widget):
         for t in self.tracks:
             t.moveAllModules(inc)
 
+    def setTrackSolo(self):
+        if self.track_solo:
+            self.track_solo = None
+        else:
+            self.track_solo = self.current_track
+            self.getTrack().setParameters(mute = False)
+
     def getPattern(self, offset=0):
         if self.patterns and self.getModulePattern():
             if self.getModulePattern() in self.patterns:
@@ -464,9 +472,9 @@ class Ma2Widget(Widget):
         while [i.name for i in self.patterns].count(p.name) > 1: p.name += '.' #unique names
         self.update()
 
-    def addModuleWithNewPattern(self, mod_on):
+    def addModuleWithNewPattern(self):
         self.addPattern()
-        self.getTrack().addModule(self.getTrack().getLastModuleOff(), self.patterns[-1]) 
+        self.getTrack().addModule(self.patterns[-1]) 
 
     def renamePattern(self):
         popup = InputPrompt(self, title = 'ENTER PATTERN NAME', title_font = self.font_name, default_text = self.getPatternName())
@@ -492,7 +500,7 @@ class Ma2Widget(Widget):
         del self.patterns[:]
         self.tracks = [Track(synths = ['__None'], name = 'NJU TREK')]
         self.patterns = [Pattern()]
-        self.tracks[0].addModule(0, self.patterns[0])
+        self.tracks[0].addModule(self.patterns[0])
 
         self.current_track = 0
 
@@ -565,7 +573,7 @@ class Ma2Widget(Widget):
         synfile = self.getInfo('title') + '.syn'
         if not os.path.exists(synfile): synfile = def_synfile
 
-        self.synatize_form_list, self.synatize_main_list, drumkit, self.stored_randoms \
+        self.synatize_form_list, self.synatize_main_list, drumkit, self.stored_randoms, self.synatize_param_list \
             = synatize(synfile, stored_randoms = self.stored_randoms, reshuffle_randoms = reshuffle_randoms)
 
         synths = ['I_' + m['id'] for m in self.synatize_main_list if m['type']=='main']
@@ -839,7 +847,7 @@ class Ma2Widget(Widget):
     def buildGLSL(self, compileGL = False, renderWAV = False):
         filename = self.getInfo('title') + '.glsl'
 
-        tracks = [t for t in self.tracks if t.modules and not t.mute]
+        tracks = [t for t in self.tracks if t.modules and not t.mute] if not self.track_solo else [self.tracks[self.track_solo]]
 
         actually_used_patterns = [m.pattern for t in tracks for m in t.modules]
         patterns = [p for p in self.patterns if p in actually_used_patterns]
@@ -866,8 +874,8 @@ class Ma2Widget(Widget):
         
         if self.MODE_debug: print("ACTUALLY USED:", actually_used_synths, actually_used_drums)
 
-        self.synatized_code_syn, self.synatized_code_drum, filtercode, self.last_synatized_forms = \
-            synatize_build(self.synatize_form_list, self.synatize_main_list, actually_used_synths, actually_used_drums)
+        self.synatized_code_syn, self.synatized_code_drum, paramcode, filtercode, self.last_synatized_forms = \
+            synatize_build(self.synatize_form_list, self.synatize_main_list, self.synatize_param_list, actually_used_synths, actually_used_drums)
 
 	# TODO: would be really nice: option to not re-shuffle the last throw of randoms, but export these to WAV on choice... TODOTODOTODOTODO!
 	# TODO LATER: great plans -- live looping ability (how bout midi input?)
@@ -1009,6 +1017,7 @@ class Ma2Widget(Widget):
             .replace("//SEQCODE", seqcode)\
             .replace("//SYNCODE", self.synatized_code_syn)\
             .replace("//DRUMSYNCODE", self.synatized_code_drum)\
+            .replace("//PARAMCODE", paramcode)\
             .replace("//FILTERCODE",filtercode)\
             .replace("//BPMCODE", "const float BPM = "+GLfloat(self.getInfo('BPM'))+";")
 
@@ -1081,23 +1090,9 @@ class Ma2Widget(Widget):
 #############################################################
 
     def pressTitle(self):     pass
-    def pressTrkAdd(self):    pass
-    def pressTrkDel(self):    pass
     def pressTrkInfo(self):   pass
-    def pressModAdd(self):    pass
-    def pressModDel(self):    pass
-    def pressPtnLast(self):   pass
     def pressPtnTitle(self):  pass
-    def pressPtnNext(self):   pass
-    def pressPtnAdd(self):    pass
-    def pressPtnDel(self):    pass
     def pressPtnInfo(self):   pass
-    def pressNoteAdd(self):   pass
-    def pressNoteDel(self):   pass
-    def pressNotePitch(self): pass
-    def pressNoteOn(self):    pass
-    def pressNoteLen(self):   pass
-    def pressNoteVel(self):   pass
     def pressLoadCSV(self):   self.loadCSV()
     def pressSaveCSV(self):   self.saveCSV()
     def pressBuildCode(self): self.buildGLSL()
@@ -1107,8 +1102,8 @@ class Ma2Widget(Widget):
     def setupTest(self):
         self.addTrack("Bassline", synth = 0)
         self.addPattern("Sündig",2)
-        self.tracks[0].addModule(0, self.patterns[0], 0, select = False)
-        self.getPattern().addNote(Note(0.00,0.50,24), select = False)
+        self.tracks[0].addModule(self.patterns[0])
+        self.getPattern().addNote(Note(0.00,0.50,24))
         for i in range(8):
             self.addTrack(name = 'Track ' + str(i+2))
         

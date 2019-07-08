@@ -61,6 +61,7 @@ track_keys   = {
                 'f6'               : 'TRACK RENAME',
                 'f7'               : 'TRACK CHANGE PARAMETERS',
                 'm'                : 'TRACK MUTE',
+                'n'                : 'TRACK SOLO',
                 'e'                : 'SYNTH EDIT',
                 'ctrl e'           : 'SYNTH CLONE HARD',
                }

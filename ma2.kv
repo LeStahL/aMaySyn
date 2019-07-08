@@ -6,7 +6,7 @@
 <PatternWidget>:
     canvas:
 
-#<SongViewWidget>: # doesn't exist yet
+#<SongViewWidget>: # doesn't exist yet (or ever)
 
 <Widget>:
     font_name: 'RobotoMono-Regular'
@@ -42,13 +42,8 @@
     thePtnWidget: thisPtnWidget
     
     btnTitle:     btnTitleID
-    btnTrkInfo:   btnTrkInfoID
     btnPtnTitle:  btnPtnTitleID
     btnPtnInfo:   btnPtnInfoID
-    btnNotePitch: btnNotePitchID
-    btnNoteOn:    btnNoteOnID
-    btnNoteLen:   btnNoteLenID
-    btnNoteVel:   btnNoteVelID
 
     BoxLayout:
         orientation: "vertical"
@@ -62,92 +57,30 @@
             RetroButton:
                 id: btnTitleID
                 on_release: root.pressTitle()
-            RetroButton:
-                on_release: root.pressTrkAdd()
-                text: 'TRK +'
-                size_hint_x: 0.1
-            RetroButton:
-                on_release: root.pressTrkDel()
-                text: 'TRK -'
-                size_hint_x: 0.1
-            RetroButton:
-                id: btnTrkInfoID
-                on_release: root.pressTrkInfo()
-                text: 'TRK Info (Name, Inst, Transpose)'
                 size_hint_x: 0.4
-                
-        TrackWidget:
-            id: thisTrkWidget
-            height: 280
-            size_hint_y: None
-            
-        BoxLayout:
-            orientation: "horizontal"
-            height: root.height * 0.05
-            size_hint_y: None
-            RetroButton:
-                on_release: root.pressModAdd()
-                text: "MOD+"
-                size_hint_x: 0.15
-            RetroButton:
-                on_release: root.pressModDel()
-                text: "MOD-"
-                size_hint_x: 0.15
-            RetroButton:
-                on_release: root.pressPtnLast()
-                text: "<"
-                size_hint_x: 0.15
+
+            # TODO: display button for BPM / OFFSET
+
             RetroButton:        
                 id: btnPtnTitleID
                 on_release: root.pressPtnTitle()
                 text: "PTN: bad performance"
-            RetroButton:
-                on_release: root.pressPtnNext()
-                text: ">"
-                size_hint_x: 0.15
-            RetroButton:
-                on_release: root.pressPtnAdd()
-                text: "PTN+"
-                size_hint_x: 0.15
-            RetroButton:
-                on_release: root.pressPtnDel()
-                text: "PTN-"
-                size_hint_x: 0.15
+                size_hint_x: 0.4
+
             RetroButton:
                 id: btnPtnInfoID
                 on_release: root.pressPtnInfo()
                 text: "PAT LEN (Beats)"
-                size_hint_x: 0.4
+                size_hint_x: 0.1
 
+
+        TrackWidget:
+            id: thisTrkWidget
+            height: 310
+            size_hint_y: None
+            
         PatternWidget:
             id: thisPtnWidget
-            
-        BoxLayout:
-            orientation: "horizontal"
-            height: root.height * 0.05
-            size_hint_y: None
-            RetroButton:
-                on_release: root.pressNoteAdd()
-                text: "NOTE +"
-            RetroButton:
-                on_release: root.pressNoteDel()
-                text: "NOTE -"
-            RetroButton:
-                id: btnNotePitchID
-                on_release: root.pressNotePitch()
-                text: "NOTE PITCH (or Drum)"
-            RetroButton:
-                id: btnNoteOnID
-                on_release: root.pressNoteOn()
-                text: "NOTE ON"
-            RetroButton:
-                id: btnNoteLenID
-                on_release: root.pressNoteLen()
-                text: "NOTE LEN"
-            RetroButton:
-                id: btnNoteVelID
-                on_release: root.pressNoteVel()
-                text: "NOTE VEL"
 
         BoxLayout:
             orientation: "horizontal"

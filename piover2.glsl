@@ -58,7 +58,7 @@ float s_atan(float a) { return 2./PI * atan(a); }
 float s_crzy(float amp) { return clamp( s_atan(amp) - 0.1*cos(0.9*amp*exp(amp)), -1., 1.); }
 float squarey(float a, float edge) { return abs(a) < edge ? a : floor(4.*a+.5)*.25; } 
 
-float supershape(float s, float amt, float A, float B, float C, float D, float E)
+float waveshape(float s, float amt, float A, float B, float C, float D, float E)
 {
     float w;
     float m = sign(s);
@@ -301,7 +301,7 @@ float resolpA1oscmixF(float time, float f, float tL, float fa, float reso) // CH
     {
           float _TIME = time - float(maxTaps-i)*Tsample;
           //float _TIME*SPB = _TIME * BPS; //do I need that?
-          float inp = supershape((s_atan(_sq(.25*f*_TIME,.2*(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.))+_sq((1.-.004)*.25*f*_TIME,.2*(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.)))+.8*(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.)),(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.),.1,.3,.3,.8,.8);
+          float inp = waveshape((s_atan(_sq(.25*f*_TIME,.2*(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.))+_sq((1.-.004)*.25*f*_TIME,.2*(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.)))+.8*(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.)),(2.*fract(2.*f*_TIME+.4*_tri(.5*f*_TIME+0.))-1.),.1,.3,.3,.8,.8);
           v0 = r*v0 - c*v1 + c*inp;
           v1 = r*v1 + c*v0;
     }

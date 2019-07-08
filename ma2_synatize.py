@@ -21,6 +21,7 @@ _f = {'id':'f', 'type':'uniform'}
 _t = {'id':'t', 'type':'uniform'}
 _t_ = {'id':'_t', 'type':'uniform'}
 _B = {'id':'B', 'type':'uniform'}
+_BT = {'id':'BT', 'type':'uniform'}
 _vel = {'id':'vel', 'type':'uniform'}
 _Bsyn = {'id':'Bsyn', 'type':'uniform'}
 _Bproc = {'id':'Bproc', 'type':'uniform'}
@@ -35,12 +36,14 @@ _Fsample = {'id':'Fsample', 'type':'uniform'}
 _Tsample = {'id':'Tsample', 'type':'uniform'}
 _rel = {'id':'rel', 'type':'uniform'}
 
+newlineindent = '\n' + 4*' '
 newlineplus = '\n' + 6*' ' + '+'
 
 def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = False):
 
-    form_list = [_f, _t, _t_, _B, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample, _Tsample, _rel]
+    form_list = [_f, _t, _t_, _B, _BT, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample, _Tsample, _rel]
     main_list = []
+    param_list = []
    
     stored_random_values = {r['id']: r['value'] for r in stored_randoms}
 
@@ -106,6 +109,16 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
 
             stored_random_values.update({form['id']: form['value']})
         
+        if cmd == 'seg':
+            if form['shape'] == 'linear' and 'from' in form.keys() and 'to' in form.keys():
+                from_x = float(form['from'].split(',')[0])
+                from_y = float(form['from'].split(',')[1])
+                to_x = float(form['to'].split(',')[0])
+                to_y = float(form['to'].split(',')[1])
+                form['slope'] = '(' + GLfloat(to_y) + '-' + GLfloat(from_y) + ')/(' + GLfloat(to_x) + '-' + GLfloat(from_x) + ')'
+                form['offset'] = GLfloat(from_x)
+                form.update({'from_x':from_x, 'from_y':from_y, 'to_x':to_x, 'to_y':to_y})
+
         for r in requirements:
             try:
                 assert r in form
@@ -127,15 +140,23 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
         else:
             form_list.append(form)
         
+        if cmd == 'param':
+            segments = form['segments'].split(',')
+            if len(segments) % 3 != 0:
+                print('PARSING - ERROR! SEGMENTS OF PARAM HAVE TO BE IN STRUCTURE <Segment>,<Start>,<End>,... AND THUS A MULTIPLE OF THREE: ', form)
+                quit()
+            form.update({'segments': segments, 'n_segments': int(len(segments) / 3)})
+            param_list.append(form)
+
     drum_list = [d['id'] for d in main_list if d['type']=='maindrum']
 
     for stored_random in stored_randoms:
         stored_random['value'] = stored_random_values[stored_random['id']]
 
-    return form_list, main_list, drum_list, stored_randoms
+    return form_list, main_list, drum_list, stored_randoms, param_list
 
 
-def synatize_build(form_list, main_list, actually_used_synths = None, actually_used_drums = None):
+def synatize_build(form_list, main_list, param_list, actually_used_synths = None, actually_used_drums = None):
 
     def instance(ID, mod={}, force_int = False):
         _return = ''
@@ -179,6 +200,9 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                 elif form['op'] == 'quantize':
                     return instance(form['src']).replace('_TIME','floor('+instance(form['bits']) + '*_TIME+.5)/' + instance(form['bits'])) \
                                                    .replace('_PROG','floor('+instance(form['bits']) + '*_PROG+.5)/' + instance(form['bits']))
+                elif form['op'] == 'modsync':
+                    return instance(form['src']).replace('_TIME','mod(_TIME, 1./(' + instance(form['freq']) + '))') \
+                                                   .replace('_PROG','mod(_PROG, 1./(' + instance(form['freq']) + '))')
                 elif form['op'] == 'overdrive':
                     return 'clip(' + instance(form['gain']) + '*' + instance(form['src']) + ')'
                 elif form['op'] == 'chorus':
@@ -189,7 +213,9 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                     return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['gain']),i)) + '*' + \
                                                    instance(form['src']).replace(tvar,'('+tvar+'-'+'{:.1e}'.format(i*float(form['delay']))+')') for i in range(int(form['number']))]) + ')'
                 elif form['op'] == 'waveshape':
-                    return 'supershape(' + instance(form['src']) + ',' + ','.join(instance(form[p]) for p in ['amount','a','b','c','d','e']) + ')'
+                    return 'waveshape(' + instance(form['src']) + ',' + ','.join(instance(form[p]) for p in ['amount','a','b','c','d','e']) + ')'
+                elif form['op'] == 'sinshape':
+                    return 'sinshape(' + instance(form['src']) + ',' + ','.join(instance(form[p]) for p in ['amount','parts']) + ')'
                 elif form['op'] == 'saturate':
                     if 'crazy' in form['mode']:
                         return 's_crzy('+instance(form['gain']) + '*' + instance(form['src']) + ')'
@@ -243,7 +269,10 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                         inst_ninc = instance(str(int(float(form['ninc']))), force_int=True)
                         _return ='MADD(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + inst_nmax + ',' + inst_ninc + ',' \
                                              + ','.join(instance(form[p]) for p in ['mix', 'cutoff', 'q', 'res', 'resq', 'detune', 'pw'])+ ',' + keyF + ')'
-                                         
+
+                    elif form['shape'] == 'badd':
+                        _return ='BADD(_PROG,' + ','.join(instance(form[p]) for p in ['freq', 'phase', 'mix', 'amp', 'peak', 'sigma', 'ncut', 'detune', 'pw']) + ')'
+
                     elif form['shape'] == 'fract':
                         _return = 'fract(' + phi + '+' + instance(form['phase']) + ')'
                             
@@ -329,7 +358,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                         return 'fract(sin(_PROG*100.*'+timbre1+')*50000.*'+timbre2+')*doubleslope(_PROG,'+env_attack+','+env_decay+','+env_sustain+')'
                         
                     elif form['shape'] == 'bitexplosion':
-                        inst_nvar = instance(form['nvar'], force_int = True) # was: str(int(form['par'][0]))
+                        inst_nvar = instance(form['nvar'], force_int = True)
                         return 'bitexplosion(_PROG, _BPROG, ' + inst_nvar + ',' + ','.join(instance(form[p]) for p in ['freqvar', 'twostepvar', 'var1', 'var2', 'var3', 'decay']) + ')' 
 
                     elif form['shape'] == 'protokick':
@@ -391,9 +420,13 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                                         + '*(_PROG <= ' + env_att + ' ? _PROG/' + env_att + ' : exp(-(_PROG-' + env_att + ')/' + env_dec + '))'
 
 
-            elif form['type']=='env':
+            elif form['type'] == 'env' or form['type'] == 'seg':
                 tvar = '_BPROG' if 'beat' in form['mode'] else '_PROG'
                 Lvar = 'L' if 'beat' in form['mode'] else 'tL'
+                if form['type'] == 'seg':
+                    tvar = '_BEAT'
+                    Lvar = 'L'
+
                 if form['shape'] == 'ahdsr' or form['shape'] == 'adsr':
                     _return = 'env_AHDSR('+tvar+','+Lvar+','+','.join(instance(form[p]) for p in ['attack', 'hold', 'decay', 'sustain', 'release'])+')'
                 elif form['shape'] == 'ahdsrexp' or form['shape'] == 'adsrexp':
@@ -408,6 +441,12 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*_BPROG)'
                 elif form['shape'] == 'expdecayrepeat':
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*mod(_BPROG,'+instance(form['beats'])+'))'
+
+                elif form['shape'] == 'generic':
+                    _return = instance(form['src']).replace('_BPROG', '(_BEAT-' + instance(form['offset']) + ')') # hm. might I do this better?
+                elif form['shape'] == 'linear':
+                    _return = instance(form['slope']) + '*(' + tvar + '-' + instance(form['offset']) + ')'
+
                 else:
                     print("PARSING - ERROR! THIS ENVELOPE SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
                     quit()
@@ -445,6 +484,9 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                     quit()
 
                 return form['shape']+form['id']+'(_PROG,f,tL,vel,'+','.join([instance(form[p]) for p in pars])+')'
+
+            elif form['type'] == 'param':
+                return form['id'] + '(_BEAT)'
 
             else:
                 print("PARSING - ERROR! THIS FORM TYPE DOES NOT EXIST: "+form['type'], form, sep='\n')
@@ -495,7 +537,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                     syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-rel, Boff, B),'+form_main['relpower']+');'
                 syncode += '\n' + 20*' ' + '}\n' + 20*' '
             syncount += 1
-        syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
+        syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('e+00','')
 
         drumcount = 1
         drumsyncode = ''
@@ -517,7 +559,19 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                             +  'amaydrumL = ' + drumsyncodeL + '\n' + 24*' ' + 'amaydrumR = ' + drumsyncodeR \
                             +  '\n' + 20*' ' + '}\n' + 20*' '
             drumcount += 1
-        drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('e+00','')
+        drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('e+00','')
+
+    paramcode = ''
+    for par in param_list:
+        print(par)
+        paramcode += 'float ' + par['id'] + '(float _BEAT)\n{' + newlineindent + 'if(_BEAT<0){return 0.;}' + newlineindent
+        for seg in range(par['n_segments']):
+            seg_code = instance(par['segments'][3*seg])
+            seg_start = par['segments'][3*seg+1]
+            seg_end = par['segments'][3*seg+2]
+            paramcode += 'else if(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + '){return ' + seg_code + ';}' + newlineindent
+        paramcode += 'else{return ' + instance(par['default']) + ';}'
+        paramcode += '\n}\n'
 
     filter_list = [f for f in form_list if f['type']=='filter']
     filtercode = '' 
@@ -529,7 +583,7 @@ def synatize_build(form_list, main_list, actually_used_synths = None, actually_u
                             .replace('_PROG','_TIME').replace('_BPROG','Bprog').replace('Bprog','_TIME*SPB')
         # think again... do we really prefer _TIME over _PROG?? (what is with slides?)
 
-    return syncode, drumsyncode, filtercode, synatized_forms
+    return syncode, drumsyncode, paramcode, filtercode, synatized_forms
 
 
 if __name__ == '__main__':

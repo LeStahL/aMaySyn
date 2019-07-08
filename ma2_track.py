@@ -38,10 +38,11 @@ class Track():
     def getNorm(self):                    return self.par_norm
     def isEmpty(self):                    return (self.modules == [])
 
-    def addModule(self, mod_on, pattern, transpose = 0, select = True):
+    def addModule(self, pattern, transpose = 0):
+        mod_on = self.getModuleOn() if self.modules else 0
         self.modules.append(Module(mod_on, pattern, transpose))
-        if select:
-            self.current_module = len(self.modules) - 1
+        self.modules.sort(key = lambda m: m.mod_on)
+        self.moveModule(+1)
 
     def delModule(self):
         if self.modules:
@@ -82,14 +83,18 @@ class Track():
                     
             self.getModule().mod_on = move_to
             self.current_module += try_leap
-
             self.modules.sort(key = lambda m: m.mod_on)
 
         if move_home:
-            if self.getModule() == self.getFirstModule() or self.getFirstModuleOn() >= self.getModuleLen():
-                self.getModule().mod_on = 0
+#            if self.getModule() == self.getFirstModule() or self.getFirstModuleOn() >= self.getModuleLen():
+#                self.getModule().mod_on = 0
+#                self.modules.sort(key = lambda m: m.mod_on)            
+#                self.current_module = 0
+#            else:
+                self.getModule().mod_on = -1
                 self.modules.sort(key = lambda m: m.mod_on)            
                 self.current_module = 0
+                self.moveModule(+1)
         if move_end:
             if self.getModule() != self.getLastModule():
                 self.getModule().mod_on = self.getLastModuleOff()

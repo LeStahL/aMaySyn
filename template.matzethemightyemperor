@@ -31,6 +31,10 @@ const float filterthreshold = 1e-3;
 
 //TEXCODE
 
+float s_atan(float a) { return 2./PI * atan(a); }
+float s_crzy(float amp) { return clamp( s_atan(amp) - 0.1*cos(0.9*amp*exp(amp)), -1., 1.); }
+float squarey(float a, float edge) { return abs(a) < edge ? a : floor(4.*a+.5)*.25; } 
+
 float doubleslope(float t, float a, float d, float s)
 {
     return smoothstep(-.00001,a,t) - (1.-s) * smoothstep(0.,d,t-a);
@@ -125,11 +129,7 @@ float env_AHDSRexp(float x, float L, float A, float H, float D, float S, float R
     return (x < A ? att : x < A+H ? 1. : dec) * rel;
 }
 
-float s_atan(float a) { return 2./PI * atan(a); }
-float s_crzy(float amp) { return clamp( s_atan(amp) - 0.1*cos(0.9*amp*exp(amp)), -1., 1.); }
-float squarey(float a, float edge) { return abs(a) < edge ? a : floor(4.*a+.5)*.25; } 
-
-float supershape(float s, float amt, float A, float B, float C, float D, float E)
+float waveshape(float s, float amt, float A, float B, float C, float D, float E)
 {
     float w;
     float m = sign(s);
@@ -148,6 +148,11 @@ float supershape(float s, float amt, float A, float B, float C, float D, float E
     return m*mix(s,w,amt);
 }
 
+float sinshape(float x, float amt, float parts)
+{
+    return (1.-amt) * x + amt * sign(x) * 0.5 * (1. - cos(parts*PI*x));
+}
+
 float GAC(float t, float offset, float a, float b, float c, float d, float e, float f, float g)
 {
     t = t - offset;
@@ -159,13 +164,13 @@ float comp_TRI(int N, float inv_N) {return N % 2 == 0 ? 0. : inv_N * inv_N * min
 float comp_SQU(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (1. - minus1hochNminus1halbe(N))*_sin(PW);}
 float comp_HAE(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);}
 
-float MADD(float t, float f, float phase, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW, int keyF)
+float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW, int keyF)
 {
     float ret = 0.;
     float INR = keyF==1 ? 1./CO : f/CO;
     float IRESQ = keyF==1 ? 1./RES_Q : 1./(RES_Q*f);
     
-    float p = f*t + phase;
+    float p = f*t;
     for(int N=1; N<=NMAX; N+=NINC)
     {
         float float_N = float(N);
@@ -178,9 +183,35 @@ float MADD(float t, float f, float phase, int NMAX, int NINC, float MIX, float C
         
         if(abs(filter_N*comp_mix) < 1e-6) break; //or is it wise to break already?
         
-        ret += comp_mix * filter_N * (_sin(float_N * p) + _sin(float_N * p * (1.+DET)));
+        ret += comp_mix * filter_N * (_sin_(float_N * p, p0) + _sin_(float_N * p * (1.+DET), p0));
     }
     return s_atan(ret);
+}
+
+float BADD(float t, float f, float p0, float MIX, float AMP, float FPEAK, float BW, float NCUT, float DET, float PW)
+{
+    float ret = 0.;
+
+    float p = f*t;
+    float inv_f = 1./f;
+    float inv_BW = 1./BW;
+    int Nmin = int((FPEAK-NCUT*BW)*inv_f);
+    int Nmax = int((FPEAK+NCUT*BW)*inv_f) + 1;
+    float float_N, inv_N, comp_mix, filter_N;
+
+    for(int N = Nmin; N < Nmax; N++)
+    {
+        float_N = float(N);
+        inv_N = 1./float_N;
+        comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI(N,inv_N)    +  (-MIX)  * comp_SAW(N,inv_N)
+                 : MIX < 1. ?   MIX    * comp_TRI(N,inv_N)    + (1.-MIX) * comp_SQU(N,inv_N,PW)
+                 : (MIX-1.) * comp_HAE(N,inv_N,PW) + (2.-MIX) * comp_SQU(N,inv_N,PW);
+
+        filter_N = exp(-pow((float_N*f-FPEAK)*inv_BW,2.));
+
+        ret += comp_mix * filter_N * (_sin_(float_N * p, p0) + _sin_(float_N * p * (1.+DET), p0));
+    }
+    return s_atan(AMP * ret);
 }
 
 float QFM_FB(float PH, float FB) // my guessing of feedback coefficients, FB>0 'saw', FB<0 'sq'
@@ -257,6 +288,8 @@ float BA8(float x, int pattern)
     	if ((pattern & (1<<b)) > 0) ret += step(x,float(7-b)/8.);
     return ret * .125;
 }
+
+//PARAMCODE
 
 //TEXTUREHEADER
 //DEFCODE

@@ -259,7 +259,7 @@ drum hut shape=fmnoise attack=0 decay=0.05 sustain=0 timbre1=.3 timbre2=2
 lfo acclfo shape=squ freq=4. mode=beat,global shift=.6 scale=.25
 maindrum HAT src=.4*acclfo*hut
 
-drum snr shape=snare freq0=6000 freq1=800 freq2=350 freqdecay1=0.01 freqdecay2=0.01 decay=0.25 sustain=0.3 release=0.1 noise_amount=.7 noise_attack=0.05 noise_decay=0.3 noise_sustain=0.3 overdrive=1.6
+drum snr shape=snare freq0=6000 freq1=800 freq2=350 freqdecay0=0.01 freqdecay1=0.01 decay=0.25 sustain=0.3 release=0.1 noise_amount=.7 noise_attack=0.05 noise_decay=0.3 noise_sustain=0.3 overdrive=1.6
 maindrum SNR src=snr
 
 filter snrrev shape=reverb src=snr iir_gain=0.15 iir_delay1=0.000297 iir_delay2=0.000371 iir_delay3=0.000411 iir_delay4=0.000437 ap_gain=0.2 ap_delay1=0.000017 ap_delay2=0.00005
@@ -269,3 +269,9 @@ maindrum empty src=0
 
 drum explosion shape=bitexplosion nvar=1 freqvar=2 twostepvar=2 var1=1.5 var2=2 var3=1 decay=1 
 maindrum EXPL src=explosion release=.5
+
+param  someshit  segments=someseg,1,2,someseg1,0,1.5 default=.33
+seg someseg shape=linear slope=.5 shift=1
+seg someseg1 shape=linear slope=2 shift=3
+osc testsomeshit shape=badd freq=f mix=.5 amp=1 peak=400*someshit sigma=20*someshit ncut=3 detune=0.01
+main SOMESHIT src=testsomeshit
