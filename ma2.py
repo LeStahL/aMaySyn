@@ -138,6 +138,10 @@ class Ma2Widget(Widget):
         while os.path.isfile(self.getWAVFileName(f'{count:03d}')): count += 1
         return f'{count:03d}'
 
+    def findPatternIndexByName(self, name):
+        pattern_names = [p.name for p in self.patterns]
+        return pattern_names.index(name) if name in pattern_names else -1
+
 ################## OFFICIAL START OF STUFF... ##############
 
     def __init__(self, **kwargs):
@@ -194,7 +198,7 @@ class Ma2Widget(Widget):
         elif action == 'PATTERN SELECT NEXT':           self.getTrack().switchModulePattern(self.getPattern(+1))
         elif action == 'PATTERN SELECT LAST':           self.getTrack().switchModulePattern(self.getPattern(-1))
         elif action == 'DIALOG PATTERN IMPORT':         self.importPattern()
-        elif action == 'DIALOG PATTERN EXPORT':         self.exportPattern()
+#        elif action == 'DIALOG PATTERN EXPORT':         self.exportPattern()
         elif action == 'SYNTH FILE RESET DEFAULT':      self.resetSynthsToDefault()
 
         if(self.theTrkWidget.active):
@@ -202,20 +206,22 @@ class Ma2Widget(Widget):
             elif action == 'TRACK SHIFT RIGHT':         self.getTrack().moveAllModules(+inc_step)
             elif action == 'TRACK SHIFT ALL LEFT':      self.moveAllTracks(-inc_step)
             elif action == 'TRACK SHIFT ALL RIGHT':     self.moveAllTracks(+inc_step)
-            elif action == 'MOD TRANSPOSE UP':          self.getTrack().transposeModule(+1)                
-            elif action == 'MOD TRANSPOSE DOWN':        self.getTrack().transposeModule(-1)                
-            elif action == 'MOD SHIFT LEFT':            self.getTrack().moveModule(-inc_step)              
-            elif action == 'MOD SHIFT RIGHT':           self.getTrack().moveModule(+inc_step)              
-            elif action == 'MOD SHIFT HOME':            self.getTrack().moveModule(0, move_home = True)    
-            elif action == 'MOD SHIFT END':             self.getTrack().moveModule(0, move_end = True)     
-            elif action == 'TRACK ADD NEW':             self.addTrack()                                    
-            elif action == 'TRACK DELETE':              self.delTrack()                                        
-            elif action == 'MOD SELECT LEFT':           self.getTrack().switchModule(-1)              
-            elif action == 'MOD SELECT RIGHT':          self.getTrack().switchModule(+1)              
-            elif action == 'MOD SELECT LAST':           self.getTrack().switchModule(0, to = -1)      
-            elif action == 'MOD SELECT FIRST':          self.getTrack().switchModule(0, to = +0)      
-            elif action == 'TRACK SELECT LAST':         self.switchTrack(-1)                                     
-            elif action == 'TRACK SELECT NEXT':         self.switchTrack(+1)                                     
+            elif action == 'MOD TRANSPOSE UP':          self.getTrack().transposeModule(+1)
+            elif action == 'MOD TRANSPOSE DOWN':        self.getTrack().transposeModule(-1)
+            elif action == 'MOD TRANSPOSE OCT UP':      self.getTrack().transposeModule(+12)
+            elif action == 'MOD TRANSPOSE OCT DOWN':    self.getTrack().transposeModule(-12)
+            elif action == 'MOD SHIFT LEFT':            self.getTrack().moveModule(-inc_step)
+            elif action == 'MOD SHIFT RIGHT':           self.getTrack().moveModule(+inc_step)
+            elif action == 'MOD SHIFT HOME':            self.getTrack().moveModule(0, move_home = True)
+            elif action == 'MOD SHIFT END':             self.getTrack().moveModule(0, move_end = True)
+            elif action == 'TRACK ADD NEW':             self.addTrack()
+            elif action == 'TRACK DELETE':              self.delTrack()
+            elif action == 'MOD SELECT LEFT':           self.getTrack().switchModule(-1)
+            elif action == 'MOD SELECT RIGHT':          self.getTrack().switchModule(+1)
+            elif action == 'MOD SELECT LAST':           self.getTrack().switchModule(0, to = -1)
+            elif action == 'MOD SELECT FIRST':          self.getTrack().switchModule(0, to = +0)
+            elif action == 'TRACK SELECT LAST':         self.switchTrack(-1)
+            elif action == 'TRACK SELECT NEXT':         self.switchTrack(+1)
             elif action == 'MOD ADD NEW':               self.addModuleWithNewPattern()
             elif action == 'MOD ADD CLONE':             self.getTrack().addModule(self.getPattern(), transpose = self.getModuleTranspose())
             elif action == 'MOD DELETE':                self.getTrack().delModule()
@@ -464,6 +470,17 @@ class Ma2Widget(Widget):
 
         if select:
             self.getTrack().switchModulePattern(self.patterns[-1])
+
+    def replacePatternByNameIfPossible(self, newPattern):
+            find_index = self.findPatternIndexByName(newPattern.name)
+            if find_index == -1:
+                self.patterns.append(newPattern)
+            else:
+                self.patterns[find_index].replaceWith(newPattern)
+                print("Replaced Pattern at index", find_index)
+
+            if self.MODE_debug:
+                self.patterns[find_index].printNoteList()
 
     def handlePatternName(self, *args, **kwargs):
         self._keyboard_request()
@@ -847,7 +864,7 @@ class Ma2Widget(Widget):
     def buildGLSL(self, compileGL = False, renderWAV = False):
         filename = self.getInfo('title') + '.glsl'
 
-        tracks = [t for t in self.tracks if t.modules and not t.mute] if not self.track_solo else [self.tracks[self.track_solo]]
+        tracks = [t for t in self.tracks if t.modules and not t.mute] if self.track_solo is None else [self.tracks[self.track_solo]]
 
         actually_used_patterns = [m.pattern for t in tracks for m in t.modules]
         patterns = [p for p in self.patterns if p in actually_used_patterns]
@@ -1146,12 +1163,11 @@ class Ma2Widget(Widget):
     def handleImportPattern(self, *args):
         if args[0].return_pattern:
             print("Imported Pattern:", args[0].return_pattern.name)
-            self.patterns.append(args[0].return_pattern)
-            self.patterns[-1].printNoteList()   
+            self.replacePatternByNameIfPossible(args[0].return_pattern)
             self.lastImportPatternFilename = args[0].XML_filename
             print("... imported from", self.lastImportPatternFilename)
         self._keyboard_request()
-        self.update()        
+        self.update()
 
     def exportPattern(self):
         #TODO - export to XML, remember LMMS_lengthscale!

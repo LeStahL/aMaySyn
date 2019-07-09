@@ -39,8 +39,10 @@ class Track():
     def isEmpty(self):                    return (self.modules == [])
 
     def addModule(self, pattern, transpose = 0):
-        mod_on = self.getModuleOn() if self.modules else 0
-        self.modules.append(Module(mod_on, pattern, transpose))
+        if not self.modules:
+            self.modules.append(Module(0, pattern, transpose))
+            return
+        self.modules.append(Module(self.getModuleOn(), pattern, transpose))
         self.modules.sort(key = lambda m: m.mod_on)
         self.moveModule(+1)
 
@@ -165,11 +167,17 @@ class Track():
         if mute is not None:
             self.mute = mute
 
+    def untagAllModules(self):
+        for m in self.modules:
+            m.tagged = False
+
+
 class Module():
 
     mod_on = 0
     pattern = None
     transpose = 0
+    tagged = False
     
     def __init__(self, mod_on, pattern, transpose = 0):
         self.mod_on = mod_on
@@ -185,3 +193,6 @@ class Module():
 
     def getPatternName(self):
         return self.pattern.name
+
+    def tag(self):
+        self.tagged = True

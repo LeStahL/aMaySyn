@@ -129,6 +129,11 @@ float env_AHDSRexp(float x, float L, float A, float H, float D, float S, float R
     return (x < A ? att : x < A+H ? 1. : dec) * rel;
 }
 
+float env_limit_length(float x, float length, float release)
+{
+    return clamp(x * 1e3, 0., 1.) * clamp(1 - (x-length)/release, 0., 1.);
+}
+
 float waveshape(float s, float amt, float A, float B, float C, float D, float E)
 {
     float w;

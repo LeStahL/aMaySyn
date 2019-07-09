@@ -114,7 +114,7 @@ class TrackWidget(Widget):
                 ### TRACK INFO ###
                 Color(1,1,1,.7)
                 volume_label = str(int(100 * t.par_norm)) + '%'
-                if t.mute or parent.track_solo and parent.track_solo != i:
+                if t.mute or (parent.track_solo is not None and parent.track_solo != i):
                     volume_label = "MUTE"
                 elif parent.track_solo == i:
                     Color(1,.4,.4,1)

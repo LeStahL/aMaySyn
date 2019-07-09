@@ -24,6 +24,17 @@ class Pattern():
             for n in self.notes:
                 n.note_pitch = n.note_pitch % max_note
 
+    def replaceWith(self, other):
+        if not other: return
+        self.name = other.name
+        self.notes = other.notes
+        self.length = other.length
+        self.current_note = other.current_note
+        self.current_gap = other.current_gap
+        self.color = other.color
+        self.synth_type = other.synth_type
+        self.max_note = other.max_note
+
     # helpers...
     def getNote(self, offset=0):    return self.notes[(self.current_note + offset) % len(self.notes)] if self.notes else None
     def getNoteOn(self, offset=0):  return self.getNote(offset).note_on if self.getNote(offset) else None

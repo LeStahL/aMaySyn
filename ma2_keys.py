@@ -39,6 +39,8 @@ global_keys  = {
 track_keys   = {
                 'ctrl shift left'  : 'TRACK SHIFT ALL LEFT',
                 'ctrl shift right' : 'TRACK SHIFT ALL RIGHT',
+                'ctrl shift up'    : 'MOD TRANSPOSE OCT UP',
+                'ctrl shift down'  : 'MOD TRANSPOSE OCT DOWN',
                 'ctrl left'        : 'TRACK SHIFT LEFT',
                 'ctrl right'       : 'TRACK SHIFT RIGHT',
                 'shift up'         : 'MOD TRANSPOSE UP',

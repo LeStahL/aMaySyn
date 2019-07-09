@@ -75,13 +75,17 @@ def set_remaining_defaults(cid, cmd, form):
             pass
 
     elif cmd == 'env':
-        defaults.update({'shape':'ahdsr', 'attack':'1e-4', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0', 'scale':'1', 'shift':'0'})
+        defaults.update({'shape':'ahdsr', 'attack':'1e-3', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0', 'scale':'1', 'shift':'0'})
         #TODO: calibrate attack and decay
         
         try:
             if form['shape'] == 'expdecay' or form['shape'] == 'expdecayrepeat':
                 defaults.update({'exponent':'1', 'beats':'1'})
-                
+            if form['shape'] == 'antivelattack':
+                defaults.update({'vel':'vel', 'velmin':'0', 'velmax':'1'})
+            if form['shape'] == 'limitlength':
+                defaults.update({'length':'L-rel', 'factor':'1'})
+
         except:
             pass
 
@@ -152,6 +156,9 @@ def set_remaining_defaults(cid, cmd, form):
                 
             elif form['op'] == 'lofi':
                 defaults.update({'bits':'128'})
+
+            elif form['op'] == 'define':
+                pass
 
         except:
             pass

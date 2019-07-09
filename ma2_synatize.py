@@ -153,6 +153,8 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
     for stored_random in stored_randoms:
         stored_random['value'] = stored_random_values[stored_random['id']]
 
+    
+
     return form_list, main_list, drum_list, stored_randoms, param_list
 
 
@@ -209,9 +211,16 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     return '(' + newlineplus.join([instance(form['src']).replace('_PROG','(_PROG-'+'{:.1e}'.format(i*float(form['step']))+'*(1.+'+instance(form['intensity'])
                         +'*_sin('+instance(form['rate'])+'*_PROG)))') for i in range(int(form['number']))]) + ')'
                 elif form['op'] == 'delay':
-                    tvar = '_PROG' if not 'beat' in form['mode'] else '_BPROG'
-                    return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['gain']),i)) + '*' + \
-                                                   instance(form['src']).replace(tvar,'('+tvar+'-'+'{:.1e}'.format(i*float(form['delay']))+')') for i in range(int(form['number']))]) + ')'
+                    if 'time' in form['mode']:
+                        return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['gain']),i)) + '*' + \
+                                    instance(form['src']).replace('_BPROG','(_BPROG-BPS*'+'{:.3e}'.format(i*float(form['delay']))+')') \
+                                                         .replace('_PROG','(_PROG-'+'{:.3e}'.format(i*float(form['delay']))+')') \
+                                                            for i in range(1+int(form['number']))]) + ')'
+                    else:
+                        return '(' + newlineplus.join(['{:.1e}'.format(pow(float(form['gain']),i)) + '*' + \
+                                    instance(form['src']).replace('_BPROG','(_BPROG-'+'{:.3e}'.format(i*float(form['delay']))+')') \
+                                                         .replace('_PROG','(_PROG-SPB*'+'{:.3e}'.format(i*float(form['delay']))+')') \
+                                                            for i in range(1+int(form['number']))]) + ')'
                 elif form['op'] == 'waveshape':
                     return 'waveshape(' + instance(form['src']) + ',' + ','.join(instance(form[p]) for p in ['amount','a','b','c','d','e']) + ')'
                 elif form['op'] == 'sinshape':
@@ -223,8 +232,10 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         return 's_atan('+instance(form['gain']) + '*' + instance(form['src']) + ')'
                 elif form['op'] == 'lofi':
                     return 'floor('+instance(form['bits'])+'*'+instance(form['src'])+'+.5)*'+'{:.1e}'.format(1/float(form['bits']))
+                elif form['op'] == 'define':
+                    return instance(form['src'])
                 else:
-                    return '1.'
+                    return '0.'
 
             elif form['type'] == 'osc' or form['type'] == 'lfo':
 
@@ -421,8 +432,10 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
 
             elif form['type'] == 'env' or form['type'] == 'seg':
-                tvar = '_BPROG' if 'beat' in form['mode'] else '_PROG'
-                Lvar = 'L' if 'beat' in form['mode'] else 'tL'
+#                tvar = '_BPROG' if 'beat' in form['mode'] else '_PROG'
+#                Lvar = 'L' if 'beat' in form['mode'] else 'tL'
+                tvar = '_BPROG' if not 'time' in form['mode'] else '_PROG'
+                Lvar = 'L' if not 'time' in form['mode'] else 'tL'
                 if form['type'] == 'seg':
                     tvar = '_BEAT'
                     Lvar = 'L'
@@ -431,6 +444,8 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     _return = 'env_AHDSR('+tvar+','+Lvar+','+','.join(instance(form[p]) for p in ['attack', 'hold', 'decay', 'sustain', 'release'])+')'
                 elif form['shape'] == 'ahdsrexp' or form['shape'] == 'adsrexp':
                     _return = 'env_AHDSRexp('+tvar+','+Lvar+','+','.join(instance(form[p]) for p in ['attack', 'hold', 'decay', 'sustain', 'release'])+')'
+                elif form['shape'] == 'limitlength':
+                    _return = 'env_limit_length('+tvar+','+instance(form['factor']) + '*(' + instance(form['length'])+'),'+instance(form['release'])+')'
                 elif form['shape'] == 'doubleslope':
                     _return = 'doubleslope('+tvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+')'
                 elif form['shape'] == 'ss':
@@ -441,6 +456,13 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*_BPROG)'
                 elif form['shape'] == 'expdecayrepeat':
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*mod(_BPROG,'+instance(form['beats'])+'))'
+                elif form['shape'] == 'antivelattack':
+                    try:
+                        attack = str(round(float(form['attack'])/(float(form['velmax'])-float(form['velmin'])+1e-3), 5)) + '*('+ GLstr(form['velmax']) + '-' + instance(form['vel']) + '+1e-3)'
+                        _return = 'smoothstep(0.,'+instance(attack)+','+tvar+')'
+                    except:
+                        attack = instance(form['attack']) + '*('+instance(form['velmax']) + '-' + instance(form['vel']) + '+1e-3)/(' + instance(form['velmax']) + '-' + instance(form['velmin']) + '+1e-3)'
+                        _return = 'smoothstep(0.,'+attack+','+tvar+')'
 
                 elif form['shape'] == 'generic':
                     _return = instance(form['src']).replace('_BPROG', '(_BEAT-' + instance(form['offset']) + ')') # hm. might I do this better?
