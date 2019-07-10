@@ -118,7 +118,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
                 form['scale'] = '(' + GLfloat(to_y) + '-' + GLfloat(from_y) + ')/(' + GLfloat(to_x) + '-' + GLfloat(from_x) + ')'
                 form['offset'] = GLfloat(from_x)
                 form['shift'] = GLfloat(from_y)
-                form.update({'from_x':from_x, 'from_y':from_y, 'to_x':to_x, 'to_y':to_y})
+                #form.update({'from_x':from_x, 'from_y':from_y, 'to_x':to_x, 'to_y':to_y})
 
         for r in requirements:
             try:

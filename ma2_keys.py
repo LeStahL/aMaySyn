@@ -1,7 +1,8 @@
 global_keys  = {
                 'escape'            : 'EXIT',
                 'f8'                : 'DEBUG TOGGLE',
-                'ctrl tab'          : 'PANEL SWITCH',  # 'tab' alone conflicted with the usage of alt-tab...
+                'shift tab'         : 'PANEL SWITCH',  # 'tab' alone conflicted with the usage of alt-tab...
+                'ctrl tab'          : 'PANEL SWITCH',
                 'f1'                : 'COLORS RANDOMIZE',
                 'f2'                : 'SONG RENAME',
                 'f3'                : 'SONG CHANGE PARAMETERS',

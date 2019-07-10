@@ -39,12 +39,18 @@ class Track():
     def getNorm(self):                    return self.par_norm
     def isEmpty(self):                    return (self.modules == [])
 
+    def selectTaggedModule(self):
+        self.current_module = self.getFirstTaggedModuleIndex()
+
     def addModule(self, pattern, transpose = 0):
         if not self.modules:
             self.modules.append(Module(0, pattern, transpose))
             return
-        self.modules.append(Module(self.getModuleOn(), pattern, transpose))
+        newModule = Module(self.getModuleOn(), pattern, transpose)
+        newModule.tag()
+        self.modules.append(newModule)
         self.modules.sort(key = lambda m: m.mod_on)
+        self.selectTaggedModule()
         self.moveModule(+1)
 
     def delModule(self):
