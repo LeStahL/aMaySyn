@@ -110,7 +110,8 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
             stored_random_values.update({form['id']: form['value']})
         
         if cmd == 'seg':
-            if form['shape'] == 'linear' and 'from' in form.keys() and 'to' in form.keys():
+            print(form)
+            if form['shape'] == 'linear' and form['to'] is not None:
                 from_x = float(form['from'].split(',')[0])
                 from_y = float(form['from'].split(',')[1])
                 to_x = float(form['to'].split(',')[0])
@@ -118,7 +119,6 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
                 form['scale'] = '(' + GLfloat(to_y) + '-' + GLfloat(from_y) + ')/(' + GLfloat(to_x) + '-' + GLfloat(from_x) + ')'
                 form['offset'] = GLfloat(from_x)
                 form['shift'] = GLfloat(from_y)
-                #form.update({'from_x':from_x, 'from_y':from_y, 'to_x':to_x, 'to_y':to_y})
 
         for r in requirements:
             try:
@@ -172,6 +172,13 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
             if inquotes(ID):
                 return '('+ID[1:-1]+')'
             
+            elif '+' in ID:
+                IDsum = ID.split('+')
+                sum = ''
+                for sumID in IDsum:
+                    sum += instance(sumID) + '+'
+                return sum[:-1]
+
             elif '*' in ID:
                 IDproduct = ID.split('*')
                 product = ''
@@ -194,6 +201,8 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
             elif form['type']=='form':
                 if form['op'] == 'mix':
                     return '(' + '+'.join([instance(f) for f in form['src'].split(',')]) + ')' 
+                elif form['op'] == 'define': # actually pretty similar to mix, but I keep it.
+                    return instance(form['src'])
                 elif form['op'] == 'detune':
                     detuned_instances = '+'.join(instance(form['src'],{'freq':'(1.-' + instance(amt) + ')*'+param(form['src'],'freq')}) for amt in form['amount'].split(','))
                     return 's_atan(' + instance(form['src']) + '+' + detuned_instances + ')'
@@ -232,8 +241,6 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         return 's_atan('+instance(form['gain']) + '*' + instance(form['src']) + ')'
                 elif form['op'] == 'lofi':
                     return 'floor('+instance(form['bits'])+'*'+instance(form['src'])+'+.5)*'+'{:.1e}'.format(1/float(form['bits']))
-                elif form['op'] == 'define':
-                    return instance(form['src'])
                 else:
                     return '0.'
 
@@ -305,6 +312,9 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     
                     #elif form['shape'] == 'guitar':
                     #        _return = 'karplusstrong(_PROG,'+instance(form['freq'])+')' # this doesn't work yet... sryboutthat
+
+                    elif form['shape'] == 'lpnoise':
+                        _return = 'lpnoise(_PROG + ' + instance(form['phase']) + ',' + instance(form['freq']) + ')'
 
                     else:
                         print("PARSING - ERROR! THIS OSC/LFO SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')

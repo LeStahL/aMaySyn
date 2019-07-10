@@ -172,7 +172,7 @@ class Ma2Widget(Widget):
         if action:
             self.stateChanged = doesActionChangeState(action)
 
-        inc_step = 1 if 'alt' not in modifiers else .25 # for precision work, press 'alt'
+        inc_step = 1 if 'alt' not in modifiers else .125 # for precision work, press 'alt'
 
         if   action == 'EXIT':                          App.get_running_app().stop()
         elif action == 'DEBUG TOGGLE':                  self.toggleDebugMode()
@@ -200,6 +200,9 @@ class Ma2Widget(Widget):
         elif action == 'DIALOG PATTERN IMPORT':         self.importPattern()
 #        elif action == 'DIALOG PATTERN EXPORT':         self.exportPattern()
         elif action == 'SYNTH FILE RESET DEFAULT':      self.resetSynthsToDefault()
+        elif action == 'TRACK CHANGE PARAMETERS':       self.changeTrackParameters()
+        elif action == 'TRACK MUTE':                    self.getTrack().setParameters(mute = not self.getTrack().mute)
+        elif action == 'TRACK SOLO':                    self.setTrackSolo()
 
         if(self.theTrkWidget.active):
             if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)
@@ -227,9 +230,6 @@ class Ma2Widget(Widget):
             elif action == 'MOD ADD CLONE':             self.getTrack().addModule(self.getPattern(), transpose = self.getModuleTranspose())
             elif action == 'MOD DELETE':                self.getTrack().delModule()
             elif action == 'TRACK RENAME':              self.renameTrack()
-            elif action == 'TRACK CHANGE PARAMETERS':   self.changeTrackParameters()
-            elif action == 'TRACK MUTE':                self.getTrack().setParameters(mute = not self.getTrack().mute)
-            elif action == 'TRACK SOLO':                self.setTrackSolo()
             elif action == 'SYNTH CLONE HARD':          self.synthClone(hard = True)
             elif action == 'SYNTH EDIT':                self.editSynth()
             elif action == 'SCROLL UP':                 self.theTrkWidget.scroll(axis = 'vertical', inc = -1)

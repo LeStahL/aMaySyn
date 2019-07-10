@@ -46,12 +46,16 @@ class Track():
         if not self.modules:
             self.modules.append(Module(0, pattern, transpose))
             return
-        newModule = Module(self.getModuleOn(), pattern, transpose)
+        newModule = Module(self.getModuleOff(), pattern, transpose)
         newModule.tag()
         self.modules.append(newModule)
         self.modules.sort(key = lambda m: m.mod_on)
         self.selectTaggedModule()
-        self.moveModule(+1)
+        while newModule.collidesWithAnyOf(self.modules):
+            self.moveModule(+1)
+            self.modules.sort(key = lambda m: m.mod_on)
+            self.selectTaggedModule()
+        self.untagAllModules()
 
     def delModule(self):
         if self.modules:
@@ -124,11 +128,10 @@ class Track():
         
     def switchModulePattern(self, pattern):
         if self.modules:
-            if self.current_module < len(self.modules) - 1:
-                offset = pattern.length - self.getModuleLen()
-                for f in self.modules[self.current_module + 1:]:
-                    f.mod_on += offset
-                    
+#            if self.current_module < len(self.modules) - 1:
+#                offset = pattern.length - self.getModuleLen()
+#                for f in self.modules[self.current_module + 1:]:
+#                    f.mod_on += offset                   
             self.getModule().pattern = pattern
         
     def checkModuleCollision(self, module):
@@ -196,6 +199,9 @@ class Module():
         self.pattern = pattern
         self.transpose = transpose
 
+    def getModuleOn(self):
+        return self.mod_on
+
     def getModuleOff(self):
         return self.mod_on + (self.pattern.length if self.pattern else 0)
 
@@ -208,3 +214,13 @@ class Module():
 
     def tag(self):
         self.tagged = True
+
+    def collidesWithAnyOf(self, modules):
+        for m in modules:
+            if self == m:
+                continue
+            if self.getModuleOn() <= m.getModuleOn() and self.getModuleOff() > m.getModuleOn():
+                return True
+            if self.getModuleOn() < m.getModuleOff() and self.getModuleOff() > m.getModuleOff():
+                return True
+        return False

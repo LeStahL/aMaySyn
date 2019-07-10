@@ -172,8 +172,8 @@ class Pattern():
         # here I had lots of possibilities .. is inc > or < 0? but these where on the monophonic synth. Let's rethink polyphonic!
         if self.notes:
             if inc < 0:
-                if self.getNote().note_len <= 1/16:
-                    self.getNote().note_len = 1/32
+                if self.getNote().note_len <= 1/32:
+                    self.getNote().note_len = 1/64
                 elif self.getNote().note_len <= -inc:
                     self.getNote().note_len /= 2
                 else:

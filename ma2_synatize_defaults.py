@@ -25,11 +25,11 @@ def set_remaining_defaults(cid, cmd, form):
                 defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'q':'3', 'res':'0', 'resq': '3', 'detune':'1e-3'})
                 # TODO: calibrate q (and rename)
                 # TODO: calibrate (resQ)
-            if form['shape'] == 'badd':
+            elif form['shape'] == 'badd':
                 defaults.update({'mix':'.5', 'amp':'1', 'peak':'500.', 'sigma':'200.', 'ncut': '3', 'detune':'1e-3'})
             elif form['shape'] == 'fm':
                 defaults.update({'lv1':'1', 'lv2':'0', 'lv3':'0', 'lv4':'0', 'fr1':'1', 'fr2':'1', 'fr3':'1', 'fr4':'1', 'fb1':'0', 'fb2':'0', 'fb3':'0', 'fb4':'0', 'algo':'0', 'parscale':'1'})
-                
+
         except:
             pass
         
@@ -52,7 +52,7 @@ def set_remaining_defaults(cid, cmd, form):
             elif form['shape'] == 'bitexplosion':
                 defaults.update({'nvar':'0', 'freqvar':'1', 'twostepvar':'1', 'var1':'1', 'var2':'1', 'var3':'1', 'decay':'1'})
             elif form['shape'] == 'protokick':
-                defaults.update({'freq0':'180', 'freq1':'50', 'freqdecay':'.15', 'hold':'.2', 'decay':'.5', 'drive':'1.2', 'detune':'5e-3',\
+                defaults.update({'freq0':'180', 'freq1':'50', 'freqdecay':'.15', 'attack':'.01', 'hold':'.2', 'decay':'.5', 'drive':'1.2', 'detune':'5e-3',\
                                  'rev_amount':'.7', 'rev_hold':'.2', 'rev_decay':'.3', 'rev_drive':'1'})
             elif form['shape'] == 'protokickass':
                 defaults.update({'freq0':'180', 'freq1':'50', 'freqdecay':'.15', 'attack':'5e-3', 'decay':'.5', 'drive':'2.4',\
@@ -72,7 +72,7 @@ def set_remaining_defaults(cid, cmd, form):
                 defaults.update({'base_freq':'310', 'base_pw':'.2', 'mod_freq':'1050', 'mod_pw':'.2', 'noise_amt':'1.5', 'noise_freq':'15',\
                                  'vibe_pw':'.2', 'vibe_freq':'20', 'comb_delay':'.445e-4', 'env_attack':'0', 'env_decay':'.6'})
         except:
-            pass
+            raise
 
     elif cmd == 'env':
         defaults.update({'shape':'ahdsr', 'attack':'1e-3', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0', 'scale':'1', 'shift':'0'})
@@ -93,7 +93,7 @@ def set_remaining_defaults(cid, cmd, form):
         defaults.update({'shape':'generic', 'src':'0', 'scale':'1', 'shift':'0', 'offset': '0'})
         
         if form['shape'] == 'linear':
-            defaults.update({'from': '0,0', 'to': '1,0'})
+            defaults.update({'from': '0,0', 'to': None})
 
     elif cmd == 'filter':
         requirements.extend(['shape', 'src'])

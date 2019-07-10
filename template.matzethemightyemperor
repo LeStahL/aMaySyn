@@ -84,7 +84,6 @@ float blackmannoise(float t, float ton, float M)
     return s;
 }
 
-// One-dimensional value noise from https://www.shadertoy.com/view/wdj3D1 (NR4)
 float value_noise_1d(float t)
 {
     float i = floor(t);
@@ -92,19 +91,12 @@ float value_noise_1d(float t)
     return mix(-1.+2.*pseudorandom(i), -1.+2.*pseudorandom(i+1.), smoothstep(0., 1., t));
 }
 
-float lpnoise(float t, float fq) // kudos to Dmitry Andreev - and'2014!
+float lpnoise(float t, float fq)
 {
     t *= fq;
-
     float tt = fract(t);
     float tn = t - tt;
-    tt = smoothstep(0.0, 1.0, tt);
-
-    // does pseudorandom(...) somehow equal hash22 noise?
-    float n0 = pseudorandom(floor(tn + 0.0) / fq);
-    float n1 = pseudorandom(floor(tn + 1.0) / fq);
-
-    return mix(n0, n1, tt);
+    return mix(pseudorandom(floor(tn) / fq), pseudorandom(floor(tn + 1.0) / fq), smoothstep(0.0, 1.0, tt));
 }
 
 float reverb_phase(float t, float amt)
@@ -264,13 +256,13 @@ float QFM(float t, float f, float phase, float LV1, float LV2, float LV3, float 
 float protokick(float t, float f_start, float f_end, float fdecay, float hold, float decay, float drive, float detune, float rev_amount, float rev_hold, float rev_decay, float rev_drive)
 {
     float phi = drop_phase(t, fdecay, f_start, f_end);
-    float rev_phi = phi + reverb_phase(t, rev_amount);
+    float rev_phi = phi + reverb_phase(t, 1.);
     return clamp(drive*.5*(_sin(phi)+_sin((1.-detune)*phi)),-1.,1.) * exp(-max(t-hold, 0.)/decay)
-         + clamp(rev_drive*.5*(_sin(rev_phi)+_sin((1.-detune)*rev_phi)),-1.,1.) * exp(-max(t-rev_hold, 0.)/rev_decay);
+         + rev_amount*clamp(rev_drive*.5*(_sin(rev_phi)+_sin((1.-detune)*rev_phi)),-1.,1.) * exp(-max(t-rev_hold, 0.)/rev_decay);
 } 
 
 float bitexplosion(float time, float B, float dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decay)
-{ // this still sounds very different on different systems...
+{
     float snd = 0.;
     float B2 = mod(B, 2.);
     float f = 60.*fvar;
