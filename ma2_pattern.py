@@ -36,14 +36,14 @@ class Pattern():
         self.max_note = other.max_note
 
     # helpers...
-    def getNote(self, offset=0):    return self.notes[(self.current_note + offset) % len(self.notes)] if self.notes else None
-    def getNoteOn(self, offset=0):  return self.getNote(offset).note_on if self.getNote(offset) else None
-    def getNoteOff(self, offset=0): return self.getNote(offset).note_off if self.getNote(offset) else None
-    def getFirstNote(self):         return self.notes[0]  if self.notes else None
-    def getLastNote(self):          return self.notes[-1] if self.notes else None
-    def getFirstTaggedNote(self):   return next(i for i in range(len(self.notes)) if self.notes[i].tagged)
+    def getNote(self, offset=0):         return self.notes[(self.current_note + offset) % len(self.notes)] if self.notes else None
+    def getNoteOn(self, offset=0):       return self.getNote(offset).note_on if self.getNote(offset) else None
+    def getNoteOff(self, offset=0):      return self.getNote(offset).note_off if self.getNote(offset) else None
+    def getFirstNote(self):              return self.notes[0]  if self.notes else None
+    def getLastNote(self):               return self.notes[-1] if self.notes else None
+    def getFirstTaggedNoteIndex(self):   return next(i for i in range(len(self.notes)) if self.notes[i].tagged)
 
-    def getDrumIndex(self):         return self.getNote().note_pitch if self.getNote() and self.synth_type == 'D' else None
+    def getDrumIndex(self):              return self.getNote().note_pitch if self.getNote() and self.synth_type == 'D' else None
 
     # THE MOST IMPORTANT FUNCTION!
     def randomColor(self):
@@ -74,7 +74,7 @@ class Pattern():
         
         self.notes.append(note)
         self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
-        self.current_note = self.getFirstTaggedNote()
+        self.current_note = self.getFirstTaggedNoteIndex()
         self.untagAllNotes()
         # cloning: since we have polyphonic mode now, we can not just assign the right gap - have to do it via space/backspace - will be changed to polyphonic cloning
         if not clone: self.setGap(to = 0)
@@ -112,7 +112,7 @@ class Pattern():
             copy_pos += copy_span 
             
         self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
-        self.current_note = self.getFirstTaggedNote()
+        self.current_note = self.getFirstTaggedNoteIndex()
         self.untagAllNotes()
 
     def delNote(self):
@@ -130,7 +130,7 @@ class Pattern():
                     if n.note_pitch == old_pitch:
                         n.tag()
                         self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
-                        self.current_note = self.getFirstTaggedNote()
+                        self.current_note = self.getFirstTaggedNoteIndex()
                         self.untagAllNotes()
                         break
 
@@ -204,7 +204,7 @@ class Pattern():
             self.getNote().note_off = self.getNote().note_on + self.getNote().note_len
 
         self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
-        self.current_note = self.getFirstTaggedNote()
+        self.current_note = self.getFirstTaggedNoteIndex()
         self.untagAllNotes()
 
     def moveAllNotes(self, inc):
@@ -294,6 +294,6 @@ class Note():
 
     def setSlide(self, numstr):
         try:
-            self.note_slide = min(48, max(-48, float(numstr)))
+            self.note_slide = min(96, max(-96, float(numstr)))
         except:
             self.note_slide = 0

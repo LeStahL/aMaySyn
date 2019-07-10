@@ -30,6 +30,7 @@ class Track():
     def getFirstModuleOn(self):           return self.getFirstModule().mod_on if self.getFirstModule() else None
     def getLastModule(self):              return self.modules[-1] if len(self.modules) > 0 else None
     def getLastModuleOff(self):           return self.getLastModule().getModuleOff() if self.getLastModule() else 0
+    def getFirstTaggedModuleIndex(self):  return next(i for i in range(len(self.modules)) if self.modules[i].tagged)
 
     def getSynthIndex(self):              return (self.current_synth - len(self.synths)) if self.synths[self.current_synth][0] not in ['I','D'] and self.current_synth != -1 else self.current_synth
     def getSynthFullName(self):           return self.synths[self.current_synth if self.current_synth is not None else 0] if self.synths else '__None'
@@ -62,7 +63,7 @@ class Track():
         if self.modules:
             self.getModule().transpose += inc
 
-    def moveModule(self, inc, move_home = None, move_end = None):
+    def moveModule(self, inc, move_home = None, move_end = None, total_length = None):
         if self.modules:
             move_to = self.getModuleOn() + inc
             if move_to < 0: return
@@ -88,20 +89,25 @@ class Track():
             self.modules.sort(key = lambda m: m.mod_on)
 
         if move_home:
-#            if self.getModule() == self.getFirstModule() or self.getFirstModuleOn() >= self.getModuleLen():
-#                self.getModule().mod_on = 0
-#                self.modules.sort(key = lambda m: m.mod_on)            
-#                self.current_module = 0
-#            else:
-                self.getModule().mod_on = -1
-                self.modules.sort(key = lambda m: m.mod_on)            
-                self.current_module = 0
-                self.moveModule(+1)
+            self.getModule().mod_on = -1
+            self.modules.sort(key = lambda m: m.mod_on)            
+            self.current_module = 0
+            self.moveModule(+1)
         if move_end:
             if self.getModule() != self.getLastModule():
                 self.getModule().mod_on = self.getLastModuleOff()
                 self.modules.sort(key = lambda m: m.mod_on)            
                 self.current_module = len(self.modules) - 1
+            elif total_length is not None:
+                self.getModule().mod_on = total_length - self.getModuleLen()
+
+    def moveModuleAnywhere(self, move_to):
+        self.getModule().tag()
+        self.getModule().mod_on = move_to
+        self.modules.sort(key = lambda m: m.mod_on)
+        self.current_module = self.getFirstTaggedModuleIndex()
+        self.untagAllModules()
+        # TODO: check for collisions
 
     def moveAllModules(self, inc):
         if self.modules:

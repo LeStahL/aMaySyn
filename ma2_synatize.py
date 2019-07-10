@@ -115,8 +115,9 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
                 from_y = float(form['from'].split(',')[1])
                 to_x = float(form['to'].split(',')[0])
                 to_y = float(form['to'].split(',')[1])
-                form['slope'] = '(' + GLfloat(to_y) + '-' + GLfloat(from_y) + ')/(' + GLfloat(to_x) + '-' + GLfloat(from_x) + ')'
+                form['scale'] = '(' + GLfloat(to_y) + '-' + GLfloat(from_y) + ')/(' + GLfloat(to_x) + '-' + GLfloat(from_x) + ')'
                 form['offset'] = GLfloat(from_x)
+                form['shift'] = GLfloat(from_y)
                 form.update({'from_x':from_x, 'from_y':from_y, 'to_x':to_x, 'to_y':to_y})
 
         for r in requirements:
@@ -135,7 +136,6 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
             continue
 
         if cmd == 'main' or cmd == 'maindrum':
-            print("FORM", form)
             main_list.append(form)
         else:
             form_list.append(form)
@@ -467,7 +467,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'generic':
                     _return = instance(form['src']).replace('_BPROG', '(_BEAT-' + instance(form['offset']) + ')') # hm. might I do this better?
                 elif form['shape'] == 'linear':
-                    _return = instance(form['slope']) + '*(' + tvar + '-' + instance(form['offset']) + ')'
+                    _return = '(' + tvar + '-' + instance(form['offset']) + ')'
 
                 else:
                     print("PARSING - ERROR! THIS ENVELOPE SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
@@ -591,7 +591,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
             seg_code = instance(par['segments'][3*seg])
             seg_start = par['segments'][3*seg+1]
             seg_end = par['segments'][3*seg+2]
-            paramcode += 'else if(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + '){return ' + seg_code + ';}' + newlineindent
+            paramcode += 'else if(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + '){return ' + seg_code.replace('_BEAT','(_BEAT-' + GLstr(seg_start) + ')') + ';}' + newlineindent
         paramcode += 'else{return ' + instance(par['default']) + ';}'
         paramcode += '\n}\n'
 

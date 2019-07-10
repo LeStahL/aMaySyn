@@ -57,7 +57,7 @@ class Ma2Widget(Widget):
     thePtnWidget = ObjectProperty(None)
     somePopup = ObjectProperty(None)
 
-    info = {'title': 'piover2', 'BPM': 80., 'B_offset': 0.}
+    info = {'title': 'piover2', 'BPM': 80., 'B_offset': 0., 'loop_seamless': False}
 
     current_track = None
     tracks = []
@@ -72,8 +72,6 @@ class Ma2Widget(Widget):
     synatize_param_list = []
     synatized_code_syn = ''
     synatized_code_drum = ''
-
- #   btnTitle = ObjectProperty()
     
     MODE_debug = False
     MODE_numberInput = False
@@ -97,6 +95,7 @@ class Ma2Widget(Widget):
     #helpers...
     def getTrack(self):                 return self.tracks[self.current_track] if self.current_track is not None else None
     def getLastTrack(self):             return self.tracks[-1] if self.tracks else None
+    def getTotalLength(self):           return max(t.getLastModuleOff() for t in self.tracks)
     def getModule(self, offset=0):      return self.getTrack().getModule(offset) if self.getTrack() else None
     def getModuleTranspose(self):       return self.getModule().transpose if self.getModule() else 0
     def getModulePattern(self):         return self.getModule().pattern if self.getModule() else None
@@ -181,6 +180,7 @@ class Ma2Widget(Widget):
         elif action == 'COLORS RANDOMIZE':              self.reRandomizeColors()  # MOST IMPORTANT FEATURE!
         elif action == 'SONG RENAME':                   self.renameSong()
         elif action == 'SONG CHANGE PARAMETERS':        self.changeSongParameters()
+        elif action == 'SONG CHANGE LOOPING OPTION':    self.changeSongLoopingOption()
         elif action == 'SYNTH RELOAD':                  self.loadSynths()
         elif action == 'SYNTH RELOAD NEW RANDOMS':      self.loadSynths(reshuffle_randoms = True) 
         elif action == 'CURVE EDIT':                    self.editCurve()
@@ -213,7 +213,8 @@ class Ma2Widget(Widget):
             elif action == 'MOD SHIFT LEFT':            self.getTrack().moveModule(-inc_step)
             elif action == 'MOD SHIFT RIGHT':           self.getTrack().moveModule(+inc_step)
             elif action == 'MOD SHIFT HOME':            self.getTrack().moveModule(0, move_home = True)
-            elif action == 'MOD SHIFT END':             self.getTrack().moveModule(0, move_end = True)
+            elif action == 'MOD SHIFT END':             self.getTrack().moveModule(0, move_end = True, total_length = self.getTotalLength())
+            elif action == 'MOD SHIFT ANYWHERE':        self.moveModuleAnywhereDialog()
             elif action == 'TRACK ADD NEW':             self.addTrack()
             elif action == 'TRACK DELETE':              self.delTrack()
             elif action == 'MOD SELECT LEFT':           self.getTrack().switchModule(-1)
@@ -385,6 +386,10 @@ class Ma2Widget(Widget):
         self.theTrkWidget.updateMarker('OFFSET',self.getInfo('B_offset'))
         self.update()
 
+    def changeSongLoopingOption(self):
+        self.setInfo('loop_seamless', not self.getInfo('loop_seamless'))
+        print('Seamless Looping is now', self.getInfo('loop_seamless'))
+
     def renameTrack(self):
         popup = InputPrompt(self, title = 'RENAME TRACK', title_font = self.font_name, default_text = self.getTrack().name)
         popup.bind(on_dismiss = self.handleRenameTrack)
@@ -436,6 +441,17 @@ class Ma2Widget(Widget):
         else:
             self.track_solo = self.current_track
             self.getTrack().setParameters(mute = False)
+
+    def moveModuleAnywhereDialog(self):
+        popup = InputPrompt(self, title = 'BEAT TO MOVE TO (EMPTY TO CANCEL)', title_font = self.font_name, default_text = '')
+        popup.bind(on_dismiss = self.handleMoveModuleAnywhere)
+        popup.open()
+    def handleMoveModuleAnywhere(self, *args):
+        self._keyboard_request()
+        if args[0] == '':
+            return
+        self.getTrack().moveModuleAnywhere(float(args[0].text.split()[0]))
+        self.update()
 
     def getPattern(self, offset=0):
         if self.patterns and self.getModulePattern():
@@ -937,8 +953,11 @@ class Ma2Widget(Widget):
         defcode += '#define NNOT ' + nN + '\n'
         defcode += '#define NDRM ' + nD + '\n'
         
-        #TODO: solve question - do I want max_mod_off here (perfect looping) or max_mod_off+max_rel (can listen to whole release decaying..)??
-        seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
+        if self.getInfo('loop_seamless'):
+            seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
+        else:
+            seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off + max_rel) + ';\n' + 4*' '
+
         seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
         if self.getInfo('B_offset')!=0: seqcode += 'time += '+'{:.4f}'.format(self.getInfo('B_offset')/self.getInfo('BPM')*60)+';\n' + 4*' '
 
