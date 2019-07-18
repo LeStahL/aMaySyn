@@ -275,6 +275,7 @@ class Ma2Widget(Widget):
             elif action == 'NOTE SET PAN':              self.setParameterFromNumberInput('pan')
             elif action == 'NOTE SET VELOCITY':         self.setParameterFromNumberInput('velocity')
             elif action == 'NOTE SET SLIDE':            self.setParameterFromNumberInput('slide')
+            elif action == 'NOTE SET AUX':              self.setParameterFromNumberInput('aux')
             elif action == 'PATTERN RENAME':            self.renamePattern()
             elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()
             elif action == 'DRUMSYNTH CLONE HARD':      self.synthClone(drum = True, hard = True)
@@ -565,6 +566,8 @@ class Ma2Widget(Widget):
             self.getPattern().getNote().setVelocity(self.lastNumberInput)
         elif parameter == 'slide':
             self.getPattern().getNote().setSlide(self.lastNumberInput)
+        elif parameter == 'aux':
+            self.getPattern().getNote().setAuxParameter(self.lastNumberInput)
         else:
             print("WARNING. TRIED TO PASS NUMBER INPUT TO NONEXISTENT PARAMETER:", parameter)
         
@@ -1012,6 +1015,9 @@ class Ma2Widget(Widget):
         for p in patterns:
             for n in p.notes:
                 tex += pack(fmt, float(n.note_slide))
+        for p in patterns:
+            for n in p.notes:
+                tex += pack(fmt, float(n.note_aux))
         for d in drum_rel:
             tex += pack(fmt, float(d))
                

@@ -105,6 +105,7 @@ pattern_keys = {
                 'v'                   : 'NOTE SET VELOCITY',
                 'g'                   : 'NOTE SET SLIDE',
                 'p'                   : 'NOTE SET PAN',
+                'x'                   : 'NOTE SET AUX',
                 'f6'                  : 'PATTERN RENAME',
                 'f9'                  : 'DEBUG PRINT NOTES',
                 'e'                   : 'DRUMSYNTH EDIT',

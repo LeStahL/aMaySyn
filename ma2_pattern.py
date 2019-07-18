@@ -64,7 +64,8 @@ class Pattern():
             note_pitch = note.note_pitch % self.max_note, \
             note_pan = note.note_pan, \
             note_vel = note.note_vel, \
-            note_slide = note.note_slide \
+            note_slide = note.note_slide, \
+            note_aux = note.note_aux \
             )
         note.tag()
         
@@ -258,7 +259,7 @@ class Pattern():
 
 class Note():
 
-    def __init__(self, note_on=0, note_len=1, note_pitch=24, note_pan=0, note_vel=100, note_slide=0): # set note_len to last default TODO
+    def __init__(self, note_on=0, note_len=1, note_pitch=24, note_pan=0, note_vel=100, note_slide=0, note_aux=0):
         self.note_on = float(note_on)
         self.note_off = float(note_on) + float(note_len)
         self.note_len = float(note_len)
@@ -266,6 +267,7 @@ class Note():
         self.note_pan = int(note_pan)
         self.note_vel = int(note_vel)
         self.note_slide = float(note_slide)
+        self.note_aux = float(note_aux)
         self.tagged = False
         # some safety checks TODO
 
@@ -288,7 +290,7 @@ class Note():
 
     def setVelocity(self, numstr):
         try:
-            self.note_vel = min(int(numstr), 999)
+            self.note_vel = min(999, max(0, int(numstr)))
         except:
             self.note_vel = 100
 
@@ -297,3 +299,9 @@ class Note():
             self.note_slide = min(96, max(-96, float(numstr)))
         except:
             self.note_slide = 0
+
+    def setAuxParameter(self, numstr):
+        try:
+            self.note_aux = min(999, max(-999, float(numstr)))
+        except:
+            self.note_aux = 0
