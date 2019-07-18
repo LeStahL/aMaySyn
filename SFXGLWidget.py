@@ -132,7 +132,7 @@ class SFXGLWidget():
         glFlush()
                     
         music = unpack('<'+str(self.blocksize*self.nblocks*2)+'H', music)
-        music = [music[i]-32768 for i in range(len(music))]
+        music = [sample-32768 for sample in music]
         music = pack('<'+str(self.blocksize*self.nblocks*2)+'h', *music)
         self.music = music
 

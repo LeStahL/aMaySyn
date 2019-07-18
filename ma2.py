@@ -184,7 +184,7 @@ class Ma2Widget(Widget):
         elif action == 'SYNTH RELOAD':                  self.loadSynths()
         elif action == 'SYNTH RELOAD NEW RANDOMS':      self.loadSynths(reshuffle_randoms = True) 
         elif action == 'CURVE EDIT':                    self.editCurve()
-        elif action == 'MUTE':                          pygame.mixer.stop()
+        elif action == 'MUTE':                          self.muteSound()
         elif action == 'SHADER PLAY':                   self.buildGLSL(compileGL = True)
         elif action == 'SHADER RENDER':                 self.buildGLSL(compileGL = True, renderWAV = True)
         elif action == 'SONG CLEAR':                    self.clearSong()
@@ -322,6 +322,12 @@ class Ma2Widget(Widget):
     def switchActive(self):
         self.theTrkWidget.active = not self.theTrkWidget.active
         self.thePtnWidget.active = not self.thePtnWidget.active
+
+    def muteSound(self):
+        try:
+            pygame.mixer.stop()
+        except:
+            pass
 
     def handleUndoStack(self):
         # is this everything I need to store?
