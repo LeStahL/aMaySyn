@@ -39,6 +39,7 @@ global_keys  = {
                 'shift k'           : 'ZOOM VERT OUT',
                 'shift j'           : 'ZOOM HORZ OUT',
                 'shift l'           : 'ZOOM HORZ IN',
+                'shift .'           : 'ENTER COMMAND',
                }
 
 track_keys   = {

@@ -282,26 +282,45 @@ class Note():
     def tag(self):
         self.tagged = True
 
-    def setPan(self, numstr = '0'):
+    ### PARAMETER SETTERS ###
+    def setParameter(self, parameter, value = None):
+        if parameter == 'pan':
+            setFunction = self.setPan
+        elif parameter == 'vel':
+            setFunction = self.setVelocity
+        elif parameter == 'slide':
+            setFunction = self.setSlide
+        elif parameter == 'aux':
+            setFunction = self.setAuxParameter
+        else:
+            print("WARNING. TRIED TO SET NONEXISTENT PARAMETER:", parameter)
+            return
+
+        if value is None:
+            setFunction()
+        else:
+            setFunction((float(value)))
+
+    def setPan(self, value = None):
         try:
-            self.note_pan = min(100, max(-100, int(numstr)))
+            self.note_pan = min(100, max(-100, int(value)))
         except:
             self.note_pan = 0
 
-    def setVelocity(self, numstr):
+    def setVelocity(self, value = None):
         try:
-            self.note_vel = min(999, max(0, int(numstr)))
+            self.note_vel = min(999, max(0, int(value)))
         except:
             self.note_vel = 100
 
-    def setSlide(self, numstr):
+    def setSlide(self, value = None):
         try:
-            self.note_slide = min(96, max(-96, float(numstr)))
+            self.note_slide = min(96, max(-96, float(value)))
         except:
             self.note_slide = 0
 
-    def setAuxParameter(self, numstr):
+    def setAuxParameter(self, value = None):
         try:
-            self.note_aux = min(999, max(-999, float(numstr)))
+            self.note_aux = min(999, max(-999, float(value)))
         except:
             self.note_aux = 0

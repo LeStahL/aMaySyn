@@ -154,8 +154,6 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
     for stored_random in stored_randoms:
         stored_random['value'] = stored_random_values[stored_random['id']]
 
-    
-
     return form_list, main_list, drum_list, stored_randoms, param_list
 
 

@@ -22,7 +22,8 @@ from itertools import accumulate
 from functools import partial
 from struct import pack, unpack
 from numpy import clip, ceil, sqrt
-from math import sin, exp, pi
+from math import sin, exp, pi, floor
+from random import random
 from datetime import *
 from copy import copy, deepcopy
 from shutil import move, copyfile
@@ -90,6 +91,7 @@ class Ma2Widget(Widget):
     MODE_headless = False
     outdir = 'out/'
 
+    lastCommand = ''
     lastImportPatternFilename = ''
 
     #helpers...
@@ -203,6 +205,7 @@ class Ma2Widget(Widget):
         elif action == 'TRACK CHANGE PARAMETERS':       self.changeTrackParameters()
         elif action == 'TRACK MUTE':                    self.getTrack().setParameters(mute = not self.getTrack().mute)
         elif action == 'TRACK SOLO':                    self.setTrackSolo()
+        elif action == 'ENTER COMMAND':                 self.promptCommand()
 
         if(self.theTrkWidget.active):
             if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)
@@ -273,7 +276,7 @@ class Ma2Widget(Widget):
             elif action == 'GAP LONGER':                self.getPattern().setGap(inc = True)
             elif action == 'GAP SHORTER':               self.getPattern().setGap(dec = True)
             elif action == 'NOTE SET PAN':              self.setParameterFromNumberInput('pan')
-            elif action == 'NOTE SET VELOCITY':         self.setParameterFromNumberInput('velocity')
+            elif action == 'NOTE SET VELOCITY':         self.setParameterFromNumberInput('vel')
             elif action == 'NOTE SET SLIDE':            self.setParameterFromNumberInput('slide')
             elif action == 'NOTE SET AUX':              self.setParameterFromNumberInput('aux')
             elif action == 'PATTERN RENAME':            self.renamePattern()
@@ -415,6 +418,18 @@ class Ma2Widget(Widget):
         self._keyboard_request()
         pars = args[0].text.split()
         self.getTrack().setParameters(norm = pars[0])
+        self.update()
+
+    def promptCommand(self):
+        popup = InputPrompt(self, title = 'ENTER CMD (ask QM how they work)', title_font = self.font_name, default_text = self.lastCommand)
+        popup.bind(on_dismiss = self.handleCommandPrompt)
+        popup.open()
+    def handleCommandPrompt(self, *args):
+        self._keyboard_request()
+        if args[0].validated:
+            executed = self.executeCommand(args[0].text)
+            if executed:
+                self.lastCommand = args[0].text
         self.update()
 
     def addTrack(self, name = 'NJU TREK', synth = None):
@@ -565,18 +580,8 @@ class Ma2Widget(Widget):
     def setParameterFromNumberInput(self, parameter):
         if self.numberInput:
             self.lastNumberInput = self.numberInput
+        self.getPattern().getNote().setParameter(parameter, self.lastNumberInput)
 
-        if parameter == 'pan':
-            self.getPattern().getNote().setPan(self.lastNumberInput)
-        elif parameter == 'velocity':
-            self.getPattern().getNote().setVelocity(self.lastNumberInput)
-        elif parameter == 'slide':
-            self.getPattern().getNote().setSlide(self.lastNumberInput)
-        elif parameter == 'aux':
-            self.getPattern().getNote().setAuxParameter(self.lastNumberInput)
-        else:
-            print("WARNING. TRIED TO PASS NUMBER INPUT TO NONEXISTENT PARAMETER:", parameter)
-        
     def setupInit(self):
 
         if '-headless' in sys.argv: self.MODE_headless = True
@@ -598,6 +603,69 @@ class Ma2Widget(Widget):
             Clock.schedule_once(self.instantCompileGLSL, 0.1)
 
         self.update()
+
+############ ONE OF MY NICER IDEAS: COMMAND PROMPT ##########
+    def executeCommand(self, cmd_str = ''):
+        try:
+            cmd = [s.lower() for s in cmd_str.split()]
+            
+            #e.g. PAR VEL <B_min> <B_max> LIN <value_min> <value_max> <n_digits>
+            if cmd[0] == 'par':
+                parameter = cmd[1]
+                B_min = float(cmd[2])
+                B_max = float(cmd[3])
+                shape = cmd[4]
+
+                if not self.getPattern() or not self.getPattern().notes:
+                    affected_notes = []
+                else:
+                    affected_notes = [n for n in self.getPattern().notes if n.note_on >= B_min and n.note_on < B_max]
+
+                # CONST: set all values to const for notes in [B_min, B_max]
+                if shape == 'const':
+                    const_value = float(cmd[5])
+                    for note in affected_notes:
+                        note.setParameter(parameter, const_value)
+                    return True
+
+                # LIN: interpolate linearly from (B_min, value_min) to (B_max, value_max)
+                elif shape in ['linear', 'lin']:
+                    min_value = float(cmd[5])
+                    max_value = float(cmd[6])
+                    step_size = 1 if len(cmd) < 8 else float(cmd[7])
+                    for note in affected_notes:
+                        lin_delta = (max_value - min_value) * (note.note_on - B_min) / (B_max - B_min)
+                        lin_value = min_value + step_size * floor(lin_delta / step_size)
+                        note.setParameter(parameter, lin_value)
+                    return True
+                
+                # RND: random values between [value_min, value_max] between [B_min, B_max] (with n_digits digits)
+                elif shape in ['random', 'rnd']:
+                    min_value = float(cmd[5])
+                    max_value = float(cmd[6])
+                    step_size = 1 if len(cmd) < 8 else float(cmd[7])
+                    rnd_scale = floor((max_value - min_value)/step_size)
+                    for note in affected_notes:
+                        rnd_delta = (rnd_scale + 1) * random.random()
+                        rnd_value = min_value + step_size * floor(rnd_delta)
+                        print("DEBUG", rnd_scale, step_size, rnd_value, rnd_delta)
+                        note.setParameter(parameter, rnd_value)
+                    return True
+
+                elif shape == 'reset':
+                    for note in affected_notes:
+                        note.setParameter(parameter, None)
+                    return True
+
+                else:
+                    print('COMMAND NOT SUPPORTED:\n', cmd)
+                    return False
+            else:
+                print('COMMAND NOT SUPPORTED:\n', cmd)
+                return False
+        except Exception as exc:
+            print('COMMAND ERRONEOUS (u stupid hobo):\n', cmd, '\n', type(exc))
+            return False
 
 ############## ONLY THE MOST IMPORTANT FUNCTION! ############
 
@@ -1271,6 +1339,7 @@ class Ma2Widget(Widget):
 class InputPrompt(ModalView):
     
     text = ''
+    validated = False
 
     def __init__(self, parent, **kwargs):
         title = kwargs.pop('title')
@@ -1300,6 +1369,7 @@ class InputPrompt(ModalView):
         
     def release(self, *args):
         self.text = args[0].text
+        self.validated = True
         self.dismiss()
 
 
