@@ -929,6 +929,8 @@ class Ma2Widget(Widget):
                 self.track_solo = None if r[c] == '-1' else int(float(r[c]))
                 c += 1
                 self.setInfo('loop', r[c] if r[c] in loop_types else loop_types[0])
+                c += 1
+                self.lastImportPatternFilename = r[c] if os.path.isfile(r[c]) else ''
                                 
 
     def saveCSV(self):
@@ -951,7 +953,9 @@ class Ma2Widget(Widget):
                 out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) \
                         +  '|' + str(n.note_pan) + '|' + str(n.note_vel) + '|' + str(n.note_slide) + '|' + str(n.note_aux)
                 
-        out_str += '|' + '|'.join([str(int(self.track_solo)) if self.track_solo is not None else '-1', self.getInfo('loop')])
+        out_str += '|' + (str(int(self.track_solo)) if self.track_solo is not None else '-1') \
+                 + '|' + self.getInfo('loop') \
+                 + '|' + self.lastImportPatternFilename
 
         # write to file
         out_csv = open(filename, "w")

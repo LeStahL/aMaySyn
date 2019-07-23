@@ -107,10 +107,7 @@ float reverb_phase(float t, float amt)
 
 float env_AHDSR(float x, float L, float A, float H, float D, float S, float R)
 {
-    float att = x/A;
-    float dec = 1. - (1.-S)*(x-H-A)/D;
-    float rel = (x <= L-R) ? 1. : (L-x)/R;
-    return (x<A ? att : x<A+H ? 1 : x<A+H+D ? dec : x<=L-R ? S : x<=L ? (L-x)/R : 0.);
+    return (x<A ? x/A : x<A+H ? 1 : x<A+H+D ? (1. - (1.-S)*(x-H-A)/D) : x<=L-R ? S : x<=L ? S*(L-x)/R : 0.);
 }
 
 float env_AHDSRexp(float x, float L, float A, float H, float D, float S, float R)

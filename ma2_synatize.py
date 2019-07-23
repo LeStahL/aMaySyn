@@ -36,13 +36,14 @@ _Fsample = {'id':'Fsample', 'type':'uniform'}
 _Tsample = {'id':'Tsample', 'type':'uniform'}
 _rel = {'id':'rel', 'type':'uniform'}
 _aux = {'id':'aux', 'type':'uniform'}
+_note = {'id':'note', 'type':'uniform'}
 
 newlineindent = '\n' + 4*' '
 newlineplus = '\n' + 6*' ' + '+'
 
 def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = False):
 
-    form_list = [_f, _t, _t_, _B, _BT, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample, _Tsample, _rel, _aux]
+    form_list = [_f, _t, _t_, _B, _BT, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample, _Tsample, _rel, _aux, _note]
     main_list = []
     param_list = []
    
@@ -192,7 +193,10 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     return GLstr(ID).replace('--','+')
             
             elif form['type']=='uniform':
-                return ID
+                if form['id']=='note':
+                    return 'note_pitch(_note)'
+                else:
+                    return ID
             
             elif form['type']=='const' or form['type']=='random':
                 return GLstr(form['value']).replace('"','')
