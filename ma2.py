@@ -614,8 +614,8 @@ class Ma2Widget(Widget):
         try:
             cmd = [s.lower() for s in cmd_str.split()]
             
-            #e.g. PAR VEL <B_min> <B_max> LIN <value_min> <value_max> <n_digits>
-            if cmd[0] == 'par':
+            #e.g. SET VEL <B_min> <B_max> LIN <value_min> <value_max> <n_digits>
+            if cmd[0] == 'set':
                 parameter = cmd[1]
                 B_min = float(cmd[2])
                 B_max = float(cmd[3])
@@ -900,7 +900,7 @@ class Ma2Widget(Widget):
                     for _ in range(int(r[c])):
                         if self.MODE_debug:
                             try:
-                                print(c, "    READ NOTE ", r[c+1], r[c+2], r[c+3], r[c+4], r[c+5], r[c+6])
+                                print(c, "    READ NOTE ", r[c+1], r[c+2], r[c+3], r[c+4], r[c+5], r[c+6], r[c+7])
                             except:
                                 print(c, " ERROR WITH REST", r[c+1:])
 
@@ -910,8 +910,9 @@ class Ma2Widget(Widget):
                             note_pitch = int(float(r[c+3])),\
                             note_pan   = int(float(r[c+4])),\
                             note_vel   = int(float(r[c+5])),\
-                            note_slide = float(r[c+6])))
-                        c += 6
+                            note_slide = float(r[c+6]),\
+                            note_aux   = float(r[c+7])))
+                        c += 7
                         
                     #if pattern.name not in [p.name for p in self.patterns]: # filter for duplicates -- TODO is this a good idea?
                     self.patterns.append(pattern)
@@ -922,6 +923,12 @@ class Ma2Widget(Widget):
                         for p in self.patterns:
                             if m.pattern.name == p.name:
                                 m.setPattern(p)
+
+                ### further information ###
+                c += 1
+                self.track_solo = None if r[c] == '-1' else int(float(r[c]))
+                c += 1
+                self.setInfo('loop', r[c] if r[c] in loop_types else loop_types[0])
                                 
 
     def saveCSV(self):
@@ -942,8 +949,10 @@ class Ma2Widget(Widget):
             out_str += '|' + p.name + '|' + p.synth_type + '|' + str(p.length) + '|' + str(len(p.notes))
             for n in p.notes:
                 out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) \
-                        +  '|' + str(n.note_pan) + '|' + str(n.note_vel) + '|' + str(n.note_slide)
+                        +  '|' + str(n.note_pan) + '|' + str(n.note_vel) + '|' + str(n.note_slide) + '|' + str(n.note_aux)
                 
+        out_str += '|' + '|'.join([str(int(self.track_solo)) if self.track_solo is not None else '-1', self.getInfo('loop')])
+
         # write to file
         out_csv = open(filename, "w")
         out_csv.write(out_str)
