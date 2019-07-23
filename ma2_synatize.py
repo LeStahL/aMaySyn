@@ -566,7 +566,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-rel, Boff, B),'+form_main['relpower']+');'
                 syncode += '\n' + 20*' ' + '}\n' + 20*' '
             syncount += 1
-        syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('e+00','')
+        syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT')
 
         drumcount = 1
         drumsyncode = ''
@@ -588,7 +588,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                             +  'amaydrumL = ' + drumsyncodeL + '\n' + 24*' ' + 'amaydrumR = ' + drumsyncodeR \
                             +  '\n' + 20*' ' + '}\n' + 20*' '
             drumcount += 1
-        drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('e+00','')
+        drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT')
 
     paramcode = ''
     for par in param_list:
@@ -599,7 +599,6 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
             seg_end = par['segments'][3*seg+2]
             paramcode += '(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + ') ? ' + seg_code.replace('_BEAT','(_BEAT-' + GLstr(seg_start) + ')') + ' : '
         paramcode += instance(par['default']) + ';' + '\n}\n'
-        paramcode = paramcode.replace('--','+').replace('-0.)', ')')
 
     filter_list = [f for f in form_list if f['type']=='filter']
     filtercode = '' 

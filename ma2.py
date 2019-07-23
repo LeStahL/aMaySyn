@@ -1144,6 +1144,7 @@ class Ma2Widget(Widget):
             .replace("//FILTERCODE",filtercode)\
             .replace("//BPMCODE", "const float BPM = "+GLfloat(self.getInfo('BPM'))+";")
 
+        glslcode = glslcode.replace('e+00','').replace('-0.)', ')').replace('+0.)', ')')
         glslcode = self.purgeExpendables(glslcode)
 
         with open("template.textureheader") as f:
