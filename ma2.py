@@ -52,13 +52,14 @@ synths = def_synths
 drumkit = def_drumkit
 
 pattern_types = {'I': 'SYNTH', '_': 'NO TYPE', 'D':'DRUMS', 'G':'GFX'}
+loop_types = ['full', 'seamless', 'none']
 
 class Ma2Widget(Widget):
     theTrkWidget = ObjectProperty(None)
     thePtnWidget = ObjectProperty(None)
     somePopup = ObjectProperty(None)
 
-    info = {'title': 'piover2', 'BPM': 80., 'B_offset': 0., 'loop_seamless': False}
+    info = {'title': 'piover2', 'BPM': 80., 'B_offset': 0., 'loop': 'full'}
 
     current_track = None
     tracks = []
@@ -397,8 +398,12 @@ class Ma2Widget(Widget):
         self.update()
 
     def changeSongLoopingOption(self):
-        self.setInfo('loop_seamless', not self.getInfo('loop_seamless'))
-        print('Seamless Looping is now', self.getInfo('loop_seamless'))
+        loop = self.getInfo('loop')
+        if loop == loop_types[-1]:
+            self.setInfo('loop', loop_types[0])
+        else:
+            self.setInfo('loop', loop_types[loop_types.index(loop) + 1])
+        print('Looping mode is now', self.getInfo('loop'))
 
     def renameTrack(self):
         popup = InputPrompt(self, title = 'RENAME TRACK', title_font = self.font_name, default_text = self.getTrack().name)
@@ -1015,6 +1020,8 @@ class Ma2Widget(Widget):
         # number of drums - not required right now, maybe we need to add something later
         nD = str(len(drum_rel))
 
+        drum_index = str(synths.index('D_Drums')+1)
+
         # get slide times
         syn_slide = []
         for m in self.synatize_main_list:
@@ -1028,13 +1035,14 @@ class Ma2Widget(Widget):
         defcode += '#define NNOT ' + nN + '\n'
         defcode += '#define NDRM ' + nD + '\n'
         
-        if self.getInfo('loop_seamless'):
-            seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off) + ';\n' + 4*' '
+        if self.getInfo('loop') == 'seamless':
+            loopcode = 'float BT = mod(BPS * time, ' + GLfloat(max_mod_off) + '); time = SPB * BT;' + 4*' '
+        elif self.getInfo('loop') == 'none':
+            loopcode = 'float BT = BPS * time;' + 4*' '
         else:
-            seqcode  = 'float max_mod_off = ' + GLfloat(max_mod_off + max_rel) + ';\n' + 4*' '
-
-        seqcode += 'int drum_index = ' + str(synths.index('D_Drums')+1) + ';\n' + 4*' '
-        if self.getInfo('B_offset')!=0: seqcode += 'time += '+'{:.4f}'.format(self.getInfo('B_offset')/self.getInfo('BPM')*60)+';\n' + 4*' '
+            loopcode = 'float BT = mod(BPS * time, ' + GLfloat(max_mod_off + max_rel) + '); time = SPB * BT;' + 4*' '
+    
+        if self.getInfo('B_offset') != 0: loopcode = 'time += '+'{:.4f}'.format(self.getInfo('B_offset')/self.getInfo('BPM')*60)+';\n' + 4*' ' + loopcode
 
         print("START TEXTURE")
         
@@ -1128,9 +1136,10 @@ class Ma2Widget(Widget):
 
         glslcode = glslcode\
             .replace("//DEFCODE", defcode)\
-            .replace("//SEQCODE", seqcode)\
             .replace("//SYNCODE", self.synatized_code_syn)\
             .replace("//DRUMSYNCODE", self.synatized_code_drum)\
+            .replace("DRUM_INDEX", drum_index)\
+            .replace("//LOOPCODE", loopcode)\
             .replace("//PARAMCODE", paramcode)\
             .replace("//FILTERCODE",filtercode)\
             .replace("//BPMCODE", "const float BPM = "+GLfloat(self.getInfo('BPM'))+";")

@@ -311,15 +311,12 @@ float drum_rel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+7*NNOT
 
 vec2 mainSynth(float time)
 {
-    //SEQCODE
     float sL = 0.;
     float sR = 0.;
     float dL = 0.;
     float dR = 0.;
 
-    // mod for looping
-    float BT = mod(BPS * time, max_mod_off);
-    time = SPB * BT;
+    //LOOPCODE
     
     float time2 = time - stereo_delay;
     float sidechain = 1.;
@@ -352,7 +349,7 @@ vec2 mainSynth(float time)
 
             for(int _note = _noteL; _note <= _noteU; _note++)
             {
-                if(syn == drum_index)
+                if(syn == DRUM_INDEX)
                 {
                     drum = int(note_pitch(_note));
                     rel = drum_rel(drum);
@@ -376,7 +373,7 @@ vec2 mainSynth(float time)
                 amtR  = clamp(1. + note_pan(_note), 0., 1.);
                 aux   = note_aux(_note);
 
-                if(syn == drum_index)
+                if(syn == DRUM_INDEX)
                 {
                     env = trk_norm(trk) * theta(Bprog) * theta(L - Bprog);
                     if(drum == 0) { sidechain = min(sidechain, 1. - vel * (clamp(1e4 * Bprog,0.,1.) - pow(Bprog/(L-rel),8.))); }
