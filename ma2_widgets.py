@@ -423,7 +423,7 @@ class PatternWidget(Widget):
                     if n.note_aux != 0:
                         vel_and_aux_info = '(' + strfloat(n.note_aux) + ')'
                     if showVelocities:
-                        vel_and_aux_info += ' ' + strfloat(n.note_vel)
+                        vel_and_aux_info += strfloat(n.note_vel)
                     if vel_and_aux_info != '':
                         Color(*(mixcolor((0,0,0),pattern.color) if n == pattern.getNote() else mixcolor((1,1,1),pattern.color)))
                         label = CoreLabel(text = vel_and_aux_info, font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
