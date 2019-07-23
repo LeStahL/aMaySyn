@@ -81,6 +81,8 @@ def set_remaining_defaults(cid, cmd, form):
         try:
             if form['shape'] == 'expdecay' or form['shape'] == 'expdecayrepeat':
                 defaults.update({'exponent':'1', 'beats':'1'})
+            if form['shape'] == 'linear':
+                defaults.update({'offset': '0'})
             if form['shape'] == 'antivelattack':
                 defaults.update({'vel':'vel', 'velmin':'0', 'velmax':'1'})
             if form['shape'] == 'limitlength':

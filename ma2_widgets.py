@@ -232,9 +232,6 @@ class PatternWidget(Widget):
     def __init__(self, **kwargs):
         super(PatternWidget, self).__init__(**kwargs)
 
-    def updateDrumkit(self, drumkit):
-        self.drumkit = drumkit
-
     claviature = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     def isKeyBlack(self, key): return '#' in self.claviature[key % 12]
 
@@ -464,6 +461,12 @@ class PatternWidget(Widget):
                 self.offset_v = max(0, self.offset_v + inc)
             else:
                 print("tried scrolling on some weird axis:", axis)
+
+
+    def updateDrumkit(self, drumkit):
+        if len(drumkit) < len(self.drumkit):
+            self.offset_drum_v += len(self.drumkit) - len(drumkit)
+        self.drumkit = drumkit
 
     def scaleByFactor(self, axis, factor, is_drum = False):
         if is_drum:

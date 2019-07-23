@@ -411,15 +411,10 @@ vec2 mainSynth(float time)
     return vec2(s_atan(sidechain * sL + dL), s_atan(sidechain * sR + dR));
 }
 
-vec2 mainSound(float t)
-{
-    return mainSynth(t);
-}
-
 void main()
 {
    float t = (iBlockOffset + (gl_FragCoord.x - .5) + (gl_FragCoord.y - .5)*iTexSize)/iSampleRate;
-   vec2 y = mainSound( t );
+   vec2 y = mainSynth(t);
    vec2 v  = floor((0.5+0.5*y)*65535.0);
    vec2 vl = mod(v,256.0)/255.0;
    vec2 vh = floor(v/256.0)/255.0;

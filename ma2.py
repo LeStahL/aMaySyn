@@ -1175,37 +1175,51 @@ class Ma2Widget(Widget):
             self.compileShader(glslcode, renderWAV)
 
     def purgeExpendables(self, code):
-        func_list = {}
-        for i,l in enumerate(code.splitlines()):
-            func_head = re.findall('(?<=float )\w*(?=[ ]*\(.*\))', l)
-            if func_head:
-                func_list.update({func_head[0]:i})
-
-        expendable = []
-        self.printIfDebug("The following functions will be purged")
-        for f in func_list.keys():
-            if code.count(f) == 1:
-                f_from = code.find('float '+f)
-                if f_from == -1: continue
-                f_iter = f_from
-                n_open = 0
-                n_closed = 0
-                while True:
-                    n_open += int(code[f_iter] == '{')
-                    n_closed += int(code[f_iter] == '}')
-                    f_iter += 1
-                    if n_open > 0 and n_closed == n_open: break
-
-                expendable.append(code[f_from:f_iter])
-                self.printIfDebug(f, 'line', func_list[f], '/', f_iter-f_from, 'chars')
-
         chars_before = len(code)
-        for e in expendable: code = code.replace(e + '\n', '')
-        chars_after = len(code)
+        purged_code = ''
 
+        while True:
+            func_list = {}
+            for i,l in enumerate(code.splitlines()):
+                func_head = re.findall('(?<=float )\w*(?=[ ]*\(.*\))', l)
+                if func_head:
+                    func_list.update({func_head[0]:i})
+
+            print(func_list)
+
+            expendable = []
+            self.printIfDebug("The following functions will be purged")
+            for f in func_list.keys():
+                #print(f, code.count(f), len(re.findall(f + '[ \n]*\(', code)))
+                if len(re.findall(f + '[ \n]*\(', code)) == 1:
+                    f_from = code.find('float '+f)
+                    if f_from == -1: continue
+                    f_iter = f_from
+                    n_open = 0
+                    n_closed = 0
+                    while True:
+                        n_open += int(code[f_iter] == '{')
+                        n_closed += int(code[f_iter] == '}')
+                        f_iter += 1
+                        if n_open > 0 and n_closed == n_open: break
+
+                    expendable.append(code[f_from:f_iter])
+                    self.printIfDebug(f, 'line', func_list[f], '/', f_iter-f_from, 'chars')
+
+            for e in expendable: code = code.replace(e + '\n', '')
+            
+            if code == purged_code:
+                break
+            else:
+                purged_code = code
+                self.printIfDebug('try to purge next iteration')
+
+        purged_code = re.sub('\n[\n]*\n', '\n\n', purged_code)
+
+        chars_after = len(purged_code)
         print('// total purge of', chars_before-chars_after, 'chars.')
         
-        return code
+        return purged_code
     
 ###################### HANDLE BUTTONS #######################
 
