@@ -117,7 +117,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
                 from_y = float(form['from'].split(',')[1])
                 to_x = float(form['to'].split(',')[0])
                 to_y = float(form['to'].split(',')[1])
-                form['scale'] = '(' + GLfloat(to_y) + '-' + GLfloat(from_y) + ')/(' + GLfloat(to_x) + '-' + GLfloat(from_x) + ')'
+                form['scale'] = GLfloat(round((to_y-from_y)/(to_x-from_x), 5))
                 form['offset'] = GLfloat(from_x)
                 form['shift'] = GLfloat(from_y)
 
@@ -441,8 +441,6 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
 
             elif form['type'] == 'env' or form['type'] == 'seg':
-#                tvar = '_BPROG' if 'beat' in form['mode'] else '_PROG'
-#                Lvar = 'L' if 'beat' in form['mode'] else 'tL'
                 tvar = '_BPROG' if not 'time' in form['mode'] else '_PROG'
                 Lvar = 'L' if not 'time' in form['mode'] else 'tL'
                 if form['type'] == 'seg':
@@ -476,7 +474,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'generic':
                     _return = instance(form['src']).replace('_BPROG', '(_BEAT-' + instance(form['offset']) + ')') # hm. might I do this better?
                 elif form['shape'] == 'linear':
-                    _return = '(' + tvar + '-' + instance(form['offset']) + ')'
+                    _return = tvar + '-' + instance(form['offset'])
 
                 else:
                     print("PARSING - ERROR! THIS ENVELOPE SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
@@ -594,15 +592,14 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
     paramcode = ''
     for par in param_list:
-        print(par)
-        paramcode += 'float ' + par['id'] + '(float _BEAT)\n{' + newlineindent + 'if(_BEAT<0){return 0.;}' + newlineindent
+        paramcode += 'float ' + par['id'] + '(float _BEAT)\n{' + newlineindent + 'return _BEAT<0 ? 0. : '
         for seg in range(par['n_segments']):
             seg_code = instance(par['segments'][3*seg])
             seg_start = par['segments'][3*seg+1]
             seg_end = par['segments'][3*seg+2]
-            paramcode += 'else if(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + '){return ' + seg_code.replace('_BEAT','(_BEAT-' + GLstr(seg_start) + ')') + ';}' + newlineindent
-        paramcode += 'else{return ' + instance(par['default']) + ';}'
-        paramcode += '\n}\n'
+            paramcode += '(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + ') ? ' + seg_code.replace('_BEAT','(_BEAT-' + GLstr(seg_start) + ')') + ' : '
+        paramcode += instance(par['default']) + ';' + '\n}\n'
+        paramcode = paramcode.replace('--','+').replace('-0.)', ')')
 
     filter_list = [f for f in form_list if f['type']=='filter']
     filtercode = '' 

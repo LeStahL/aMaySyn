@@ -646,9 +646,7 @@ class Ma2Widget(Widget):
                     step_size = 1 if len(cmd) < 8 else float(cmd[7])
                     rnd_scale = floor((max_value - min_value)/step_size)
                     for note in affected_notes:
-                        rnd_delta = (rnd_scale + 1) * random.random()
-                        rnd_value = min_value + step_size * floor(rnd_delta)
-                        print("DEBUG", rnd_scale, step_size, rnd_value, rnd_delta)
+                        rnd_value = min_value + step_size * floor((rnd_scale + 1) * random.random())
                         note.setParameter(parameter, rnd_value)
                     return True
 
