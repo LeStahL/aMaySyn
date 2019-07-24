@@ -18,14 +18,13 @@ float fhelp(float x) { return 1. + .333*x; } // 1. + .33333*x + .1*x*x + .02381*
 
 #define pat4(a,b,c,d,x) mod(x,1.)<.25 ? a : mod(x,1.)<.5 ? b : mod(x,1.) < .75 ? c : d
 
-//BPMCODE
-const float BPS = BPM/60.;
-const float SPB = 60./BPM;
+//BEATHEADER
+float BPS, SPB, BT;
 
 const float Fsample = 44100.; // PRODUCTION: CHANGE THIS BACK TO 44100.
 const float Tsample = 1./Fsample;
 
-const float stereo_delay = 2e-4; //enhance the stereo feel - this is experimental since I included the stereo functionality
+const float stereo_delay = 2e-4;
 
 const float filterthreshold = 1e-3;
 
@@ -314,6 +313,11 @@ vec2 mainSynth(float time)
     float dR = 0.;
 
     //LOOPCODE
+    int _it;
+    for(_it = 0; _it < NTIME - 1 && pos_t[_it + 1] < time; _it++);
+    BPS = (pos_B[_it + 1] - pos_B[_it]) / (pos_t[_it + 1] - pos_t[_it]);
+    SPB = 1./BPS;
+    BT = pos_B[_it] + (time - pos_t[_it]) * BPS;
     
     float time2 = time - stereo_delay;
     float sidechain = 1.;

@@ -445,8 +445,16 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
 
             elif form['type'] == 'env' or form['type'] == 'seg':
-                tvar = '_BPROG' if not 'time' in form['mode'] else '_PROG'
-                Lvar = 'L' if not 'time' in form['mode'] else 'tL'
+                tvar = '_BPROG'
+                Lvar = 'L'
+
+                if 'time' in form['mode']:
+                    tvar = '_PROG'
+                    Lvar = 'tL'
+                elif 'relative' in form['mode']:
+                    tvar = 'Bproc'
+                    Lvar = '1.'
+
                 if form['type'] == 'seg':
                     tvar = '_BEAT'
                     Lvar = 'L'

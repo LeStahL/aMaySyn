@@ -313,7 +313,7 @@ class Ma2Widget(Widget):
         self.updateLabels()
             
     def updateLabels(self, dt = 0):
-        self.btnTitle.text = 'TITLE: ' + self.getInfo('title')
+        self.btnTitle.text = 'TITLE: ' + self.getInfo('title') + ' (LOOP: ' + self.getInfo('loop') + ')'
         self.btnPtnTitle.text = 'PTN: ' + self.getPatternName() + ' (' + str(self.getSameTypePatternIndex()+1) + '/' + str(len(self.getSameTypePatterns())) + ') ' + pattern_types[self.getPatternSynthType()]
         self.btnPtnInfo.text = 'PTN LEN: ' + str(self.getPatternLen())
 
@@ -1047,15 +1047,24 @@ class Ma2Widget(Widget):
         defcode += '#define NPTN ' + nP + '\n'
         defcode += '#define NNOT ' + nN + '\n'
         defcode += '#define NDRM ' + nD + '\n'
-        
+
+        #beatcode = 'const float BPM = '+GLfloat(self.getInfo('BPM'))+';\n' + 'const float BPS = BPM/60.;\n' + 'const float SPB = 60./BPM;\n'
+
+        SPB = 60/float(self.getInfo('BPM'))
+        max_time = round(max_mod_off * SPB, 6)
+
+        beatheader = '#define NTIME 2\n'
+        beatheader += 'const float pos_B[NTIME] = float[NTIME](0.,' + GLfloat(max_mod_off) + ');\n'
+        beatheader += 'const float pos_t[NTIME] = float[NTIME](0.,' + GLfloat(max_time) + ');\n'
+
         if self.getInfo('loop') == 'seamless':
-            loopcode = 'float BT = mod(BPS * time, ' + GLfloat(max_mod_off) + '); time = SPB * BT;' + 4*' '
-        elif self.getInfo('loop') == 'none':
-            loopcode = 'float BT = BPS * time;' + 4*' '
+            loopcode = 'time = mod(time, ' + GLfloat(max_time) + ');\n' + 4*' '
+        elif self.getInfo('loop') == 'full':
+            loopcode = 'time = mod(time, ' + GLfloat((max_mod_off + max_rel) * SPB) + ');\n' + 4*' '
         else:
-            loopcode = 'float BT = mod(BPS * time, ' + GLfloat(max_mod_off + max_rel) + '); time = SPB * BT;' + 4*' '
-    
-        if self.getInfo('B_offset') != 0: loopcode = 'time += '+'{:.4f}'.format(self.getInfo('B_offset')/self.getInfo('BPM')*60)+';\n' + 4*' ' + loopcode
+            loopcode = ''
+        
+        if self.getInfo('B_offset') != 0: loopcode = 'time += '+'{:.4f}'.format(self.getInfo('B_offset') * SPB)+';\n' + 4*' ' + loopcode
 
         print("START TEXTURE")
         
@@ -1152,10 +1161,10 @@ class Ma2Widget(Widget):
             .replace("//SYNCODE", self.synatized_code_syn)\
             .replace("//DRUMSYNCODE", self.synatized_code_drum)\
             .replace("DRUM_INDEX", drum_index)\
-            .replace("//LOOPCODE", loopcode)\
             .replace("//PARAMCODE", paramcode)\
             .replace("//FILTERCODE",filtercode)\
-            .replace("//BPMCODE", "const float BPM = "+GLfloat(self.getInfo('BPM'))+";")
+            .replace("//LOOPCODE", loopcode)\
+            .replace("//BEATHEADER", beatheader)
 
         glslcode = glslcode.replace('e+00','').replace('-0.)', ')').replace('+0.)', ')')
         glslcode = self.purgeExpendables(glslcode)
