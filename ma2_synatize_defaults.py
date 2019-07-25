@@ -30,6 +30,9 @@ def set_remaining_defaults(cid, cmd, form):
             elif form['shape'] == 'fm':
                 defaults.update({'lv1':'1', 'lv2':'0', 'lv3':'0', 'lv4':'0', 'fr1':'1', 'fr2':'1', 'fr3':'1', 'fr4':'1', 'fb1':'0', 'fb2':'0', 'fb3':'0', 'fb4':'0', 'algo':'0', 'parscale':'1'})
 
+            elif form['shape'] == 'noise':
+                defaults.update({'freq':'1.'})
+
         except:
             pass
         
@@ -126,7 +129,7 @@ def set_remaining_defaults(cid, cmd, form):
         
         try:
             if form['op'] == 'detune':
-                defaults.update({'amount':'.01,-.005'})
+                defaults.update({'factor':'1.01,.995'})
                 
             elif form['op'] =='pitchshift':
                 defaults.update({'steps':'12'})

@@ -2,9 +2,9 @@
 
 
 osc  somesaw1  shape=saw
-form somesawD1 detune src=somesaw1 amount=0.01,0.033,0.04
+form somesawD1 detune src=somesaw1 factor=1.01,1.033,1.04
 osc  somesaw2  shape=saw freq=.5*f phase=0.01
-form somesawD2 op=detune src=somesaw2 amount=0.05,-0.03,-0.02
+form somesawD2 op=detune src=somesaw2 factor=1.05,.97,0.98
 form somesaw   mix src=somesawD1+.6*somesawD2
 env  stutter   shape=expdecayrepeat exponent=16. beats=.125
 env  slowdec   shape=expdecay exponent=1.5
@@ -21,7 +21,7 @@ main justsaw src=somesaw1
 env M8_env shape=adsrexp attack=0.75 decay=0.5 sustain=0.1 release=0.8 mode=beat
 env M8_fenv shape=adsrexp attack=0.5 decay=0.5 sustain=0.1 release=10 scale=4500 shift=500 mode=beat
 osc M8_osc shape=madd freq=f phase=0 nmax=200 ninc=1 mix=-1 cutoff=M8_fenv Q=20 res=0 resq=0 detune=0.018 pw=0
-#form M8_oscD op=detune src=M8_osc detune=1,.3 
+#form M8_oscD op=detune src=M8_osc factor=2,1.3 
 form M8_oscDQ op=quantize src=M8_osc bits=128
 form M8_oscDL lofi src=M8_oscDQ bits=8
 form M8_oscDLC chorus src=M8_oscDL number=6 step=2e-3 intensity=1e-3 rate=20

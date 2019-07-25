@@ -641,7 +641,7 @@ class Ma2Widget(Widget):
                     for note in affected_notes:
                         lin_delta = (max_value - min_value) * (note.note_on - B_min) / (B_max - B_min)
                         lin_value = min_value + step_size * floor(lin_delta / step_size)
-                        note.setParameter(parameter, lin_value)
+                        note.setParameter(parameter, round(lin_value, 3))
                     return True
                 
                 # RND: random values between [value_min, value_max] between [B_min, B_max] (with n_digits digits)
@@ -652,7 +652,7 @@ class Ma2Widget(Widget):
                     rnd_scale = floor((max_value - min_value)/step_size)
                     for note in affected_notes:
                         rnd_value = min_value + step_size * floor((rnd_scale + 1) * random.random())
-                        note.setParameter(parameter, rnd_value)
+                        note.setParameter(parameter, round(rnd_value, 3))
                     return True
 
                 elif shape == 'reset':

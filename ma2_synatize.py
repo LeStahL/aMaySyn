@@ -207,7 +207,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['op'] == 'define': # actually pretty similar to mix, but I keep it.
                     return instance(form['src'])
                 elif form['op'] == 'detune':
-                    detuned_instances = '+'.join(instance(form['src'],{'freq':'(1.-' + instance(amt) + ')*'+param(form['src'],'freq')}) for amt in form['amount'].split(','))
+                    detuned_instances = '+'.join(instance(form['src'],{'freq':instance(amt)+'*'+param(form['src'],'freq')}) for amt in form['factor'].split(','))
                     return 's_atan(' + instance(form['src']) + '+' + detuned_instances + ')'
                 elif form['op'] == 'pitchshift':
                     return instance(form['src'],{'freq':'{:.4f}'.format(pow(2,float(form['steps'])/12)) + '*' + param(form['src'],'freq')})
@@ -318,6 +318,9 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
                     elif form['shape'] == 'lpnoise':
                         _return = 'lpnoise(_PROG + ' + instance(form['phase']) + ',' + instance(form['freq']) + ')'
+
+                    elif form['shape'] == 'noise':
+                        _return = 'pseudorandom(' + instance(form['freq']) + '*_PROG + ' + instance(form['phase']) + ')'
 
                     else:
                         print("PARSING - ERROR! THIS OSC/LFO SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
