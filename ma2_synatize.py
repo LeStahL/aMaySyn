@@ -292,7 +292,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                                              + ','.join(instance(form[p]) for p in ['mix', 'cutoff', 'q', 'res', 'resq', 'detune', 'pw'])+ ',' + keyF + ')'
 
                     elif form['shape'] == 'badd':
-                        _return ='BADD(_PROG,' + ','.join(instance(form[p]) for p in ['freq', 'phase', 'mix', 'amp', 'peak', 'sigma', 'ncut', 'detune', 'pw']) + ')'
+                        _return ='BADD(_PROG,' + ','.join(instance(form[p]) for p in ['freq', 'phase', 'mix', 'amp', 'peak', 'sigma', 'q', 'ncut', 'detune', 'pw']) + ')'
 
                     elif form['shape'] == 'fract':
                         _return = 'fract(' + phi + '+' + instance(form['phase']) + ')'

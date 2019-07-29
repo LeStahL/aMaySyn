@@ -59,7 +59,7 @@ class Ma2Widget(Widget):
     thePtnWidget = ObjectProperty(None)
     somePopup = ObjectProperty(None)
 
-    info = {'title': 'piover2', 'BPM': 80., 'B_offset': 0., 'loop': 'full'}
+    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'loop': 'full', 'stereo_delay': 2e-4}
 
     current_track = None
     tracks = []
@@ -93,6 +93,7 @@ class Ma2Widget(Widget):
     outdir = 'out/'
 
     lastCommand = ''
+    lastSongCommand = ''
     lastImportPatternFilename = ''
 
     #helpers...
@@ -144,6 +145,30 @@ class Ma2Widget(Widget):
         pattern_names = [p.name for p in self.patterns]
         return pattern_names.index(name) if name in pattern_names else -1
 
+    def getTimeOfBeat(self, beat):
+        return round(self.getTimeOfBeat_raw(beat), 6)
+
+    def getTimeOfBeat_raw(self, beat):
+        beat = float(beat)
+        bpmlist = self.getInfo('BPM')
+        if(type(bpmlist) != str):
+            return beat * 60./bpmlist
+
+        bpmdict = {float(part.split(':')[0]): float(part.split(':')[1]) for part in bpmlist.split()}
+        if beat < 0:
+            return 0
+        if len(bpmdict) == 1:
+            return beat * 60./bpmdict[0]
+        time = 0
+        for b in range(len(bpmdict) - 1):
+            last_B = [*bpmdict][b]
+            next_B = [*bpmdict][b+1]
+            if beat < next_B:
+                return time + (beat - last_B) * 60./ bpmdict[last_B]
+            else:
+                time += (next_B - last_B) * 60./ bpmdict[last_B]
+        return time + (beat - next_B) * 60./ bpmdict[next_B]
+
 ################## OFFICIAL START OF STUFF... ##############
 
     def __init__(self, **kwargs):
@@ -182,7 +207,8 @@ class Ma2Widget(Widget):
         elif action == 'PANEL SWITCH':                  self.switchActive()
         elif action == 'COLORS RANDOMIZE':              self.reRandomizeColors()  # MOST IMPORTANT FEATURE!
         elif action == 'SONG RENAME':                   self.renameSong()
-        elif action == 'SONG CHANGE PARAMETERS':        self.changeSongParameters()
+        elif action == 'ENTER SONG COMMAND':            self.promptSongCommand()
+        elif action == 'ENTER COMMAND':                 self.promptCommand()
         elif action == 'SONG CHANGE LOOPING OPTION':    self.changeSongLoopingOption()
         elif action == 'SYNTH RELOAD':                  self.loadSynths()
         elif action == 'SYNTH RELOAD NEW RANDOMS':      self.loadSynths(reshuffle_randoms = True) 
@@ -206,7 +232,6 @@ class Ma2Widget(Widget):
         elif action == 'TRACK CHANGE PARAMETERS':       self.changeTrackParameters()
         elif action == 'TRACK MUTE':                    self.getTrack().setParameters(mute = not self.getTrack().mute)
         elif action == 'TRACK SOLO':                    self.setTrackSolo()
-        elif action == 'ENTER COMMAND':                 self.promptCommand()
 
         if(self.theTrkWidget.active):
             if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)
@@ -382,20 +407,34 @@ class Ma2Widget(Widget):
         self.setInfo('title', args[0].text)
         self.update()
 
-    def changeSongParameters(self):
-        par_string = str(self.getInfo('BPM')) + ' ' + str(self.getInfo('B_offset'))
-        popup = InputPrompt(self, title = 'ENTER BPM, <SPACE>, BEAT OFFSET', title_font = self.font_name, default_text = par_string)
-        popup.bind(on_dismiss = self.handleChangeSongParameters)
-        popup.open()
-    def handleChangeSongParameters(self, *args):
-        self._keyboard_request()
-        pars = args[0].text.split()
-        self.setInfo('BPM', float(pars[0]))
-        try:    self.setInfo('B_offset', float(pars[1]))
-        except: self.setInfo('B_offset', 0)
-            
-        self.theTrkWidget.updateMarker('OFFSET',self.getInfo('B_offset'))
-        self.update()
+    def tryToSetBPM(self, bpmlist):
+        if type(bpmlist) == str:
+            bpmlist = bpmlist.split()
+        if len(bpmlist) == 1:
+            if ':' not in bpmlist[0]:
+                bpmlist = ['0:' + bpmlist[0]]
+        try:
+            bpmlist.sort(key = lambda k: float(k.split(':')[0]))
+            bpmdict = {}
+            for part in bpmlist:
+                if len(part.split(':')) != 2:
+                    raise
+                if part.split(':')[0] in bpmdict:
+                    raise
+                bpmdict.update({float(part.split(':')[0]): float(part.split(':')[1])})
+            # now... everything in input is good? good.
+            self.theTrkWidget.removeMarkersContaining('BPM')
+            for beat in bpmdict:
+                marker_label = 'BPM' + GLfloat(bpmdict[beat])
+                if marker_label[-1] == '.':
+                    marker_label = marker_label[:-1]
+                self.theTrkWidget.updateMarker(marker_label, beat, style = 2)
+            self.setInfo('BPM', ' '.join(bpmlist))
+            return True
+
+        except:
+            print("couldn't set BPM as", bpmlist, "try again sometime...", sep="\n")
+            return False
 
     def changeSongLoopingOption(self):
         loop = self.getInfo('loop')
@@ -425,11 +464,24 @@ class Ma2Widget(Widget):
         self.getTrack().setParameters(norm = pars[0])
         self.update()
 
+
+    def promptSongCommand(self):
+        popup = InputPrompt(self, title = 'ENTER BPM ... / OFFSET ... / STEREO ...', title_font = self.font_name, default_text = self.lastSongCommand)
+        popup.bind(on_dismiss = self.handlePromptSongCommand)
+        popup.open()
+    def handlePromptSongCommand(self, *args):
+        self._keyboard_request()
+        if args[0].validated:
+            executed = self.executeCommand(args[0].text)
+            if executed:
+                self.lastSongCommand = args[0].text
+        self.update()
+
     def promptCommand(self):
         popup = InputPrompt(self, title = 'ENTER CMD (ask QM how they work)', title_font = self.font_name, default_text = self.lastCommand)
-        popup.bind(on_dismiss = self.handleCommandPrompt)
+        popup.bind(on_dismiss = self.handlePromptCommand)
         popup.open()
-    def handleCommandPrompt(self, *args):
+    def handlePromptCommand(self, *args):
         self._keyboard_request()
         if args[0].validated:
             executed = self.executeCommand(args[0].text)
@@ -663,9 +715,42 @@ class Ma2Widget(Widget):
                 else:
                     print('COMMAND NOT SUPPORTED:\n', cmd)
                     return False
+
+            elif cmd[0] == 'bpm':
+                if len(cmd) == 1:
+                    self.lastSongCommand = 'BPM ' + self.getInfo('BPM')
+                    return False
+                else:
+                    return self.tryToSetBPM(cmd[1:])
+
+            elif cmd[0] == 'offset':
+                if len(cmd) == 1:
+                    self.lastSongCommand = 'OFFSET ' + str(self.getInfo('B_offset'))
+                    return False
+                else:
+                    value = float(cmd[1])
+                    if value > 0:
+                        self.setInfo('B_offset', value)
+                        self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
+                    else:
+                        self.setInfo('B_offset', 0)
+                        self.theTrkWidget.removeMarkersContaining('OFFSET')
+                    return True
+
+            elif cmd[0] == 'stereo':
+                if len(cmd) == 1:
+                    self.lastSongCommand = 'STEREO ' + str(self.getInfo('stereo_delay'))
+                    return False
+                else:
+                    value = float(cmd[1])
+                    print("stereo_delay was", self.getInfo('stereo_delay'), "- is now", value)
+                    self.setInfo('stereo_delay', value)
+                    return True
+                    
             else:
                 print('COMMAND NOT SUPPORTED:\n', cmd)
                 return False
+
         except Exception as exc:
             print('COMMAND ERRONEOUS (u stupid hobo):\n', cmd, '\n', type(exc))
             return False
@@ -871,9 +956,10 @@ class Ma2Widget(Widget):
                 self.tracks = []
                 self.patterns = []
                 self.setInfo('title', r[0])
-                self.setInfo('BPM', float(r[1]))
+                self.tryToSetBPM(r[1])
                 self.setInfo('B_offset', float(r[2]))
-                self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
+                if self.getInfo('B_offset') > 0:
+                    self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
                 
                 c = 4
                 ### read tracks -- with modules assigned to dummy patterns
@@ -931,6 +1017,8 @@ class Ma2Widget(Widget):
                 self.setInfo('loop', r[c] if r[c] in loop_types else loop_types[0])
                 c += 1
                 self.lastImportPatternFilename = r[c] if os.path.isfile(r[c]) else ''
+                c += 1
+                self.setInfo('stereo_delay', float(r[c]))
                                 
 
     def saveCSV(self):
@@ -955,7 +1043,8 @@ class Ma2Widget(Widget):
                 
         out_str += '|' + (str(int(self.track_solo)) if self.track_solo is not None else '-1') \
                  + '|' + self.getInfo('loop') \
-                 + '|' + self.lastImportPatternFilename
+                 + '|' + self.lastImportPatternFilename \
+                 + '|' + str(self.getInfo('stereo_delay'))
 
         # write to file
         out_csv = open(filename, "w")
@@ -1048,23 +1137,34 @@ class Ma2Widget(Widget):
         defcode += '#define NNOT ' + nN + '\n'
         defcode += '#define NDRM ' + nD + '\n'
 
-        #beatcode = 'const float BPM = '+GLfloat(self.getInfo('BPM'))+';\n' + 'const float BPS = BPM/60.;\n' + 'const float SPB = 60./BPM;\n'
+        max_time = self.getTimeOfBeat(max_mod_off)
 
-        SPB = 60/float(self.getInfo('BPM'))
-        max_time = round(max_mod_off * SPB, 6)
+        # construct arrays for beat / time correspondence
+        pos_B = [float(part.split(':')[0]) for part in self.getInfo('BPM').split()] + [max_mod_off]
+        pos_t = [self.getTimeOfBeat(B) for B in pos_B]
+        pos_BPS = []
+        pos_SPB = []
+        for b in range(len(pos_B)-1):
+            pos_BPS.append((pos_B[b+1] - pos_B[b]) / (pos_t[b+1] - pos_t[b]))
+            pos_SPB.append(1./pos_BPS[-1])
 
-        beatheader = '#define NTIME 2\n'
-        beatheader += 'const float pos_B[NTIME] = float[NTIME](0.,' + GLfloat(max_mod_off) + ');\n'
-        beatheader += 'const float pos_t[NTIME] = float[NTIME](0.,' + GLfloat(max_time) + ');\n'
+        ntime = str(len(pos_B))
+        ntime_1 = str(len(pos_B)-1)
+
+        beatheader = '#define NTIME ' + ntime + '\n'
+        beatheader += 'const float pos_B[' + ntime + '] = float[' + ntime + '](' + ','.join([GLfloat(x) for x in pos_B]) + ');\n'
+        beatheader += 'const float pos_t[' + ntime + '] = float[' + ntime + '](' + ','.join([GLfloat(x) for x in pos_t]) + ');\n'
+        beatheader += 'const float pos_BPS[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join([GLfloat(x) for x in pos_BPS]) + ');\n'
+        beatheader += 'const float pos_SPB[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join([GLfloat(x) for x in pos_SPB]) + ');'
 
         if self.getInfo('loop') == 'seamless':
             loopcode = 'time = mod(time, ' + GLfloat(max_time) + ');\n' + 4*' '
         elif self.getInfo('loop') == 'full':
-            loopcode = 'time = mod(time, ' + GLfloat((max_mod_off + max_rel) * SPB) + ');\n' + 4*' '
+            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off + max_rel)) + ');\n' + 4*' '
         else:
             loopcode = ''
         
-        if self.getInfo('B_offset') != 0: loopcode = 'time += '+'{:.4f}'.format(self.getInfo('B_offset') * SPB)+';\n' + 4*' ' + loopcode
+        if self.getInfo('B_offset') != 0: loopcode = 'time += ' + GLfloat(self.getTimeOfBeat(self.getInfo('B_offset'))) + ';\n' + 4*' ' + loopcode
 
         print("START TEXTURE")
         
@@ -1164,7 +1264,8 @@ class Ma2Widget(Widget):
             .replace("//PARAMCODE", paramcode)\
             .replace("//FILTERCODE",filtercode)\
             .replace("//LOOPCODE", loopcode)\
-            .replace("//BEATHEADER", beatheader)
+            .replace("//BEATHEADER", beatheader)\
+            .replace("STEREO_DELAY", GLfloat(self.getInfo('stereo_delay')))
 
         glslcode = glslcode.replace('e+00','').replace('-0.)', ')').replace('+0.)', ')')
         glslcode = self.purgeExpendables(glslcode)

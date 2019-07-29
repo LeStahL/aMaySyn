@@ -24,8 +24,6 @@ float BPS, SPB, BT;
 const float Fsample = 44100.; // PRODUCTION: CHANGE THIS BACK TO 44100.
 const float Tsample = 1./Fsample;
 
-const float stereo_delay = 2e-4;
-
 const float filterthreshold = 1e-3;
 
 //TEXCODE
@@ -153,10 +151,10 @@ float GAC(float t, float offset, float a, float b, float c, float d, float e, fl
     return t<0. ? 0. : a + b*t + c*t*t + d*_sin(e*t) + f*exp(-g*t);
 }
 
-float comp_SAW(int N, float inv_N) {return inv_N * minus1hochN(N);}
-float comp_TRI(int N, float inv_N) {return N % 2 == 0 ? 0. : inv_N * inv_N * minus1hochNminus1halbe(N);}
-float comp_SQU(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (1. - minus1hochNminus1halbe(N))*_sin(PW);}
-float comp_HAE(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (minus1hochN(N)*_sin(PW*float(N)+.25) - 1.);}
+float comp_SAW(int N, float inv_N, float PW) {return inv_N * (1. - _sin(float(N)*PW));}
+float comp_TRI(int N, float inv_N, float PW) {return N % 2 == 0 ? .1 * inv_N * _sin(float(N)*PW) : inv_N * inv_N * (1. - _sin(float(N)*PW));}
+float comp_SQU(int N, float inv_N, float PW) {return inv_N * (minus1hochN(N) * _sin(.5*float(N)*PW + .25) - 1.);}
+float comp_HAE(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (1. - minus1hochNminus1halbe(N))*_sin(PW);}
 
 float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW, int keyF)
 {
@@ -170,9 +168,9 @@ float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, 
     {
         float_N = float(N);
         inv_N = 1./float_N;
-        comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI(N,inv_N)    -     MIX  * comp_SAW(N,inv_N)
-                 : MIX < 1. ? (1.-MIX) * comp_TRI(N,inv_N)    +     MIX  * comp_SQU(N,inv_N,PW)
-                            : (MIX-1.) * comp_HAE(N,inv_N,PW) + (2.-MIX) * comp_SQU(N,inv_N,PW);
+        comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI(N,inv_N,PW)  -     MIX  * comp_SAW(N,inv_N,PW)
+                 : MIX < 1. ? (1.-MIX) * comp_TRI(N,inv_N,PW)  +     MIX  * comp_SQU(N,inv_N,PW)
+                            : (MIX-1.) * comp_HAE(N,inv_N,PW)  + (2.-MIX) * comp_SQU(N,inv_N,PW);
 
         if(abs(comp_mix) < 1e-6) continue;
 
@@ -183,26 +181,26 @@ float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, 
     return s_atan(ret);
 }
 
-float BADD(float t, float f, float p0, float MIX, float AMP, float FPEAK, float BW, float NCUT, float DET, float PW)
+float BADD(float t, float f, float p0, float MIX, float AMP, float FPEAK, float BW, float Q, float NCUT, float DET, float PW)
 {
     float ret = 0.;
 
     float p = f*t;
     float inv_f = 1./f;
     float inv_BW = 1./BW;
-    int Nmin = int((FPEAK-NCUT*BW)*inv_f);
-    int Nmax = int((FPEAK+NCUT*BW)*inv_f) + 1;
+    int Nmin = int((FPEAK - min(NCUT, floor(FPEAK/BW)) * BW)*inv_f);
+    int Nmax = int((FPEAK + NCUT * BW)*inv_f) + 1;
     float float_N, inv_N, comp_mix, filter_N;
 
-    for(int N = Nmin; N < Nmax; N++)
+    for(int N = Nmin; N <= Nmax; N++)
     {
         float_N = float(N);
         inv_N = 1./float_N;
-        comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI(N,inv_N)    +  (-MIX)  * comp_SAW(N,inv_N)
-                 : MIX < 1. ?   MIX    * comp_TRI(N,inv_N)    + (1.-MIX) * comp_SQU(N,inv_N,PW)
+        comp_mix = MIX < 0. ? (MIX+1.) * comp_TRI(N,inv_N,PW) +  (-MIX)  * comp_SAW(N,inv_N,PW)
+                 : MIX < 1. ?   MIX    * comp_TRI(N,inv_N,PW) + (1.-MIX) * comp_SQU(N,inv_N,PW)
                  : (MIX-1.) * comp_HAE(N,inv_N,PW) + (2.-MIX) * comp_SQU(N,inv_N,PW);
 
-        filter_N = exp(-pow((float_N*f-FPEAK)*inv_BW,2.));
+        filter_N = exp(-pow(abs(float_N*f-FPEAK)*inv_BW,Q));
 
         ret += comp_mix * filter_N * (_sin_(float_N * p, p0) + _sin_(float_N * p * (1.+DET), p0));
     }
@@ -317,11 +315,11 @@ vec2 mainSynth(float time)
     //LOOPCODE
     int _it;
     for(_it = 0; _it < NTIME - 2 && pos_t[_it + 1] < time; _it++);
-    BPS = (pos_B[_it + 1] - pos_B[_it]) / (pos_t[_it + 1] - pos_t[_it]);
-    SPB = 1./BPS;
+    BPS = pos_BPS[_it];
+    SPB = pos_SPB[_it];
     BT = pos_B[_it] + (time - pos_t[_it]) * BPS;
     
-    float time2 = time - stereo_delay;
+    float time2 = time - STEREO_DELAY;
     float sidechain = 1.;
 
     float amaysynL, amaysynR, amaydrumL, amaydrumR, B, Bon, Boff, Bprog, Bproc, L, tL, _t, _t2, vel, rel, f, amtL, amtR, env, aux;
@@ -370,7 +368,7 @@ vec2 mainSynth(float time)
                 Bprog = B - Bon;
                 Bproc = Bprog / L;
                 _t    = Bprog * SPB;
-                _t2   = _t - stereo_delay;
+                _t2   = _t - STEREO_DELAY;
                 vel   = note_vel(_note);
                 amtL  = clamp(1. - note_pan(_note), 0., 1.);
                 amtR  = clamp(1. + note_pan(_note), 0., 1.);

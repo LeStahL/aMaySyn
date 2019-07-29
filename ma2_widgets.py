@@ -32,6 +32,7 @@ class TrackWidget(Widget):
     active = BooleanProperty(True)
 
     marker_list = {}
+    marker_style = {}
     scale_h = 1
     scale_v = 1
     offset_h = 0
@@ -60,11 +61,11 @@ class TrackWidget(Widget):
 
         font_size = 16
         char_w = 10
-        chars_name = 16
-        chars_synth = 10
+        chars_name = 13
+        chars_synth = 13
         font_size_small = int(10 * min(self.scale_v, self.scale_h))
 
-        max_visible_tracks = int((trackview_h - font_size) / (row_h + gap_h))
+        max_visible_tracks = int((trackview_h - 2. * font_size) / (row_h + gap_h))
         number_visible_tracks = min(len(tracklist), max_visible_tracks)
         self.offset_v = min(self.offset_v, abs(len(tracklist) - max_visible_tracks))
 
@@ -158,14 +159,22 @@ class TrackWidget(Widget):
                 draw_x += beat_w
             
             for m in self.marker_list:
-                Color(.7,0,.1,.7)
                 draw_x = grid_l + self.marker_list[m] * beat_w
-                Line(points = [draw_x, draw_y, draw_x, self.top - pad_t], width=1.5)
 
-                label = CoreLabel(text = m, font_size = 9, font_name = self.font_name)
+                if m in self.marker_style and self.marker_style[m] == 2:
+                    line_bottom = draw_y - 10
+                    line_top = draw_y
+                    Color(.3,.3,.7,.7)
+                else:
+                    line_bottom = draw_y - 2
+                    line_top = self.top - pad_t
+                    Color(.7,0,.1,.7)
+                Line(points = [draw_x, line_bottom, draw_x, line_top], width=1.5)
+
+                label = CoreLabel(text = m, font_size = font_size_small, font_name = self.font_name)
                 label.refresh()
-                Rectangle(size = label.texture.size, pos = (draw_x - label.width/2, draw_y-10), texture = label.texture)
-                Rectangle(size = label.texture.size, pos = (draw_x - label.width/2 - .5, draw_y-10), texture = label.texture)
+                Rectangle(size = label.texture.size, pos = (draw_x - label.width/2, line_bottom - font_size_small - 6), texture = label.texture)
+                Rectangle(size = label.texture.size, pos = (draw_x - label.width/2 - .5, line_bottom - font_size_small - 6), texture = label.texture)
 
 #            ### PARAMETER VIEW ### -- damn, this makes little sense because I need so much information about the parameter segments themselves...
 #            Color(.5, .4, 0)
@@ -191,10 +200,16 @@ class TrackWidget(Widget):
 #                draw_x += beat_w
 
 
-    def updateMarker(self, label, position):
+    def updateMarker(self, label, position, style = 1):
         self.marker_list.update({label: position})
+        self.marker_style.update({label: style})
         
-        markers_to_remove = {l:p for l,p in self.marker_list.items() if p<=0}
+        markers_to_remove = {l:p for l,p in self.marker_list.items() if p<0}
+        for m in markers_to_remove:
+            del self.marker_list[m]
+
+    def removeMarkersContaining(self, label):
+        markers_to_remove = {l:p for l,p in self.marker_list.items() if label in l}
         for m in markers_to_remove:
             del self.marker_list[m]
 
@@ -275,7 +290,7 @@ class PatternWidget(Widget):
         number_keys_visible = int((self.top - pad_t - self.y - pad_b)/(key_h+1))
 
         if isDrum:
-            self.offset_drum_v = min(self.offset_drum_v, len(self.drumkit) - number_keys_visible)
+            self.offset_drum_v = max(0, min(self.offset_drum_v, len(self.drumkit) - number_keys_visible))
             offset_v = self.offset_drum_v
             key = offset_v
 

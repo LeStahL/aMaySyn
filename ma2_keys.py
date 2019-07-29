@@ -5,7 +5,7 @@ global_keys  = {
                 'ctrl tab'          : 'PANEL SWITCH',
                 'f1'                : 'COLORS RANDOMIZE',
                 'f2'                : 'SONG RENAME',
-                'f3'                : 'SONG CHANGE PARAMETERS',
+                'f3'                : 'ENTER SONG COMMAND',
                 'f4'                : 'SONG CHANGE LOOPING OPTION',
                 'f5'                : 'SYNTH RELOAD',
                 'ctrl f5'           : 'SYNTH RELOAD NEW RANDOMS',
@@ -39,7 +39,7 @@ global_keys  = {
                 'shift k'           : 'ZOOM VERT OUT',
                 'shift j'           : 'ZOOM HORZ OUT',
                 'shift l'           : 'ZOOM HORZ IN',
-                'shift .'           : 'ENTER COMMAND',
+                'shift f3'          : 'ENTER COMMAND',
                }
 
 track_keys   = {
