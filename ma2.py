@@ -216,6 +216,7 @@ class Ma2Widget(Widget):
         elif action == 'MUTE':                          self.muteSound()
         elif action == 'SHADER PLAY':                   self.buildGLSL(compileGL = True)
         elif action == 'SHADER RENDER':                 self.buildGLSL(compileGL = True, renderWAV = True)
+        elif action == 'SHADER RENDER MODULEONLY':      self.buildGLSL(compileGL = True, onlyModule = True)            
         elif action == 'SONG CLEAR':                    self.clearSong()
         elif action == 'SONG LOAD':                     self.loadCSV_prompt()
         elif action == 'SONG SAVE':                     self.saveCSV_prompt()
@@ -410,10 +411,13 @@ class Ma2Widget(Widget):
 
     def tryToSetBPM(self, bpmlist):
         if type(bpmlist) == str:
-            bpmlist = bpmlist.split()
+            bpmlist = bpmlist.split()            
         if len(bpmlist) == 1:
             if ':' not in bpmlist[0]:
                 bpmlist = ['0:' + bpmlist[0]]
+            elif bpmlist[0].split(':')[0] != '0':
+                bpmlist = [self.getInfo('BPM')] + bpmlist
+
         try:
             bpmlist.sort(key = lambda k: float(k.split(':')[0]))
             bpmdict = {}
@@ -1058,18 +1062,34 @@ class Ma2Widget(Widget):
     def instantCompileGLSL(self, delta):
         self.buildGLSL(compileGL = True, renderWAV = True)
 
-    def buildGLSL(self, compileGL = False, renderWAV = False):
+    def buildGLSL(self, compileGL = False, renderWAV = False, onlyModule = False):
         filename = self.getInfo('title') + '.glsl'
 
-        tracks = [t for t in self.tracks if t.modules and not t.mute] if self.track_solo is None else [self.tracks[self.track_solo]]
+        if onlyModule:
+            test_track = deepcopy(self.tracks[self.current_track])
+            test_module = deepcopy(self.getModule())
+            test_module.move(0)
+            test_track.modules = [test_module]
+            tracks = [test_track]
+            patterns = [test_module.pattern]
+            actually_used_patterns = patterns
+            loop_mode = 'seamless'
+            offset = 0
+            max_mod_off = test_module.getModuleOff()
+            print(test_track)
+            print(tracks)
+            print(patterns)
 
-        actually_used_patterns = [m.pattern for t in tracks for m in t.modules]
-        patterns = [p for p in self.patterns if p in actually_used_patterns]
+        else:
+            tracks = [t for t in self.tracks if t.modules and not t.mute] if self.track_solo is None else [self.tracks[self.track_solo]]
+            actually_used_patterns = [m.pattern for t in tracks for m in t.modules]
+            patterns = [p for p in self.patterns if p in actually_used_patterns]
+            loop_mode = self.getInfo('loop')
+            offset = self.getInfo('B_offset')
+            max_mod_off = max(t.getLastModuleOff() for t in tracks)
 
         track_sep = [0] + list(accumulate([len(t.modules) for t in tracks]))
         pattern_sep = [0] + list(accumulate([len(p.notes) for p in patterns]))
-        
-        max_mod_off = max(t.getLastModuleOff() for t in tracks)
 
         nT  = str(len(tracks))
         nT1 = str(len(tracks) + 1)
@@ -1083,7 +1103,7 @@ class Ma2Widget(Widget):
         gf.close()
 
         self.loadSynths()
-        actually_used_synths = set(t.getSynthName() for t in self.tracks if not t.getSynthType() == '_')
+        actually_used_synths = set(t.getSynthName() for t in tracks if not t.getSynthType() == '_')
         actually_used_drums = set(n.note_pitch for p in patterns if p.synth_type == 'D' for n in p.notes)
         
         if self.MODE_debug: print("ACTUALLY USED:", actually_used_synths, actually_used_drums)
@@ -1151,19 +1171,19 @@ class Ma2Widget(Widget):
         ntime_1 = str(len(pos_B)-1)
 
         beatheader = '#define NTIME ' + ntime + '\n'
-        beatheader += 'const float pos_B[' + ntime + '] = float[' + ntime + '](' + ','.join([GLfloat(x) for x in pos_B]) + ');\n'
-        beatheader += 'const float pos_t[' + ntime + '] = float[' + ntime + '](' + ','.join([GLfloat(x) for x in pos_t]) + ');\n'
-        beatheader += 'const float pos_BPS[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join([GLfloat(x) for x in pos_BPS]) + ');\n'
-        beatheader += 'const float pos_SPB[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join([GLfloat(x) for x in pos_SPB]) + ');'
+        beatheader += 'const float pos_B[' + ntime + '] = float[' + ntime + '](' + ','.join(map(GLfloat, pos_B)) + ');\n'
+        beatheader += 'const float pos_t[' + ntime + '] = float[' + ntime + '](' + ','.join(map(GLfloat, pos_t)) + ');\n'
+        beatheader += 'const float pos_BPS[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join(map(GLfloat, pos_BPS)) + ');\n'
+        beatheader += 'const float pos_SPB[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join(map(GLfloat, pos_SPB)) + ');'
 
-        if self.getInfo('loop') == 'seamless':
+        if loop_mode == 'seamless':
             loopcode = 'time = mod(time, ' + GLfloat(max_time) + ');\n' + 4*' '
-        elif self.getInfo('loop') == 'full':
+        elif loop_mode == 'full':
             loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off + max_rel)) + ');\n' + 4*' '
         else:
             loopcode = ''
         
-        if self.getInfo('B_offset') != 0: loopcode = 'time += ' + GLfloat(self.getTimeOfBeat(self.getInfo('B_offset'))) + ';\n' + 4*' ' + loopcode
+        if offset != 0: loopcode = 'time += ' + GLfloat(self.getTimeOfBeat(offset)) + ';\n' + 4*' ' + loopcode
 
         print("START TEXTURE")
         

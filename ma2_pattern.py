@@ -16,6 +16,9 @@ class Pattern():
         self.color = color if color else self.randomColor()
         self.setTypeParam(synth_type = synth_type, max_note = max_note if max_note > 0 else 88)
 
+    def __repr__(self):
+        return ','.join(str(i) for i in [self.name, self.notes, self.length, self.current_note, self.synth_type])
+
     def setTypeParam(self, synth_type = None, max_note = None):
         if synth_type:
             self.synth_type = synth_type
@@ -270,6 +273,9 @@ class Note():
         self.note_aux = float(note_aux)
         self.tagged = False
         # some safety checks TODO
+
+    def __repr__(self):
+        return ','.join(str(i) for i in [self.note_on, self.note_off, self.note_pitch])
 
     def moveNoteOn(self, to):
         self.note_on = to

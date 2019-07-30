@@ -20,6 +20,9 @@ class Track():
         self.current_module = 0
         if synth is not None: self.current_synth = synth
 
+    def __repr__(self):
+        return ','.join(str(i) for i in [self.name, self.synths, self.current_synth, self.modules, self.current_module])
+
     # helpers...
     def getModule(self, offset=0):        return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
     def getModulePattern(self, offset=0): return self.getModule(offset).pattern if self.getModule(offset) else None 
@@ -94,26 +97,26 @@ class Track():
                         move_to = self.getModuleOff(try_leap)
                         if move_to >= self.getLastModuleOff(): break
                     
-            self.getModule().mod_on = move_to
+            self.getModule().move(move_to)
             self.current_module += try_leap
             self.modules.sort(key = lambda m: m.mod_on)
 
         if move_home:
-            self.getModule().mod_on = -1
+            self.getModule().move(-1)
             self.modules.sort(key = lambda m: m.mod_on)            
             self.current_module = 0
             self.moveModule(+1)
         if move_end:
             if self.getModule() != self.getLastModule():
-                self.getModule().mod_on = self.getLastModuleOff()
+                self.getModule().move(self.getLastModuleOff())
                 self.modules.sort(key = lambda m: m.mod_on)            
                 self.current_module = len(self.modules) - 1
             elif total_length is not None:
-                self.getModule().mod_on = total_length - self.getModuleLen()
+                self.getModule().move(total_length - self.getModuleLen())
 
     def moveModuleAnywhere(self, move_to):
         self.getModule().tag()
-        self.getModule().mod_on = move_to
+        self.getModule().move(move_to)
         self.modules.sort(key = lambda m: m.mod_on)
         self.current_module = self.getFirstTaggedModuleIndex()
         self.untagAllModules()
@@ -199,11 +202,17 @@ class Module():
         self.pattern = pattern
         self.transpose = transpose
 
+    def __repr__(self):
+        return ','.join(str(i) for i in [self.mod_on, self.getModuleOff(), self.pattern.name, self.transpose])
+
     def getModuleOn(self):
         return self.mod_on
 
     def getModuleOff(self):
         return self.mod_on + (self.pattern.length if self.pattern else 0)
+
+    def move(self, move_to):
+        self.mod_on = move_to
 
     def setPattern(self, pattern):
         if App.get_running_app().root.existsPattern(pattern):

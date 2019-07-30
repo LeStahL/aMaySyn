@@ -18,6 +18,7 @@ global_keys  = {
                 'ctrl shift b'      : 'SHADER PLAY',
                 'ctrl enter'        : 'SHADER PLAY',
 		        'ctrl shift enter'  : 'SHADER RENDER',
+                'ctrl t'            : 'SHADER RENDER MODULEONLY',
                 'ctrl n'            : 'SONG CLEAR',
                 'ctrl l'            : 'SONG LOAD',
                 'ctrl s'            : 'SONG SAVE',
@@ -39,7 +40,7 @@ global_keys  = {
                 'shift k'           : 'ZOOM VERT OUT',
                 'shift j'           : 'ZOOM HORZ OUT',
                 'shift l'           : 'ZOOM HORZ IN',
-                'shift f3'          : 'ENTER COMMAND',
+                'shift .'           : 'ENTER COMMAND',
                 'ctrl p'            : 'PURGE UNUSED PATTERNS',
                }
 
