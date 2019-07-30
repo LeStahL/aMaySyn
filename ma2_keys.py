@@ -40,6 +40,7 @@ global_keys  = {
                 'shift j'           : 'ZOOM HORZ OUT',
                 'shift l'           : 'ZOOM HORZ IN',
                 'shift f3'          : 'ENTER COMMAND',
+                'ctrl p'            : 'PURGE UNUSED PATTERNS',
                }
 
 track_keys   = {

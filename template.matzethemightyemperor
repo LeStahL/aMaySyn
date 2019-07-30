@@ -290,7 +290,7 @@ int trk_sep(int index)      {return int(rfloat(index));}
 int trk_syn(int index)      {return int(rfloat(index+1+1*NTRK));}
 float trk_norm(int index)   {return     rfloat(index+1+2*NTRK);}
 float trk_rel(int index)    {return     rfloat(index+1+3*NTRK);}
-float trk_slide(int index)  {return     rfloat(index+1+4*NTRK);}
+float trk_slide(int index)  {return     rfloat(index+1+4*NTRK);} // idea for future: change to individual note_slide_time
 float mod_on(int index)     {return     rfloat(index+1+5*NTRK);}
 float mod_off(int index)    {return     rfloat(index+1+5*NTRK+1*NMOD);}
 int mod_ptn(int index)      {return int(rfloat(index+1+5*NTRK+2*NMOD));}

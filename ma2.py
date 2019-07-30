@@ -232,6 +232,7 @@ class Ma2Widget(Widget):
         elif action == 'TRACK CHANGE PARAMETERS':       self.changeTrackParameters()
         elif action == 'TRACK MUTE':                    self.getTrack().setParameters(mute = not self.getTrack().mute)
         elif action == 'TRACK SOLO':                    self.setTrackSolo()
+        elif action == 'PURGE UNUSED PATTERNS':         self.purgeUnusedPatterns()
 
         if(self.theTrkWidget.active):
             if   action == 'TRACK SHIFT LEFT':          self.getTrack().moveAllModules(-inc_step)
@@ -1024,8 +1025,6 @@ class Ma2Widget(Widget):
     def saveCSV(self):
         filename = self.getInfo('title') + '.may'
         
-        self.purgeUnusedPatterns()
-
         out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
