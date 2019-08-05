@@ -289,21 +289,22 @@ float BA8(float x, int pattern)
 int trk_sep(int index)      {return int(rfloat(index));}
 int trk_syn(int index)      {return int(rfloat(index+1+1*NTRK));}
 float trk_norm(int index)   {return     rfloat(index+1+2*NTRK);}
-float trk_rel(int index)    {return     rfloat(index+1+3*NTRK);}
-float trk_slide(int index)  {return     rfloat(index+1+4*NTRK);} // idea for future: change to individual note_slide_time
-float mod_on(int index)     {return     rfloat(index+1+5*NTRK);}
-float mod_off(int index)    {return     rfloat(index+1+5*NTRK+1*NMOD);}
-int mod_ptn(int index)      {return int(rfloat(index+1+5*NTRK+2*NMOD));}
-float mod_transp(int index) {return     rfloat(index+1+5*NTRK+3*NMOD);}
-int ptn_sep(int index)      {return int(rfloat(index+1+5*NTRK+4*NMOD));}
-float note_on(int index)    {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN);}
-float note_off(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+1*NNOT);}
-float note_pitch(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+2*NNOT);}
-float note_pan(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+3*NNOT);}
-float note_vel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+4*NNOT);}
-float note_slide(int index) {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+5*NNOT);}
-float note_aux(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+6*NNOT);}
-float drum_rel(int index)   {return     rfloat(index+2+5*NTRK+4*NMOD+NPTN+7*NNOT);}
+float trk_rel(int index)    {return     rfloat(index+1+3*NTRK);} // have to put that in: "predraw" - shift every B_on earlier (and call release "prolong")
+float trk_pre(int index)    {return     rfloat(index+1+4*NTRK);}
+float trk_slide(int index)  {return     rfloat(index+1+5*NTRK);} // idea for future: change to individual note_slide_time
+float mod_on(int index)     {return     rfloat(index+1+6*NTRK);}
+float mod_off(int index)    {return     rfloat(index+1+6*NTRK+1*NMOD);}
+int mod_ptn(int index)      {return int(rfloat(index+1+6*NTRK+2*NMOD));}
+float mod_transp(int index) {return     rfloat(index+1+6*NTRK+3*NMOD);}
+int ptn_sep(int index)      {return int(rfloat(index+1+6*NTRK+4*NMOD));}
+float note_on(int index)    {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN);}
+float note_off(int index)   {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN+1*NNOT);}
+float note_pitch(int index) {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN+2*NNOT);}
+float note_pan(int index)   {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN+3*NNOT);}
+float note_vel(int index)   {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN+4*NNOT);}
+float note_slide(int index) {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN+5*NNOT);}
+float note_aux(int index)   {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN+6*NNOT);}
+float drum_rel(int index)   {return     rfloat(index+2+6*NTRK+4*NMOD+NPTN+7*NNOT);}
 
 vec2 mainSynth(float time)
 {
@@ -322,7 +323,7 @@ vec2 mainSynth(float time)
     float time2 = time - STEREO_DELAY;
     float sidechain = 1.;
 
-    float amaysynL, amaysynR, amaydrumL, amaydrumR, B, Bon, Boff, Bprog, Bproc, L, tL, _t, _t2, vel, rel, f, amtL, amtR, env, aux;
+    float amaysynL, amaysynR, amaydrumL, amaydrumR, B, Bon, Boff, Bprog, Bproc, L, tL, _t, _t2, vel, rel, pre, f, amtL, amtR, env, slide, aux;
     int tsep0, tsep1, _modU, _modL, ptn, psep0, psep1, _noteU, _noteL, syn, drum;
 
     for(int trk = 0; trk < NTRK; trk++)
@@ -332,8 +333,9 @@ vec2 mainSynth(float time)
 
         syn = trk_syn(trk);
         rel = trk_rel(trk);
+        pre = trk_pre(trk);
  
-        for(_modU = tsep0; (_modU < tsep1 - 1) && (BT > mod_on(_modU + 1)); _modU++);             
+        for(_modU = tsep0; (_modU < tsep1 - 1) && (BT > mod_on(_modU + 1) - pre); _modU++);             
         for(_modL = tsep0; (_modL < tsep1 - 1) && (BT >= mod_off(_modL) + rel); _modL++);
 
         for(int _mod = _modL; _mod <= _modU; _mod++)
@@ -344,9 +346,8 @@ vec2 mainSynth(float time)
             psep0 = ptn_sep(ptn);
             psep1 = ptn_sep(ptn + 1);
                          
-            for(_noteU = psep0; (_noteU < psep1 - 1) && (B > note_on(_noteU + 1)); _noteU++);
+            for(_noteU = psep0; (_noteU < psep1 - 1) && (B > note_on(_noteU + 1) - pre); _noteU++);
             for(_noteL = psep0; (_noteL < psep1 - 1) && (B >= note_off(_noteL) + rel); _noteL++);
-            //here: could introduce "monosynth" mode that sets _noteL = _noteU
 
             for(int _note = _noteL; _note <= _noteU; _note++)
             {
@@ -361,7 +362,7 @@ vec2 mainSynth(float time)
                 amaydrumL = 0.;
                 amaydrumR = 0.;
 
-                Bon   = note_on(_note);
+                Bon   = note_on(_note) - pre;
                 Boff  = note_off(_note) + rel;
                 L     = Boff - Bon;
                 tL    = L * SPB;
@@ -372,6 +373,7 @@ vec2 mainSynth(float time)
                 vel   = note_vel(_note);
                 amtL  = clamp(1. - note_pan(_note), 0., 1.);
                 amtR  = clamp(1. + note_pan(_note), 0., 1.);
+                slide = note_slide(_note);
                 aux   = note_aux(_note);
 
                 if(syn == DRUM_INDEX)
@@ -386,10 +388,10 @@ vec2 mainSynth(float time)
                 {
                     f = freqC1(note_pitch(_note) + mod_transp(_mod));
 
-                    if(abs(note_slide(_note)) > 1e-3) // THIS IS SLIDEY BIZ
+                    if(abs(slide) > 1e-3) // THIS IS SLIDEY BIZ
                     {
                         float Bslide = trk_slide(trk);
-                        float fac = note_slide(_note) * log(2.)/12.;
+                        float fac = slide * log(2.)/12.;
                         if (Bprog <= Bslide)
                         {
                             float help = 1. - Bprog/Bslide;

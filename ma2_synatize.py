@@ -16,37 +16,24 @@ def GLstr(s):
 inquotes = lambda f: len(f) > 2 and f[0] == '"' and f[-1] == '"'
 split_if_not_quoted = lambda string, delimiter: string.split(delimiter) if not inquotes(string) else [string]
 
-#reserved keywords you cannot name a form after ~ f,t are essential, and maybe we want to use the other
-_f = {'id':'f', 'type':'uniform'}
-_t = {'id':'t', 'type':'uniform'}
-_t_ = {'id':'_t', 'type':'uniform'}
-_B = {'id':'B', 'type':'uniform'}
-_BT = {'id':'BT', 'type':'uniform'}
-_vel = {'id':'vel', 'type':'uniform'}
-_Bsyn = {'id':'Bsyn', 'type':'uniform'}
-_Bproc = {'id':'Bproc', 'type':'uniform'}
-_Bprog = {'id':'Bprog', 'type':'uniform'}
-_L = {'id':'L', 'type':'uniform'}
-_tL = {'id':'tL', 'type':'uniform'}
-_SPB = {'id':'SPB', 'type':'uniform'}
-_BPS = {'id':'BPS', 'type':'uniform'}
-_BPM = {'id':'BPM', 'type':'uniform'}
-_note = {'id':'note', 'type':'uniform'}
-_Fsample = {'id':'Fsample', 'type':'uniform'}
-_Tsample = {'id':'Tsample', 'type':'uniform'}
-_rel = {'id':'rel', 'type':'uniform'}
-_aux = {'id':'aux', 'type':'uniform'}
-_note = {'id':'note', 'type':'uniform'}
-
 newlineindent = '\n' + 4*' '
 newlineplus = '\n' + 6*' ' + '+'
 
 def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = False):
 
-    form_list = [_f, _t, _t_, _B, _BT, _vel, _Bsyn, _Bproc, _Bprog, _L, _tL, _SPB, _BPS, _BPM, _note, _Fsample, _Tsample, _rel, _aux, _note]
+    # reserved names you cannot name a form after ~ f,t are essential, and maybe we want to use the other
+    # time              time elapsed globally
+    # _t                time elapsed since beginning of note
+    # B                 beats elapsed since beginning of module
+    # BT                beats elapsed globally
+    # Bprog             beats elapsed since beginning of note
+    # Bproc             elapsed percent of note
+    var_list = ['f', 'time', 'time2', '_t', '_t2', 'B', 'BT', 'vel', 'Bsyn', 'Bproc', 'Bprog', 'L', 'tL', 'SPB', 'BPS', 'BPM', 'Fsample', 'Tsample', 'rel', 'aux', 'note', 'slide']
+
+    form_list = [{'id': var, 'type': 'uniform'} for var in var_list]
     main_list = []
     param_list = []
-   
+
     stored_random_values = {r['id']: r['value'] for r in stored_randoms}
 
     print('PARSING', './' + syn_file)
@@ -253,7 +240,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         phi = instance(form['freq']) + '*_PROG'
 
                     elif form['type'] == 'lfo':
-                        tvar = '*Bprog' if 'global' not in form['mode'] else '*B'
+                        tvar = '*_BPROG' if 'global' not in form['mode'] else ('*_BEAT' if 'module' not in form['mode'] else '*_BMODPROG')
                         if 'time' in form['mode']: tvar = '*_PROG' if 'global' not in form['mode'] else '*_TIME'
                             
                         phi = instance(form['freq']) + tvar
@@ -451,7 +438,9 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 tvar = '_BPROG'
                 Lvar = 'L'
 
-                if 'time' in form['mode']:
+                if 'module' in form['mode']:
+                    tvar = '_BMODPROG'
+                elif 'time' in form['mode']:
                     tvar = '_PROG'
                     Lvar = 'tL'
                 elif 'relative' in form['mode']:
@@ -461,6 +450,9 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 if form['type'] == 'seg':
                     tvar = '_BEAT'
                     Lvar = 'L'
+
+                if form['offset'] != '0':
+                    tvar = tvar + '-' + instance(form['offset']) 
 
                 if form['shape'] == 'ahdsr' or form['shape'] == 'adsr':
                     _return = 'env_AHDSR('+tvar+','+Lvar+','+','.join(instance(form[p]) for p in ['attack', 'hold', 'decay', 'sustain', 'release'])+')'
@@ -489,7 +481,9 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'generic':
                     _return = instance(form['src']).replace('_BPROG', '(_BEAT-' + instance(form['offset']) + ')') # hm. might I do this better?
                 elif form['shape'] == 'linear':
-                    _return = tvar + '-' + instance(form['offset'])
+                    _return = tvar
+                elif form['shape'] == 'param':
+                    _return = form['id'] + '(' + tvar + ')'
 
                 else:
                     print("PARSING - ERROR! THIS ENVELOPE SHAPE DOES NOT EXIST: "+form['shape'], form, sep='\n')
@@ -581,7 +575,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-rel, Boff, B),'+form_main['relpower']+');'
                 syncode += '\n' + 20*' ' + '}\n' + 20*' '
             syncount += 1
-        syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT')
+        syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('_BMODPROG','B')
 
         drumcount = 1
         drumsyncode = ''
@@ -603,13 +597,13 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                             +  'amaydrumL = ' + drumsyncodeL + '\n' + 24*' ' + 'amaydrumR = ' + drumsyncodeR \
                             +  '\n' + 20*' ' + '}\n' + 20*' '
             drumcount += 1
-        drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT')
+        drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('_BMODPROG','B')
 
     paramcode = ''
     for par in param_list:
         paramcode += 'float ' + par['id'] + '(float _BEAT)\n{' + newlineindent + 'return _BEAT<0 ? 0. : '
         for seg in range(par['n_segments']):
-            seg_code = instance(par['segments'][3*seg])
+            seg_code = instance(par['segments'][3*seg]).replace('_BPROG', '_BEAT').replace('_BMODPROG', '_BEAT')
             seg_start = par['segments'][3*seg+1]
             seg_end = par['segments'][3*seg+2]
             paramcode += '(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + ') ? ' + seg_code.replace('_BEAT','(_BEAT-' + GLstr(seg_start) + ')') + ' : '

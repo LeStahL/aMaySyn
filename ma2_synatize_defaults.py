@@ -7,7 +7,7 @@ def set_remaining_defaults(cid, cmd, form):
     
     if cmd in ['main', 'maindrum']:
         requirements.append('src')
-        defaults.update({'release':'0', 'relpower':'1', 'slidetime':'.125'})
+        defaults.update({'release':'0', 'relpower':'1', 'slidetime':'.125', 'predraw': '0'})
    
     elif cmd == 'random':
         defaults.update({'min':'0', 'max':'1', 'digits':'3', 'store':False, 'tag':''})
@@ -78,14 +78,12 @@ def set_remaining_defaults(cid, cmd, form):
             raise
 
     elif cmd == 'env':
-        defaults.update({'shape':'ahdsr', 'attack':'1e-3', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0', 'scale':'1', 'shift':'0'})
+        defaults.update({'shape':'ahdsr', 'attack':'1e-3', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0', 'scale':'1', 'shift':'0', 'offset':'0'})
         #TODO: calibrate attack and decay
         
         try:
             if form['shape'] == 'expdecay' or form['shape'] == 'expdecayrepeat':
                 defaults.update({'exponent':'1', 'beats':'1'})
-            if form['shape'] == 'linear':
-                defaults.update({'offset': '0'})
             if form['shape'] == 'antivelattack':
                 defaults.update({'vel':'vel', 'velmin':'0', 'velmax':'1'})
             if form['shape'] == 'limitlength':

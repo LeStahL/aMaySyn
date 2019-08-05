@@ -39,14 +39,15 @@ class Pattern():
         self.max_note = other.max_note
 
     # helpers...
-    def getNote(self, offset=0):         return self.notes[(self.current_note + offset) % len(self.notes)] if self.notes else None
-    def getNoteOn(self, offset=0):       return self.getNote(offset).note_on if self.getNote(offset) else None
-    def getNoteOff(self, offset=0):      return self.getNote(offset).note_off if self.getNote(offset) else None
-    def getFirstNote(self):              return self.notes[0]  if self.notes else None
-    def getLastNote(self):               return self.notes[-1] if self.notes else None
-    def getFirstTaggedNoteIndex(self):   return next(i for i in range(len(self.notes)) if self.notes[i].tagged)
+    def getNote(self, offset=0):        return self.notes[(self.current_note + offset) % len(self.notes)] if self.notes else None
+    def getNoteOn(self, offset=0):      return self.getNote(offset).note_on if self.getNote(offset) else None
+    def getNoteOff(self, offset=0):     return self.getNote(offset).note_off if self.getNote(offset) else None
+    def getFirstNote(self):             return self.notes[0]  if self.notes else None
+    def getLastNote(self):              return self.notes[-1] if self.notes else None
+    def getFirstTaggedNoteIndex(self):  return next(i for i in range(len(self.notes)) if self.notes[i].tagged)
 
-    def getDrumIndex(self):              return self.getNote().note_pitch if self.getNote() and self.synth_type == 'D' else None
+    def isEmpty(self):                  return False if self.notes else True
+    def getDrumIndex(self):             return self.getNote().note_pitch if self.getNote() and self.synth_type == 'D' else None
 
     # THE MOST IMPORTANT FUNCTION!
     def randomColor(self):
@@ -287,6 +288,21 @@ class Note():
 
     def tag(self):
         self.tagged = True
+    
+    ### PARAMETER GETTERS ###
+
+    def getParameter(self, parameter):
+        if parameter == 'pan':
+            return self.note_pan
+        elif parameter == 'vel':
+            return self.note_vel
+        elif parameter == 'slide':
+            return self.note_slide
+        elif parameter == 'aux':
+            return self.note_aux
+        else:
+            print("WARNING. TRIED TO GET NONEXISTENT PARAMETER:", parameter)
+            return None
 
     ### PARAMETER SETTERS ###
     def setParameter(self, parameter, value = None):

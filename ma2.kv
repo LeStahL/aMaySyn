@@ -44,6 +44,7 @@
     btnTitle:     btnTitleID
     btnPtnTitle:  btnPtnTitleID
     btnPtnInfo:   btnPtnInfoID
+    btnNoteInfo:  btnNoteInfoID
 
     BoxLayout:
         orientation: "vertical"
@@ -87,17 +88,12 @@
             height: root.height * 0.05
             size_hint_y: None
             RetroButton:
-                id: a
-                on_release: root.pressLoadCSV()
-                text: "Load .may"
+                id: btnNoteInfoID
+                text: "NOTE INFO"
             RetroButton:
-                id: b
-                on_release: root.pressSaveCSV()
-                text: "Save .may"
-            RetroButton:
-                id: c
                 on_release: root.pressBuildCode()
                 text: "Export GLSL"
+                size_hint_x: 0.33
 
 
 <EditSynthDialog>:

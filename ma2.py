@@ -343,6 +343,9 @@ class Ma2Widget(Widget):
         self.btnTitle.text = 'TITLE: ' + self.getInfo('title') + ' (LOOP: ' + self.getInfo('loop') + ')'
         self.btnPtnTitle.text = 'PTN: ' + self.getPatternName() + ' (' + str(self.getSameTypePatternIndex()+1) + '/' + str(len(self.getSameTypePatterns())) + ') ' + pattern_types[self.getPatternSynthType()]
         self.btnPtnInfo.text = 'PTN LEN: ' + str(self.getPatternLen())
+        note = self.getNote()
+        self.btnNoteInfo.text = 'NOTE INFO: --' if note is None else 'NOTE INFO:  [' + str(note.note_on) + '..' + str(note.note_off) + ']   PITCH ' + str(note.note_pitch) \
+            + '   VEL ' + str(note.note_vel) + '   PAN ' + str(note.note_pan) + '   SLIDE ' + str(note.note_slide) + '   AUX ' + str(note.note_aux)
 
     def mainBackgroundColor(self):
         if self.MODE_debug:
@@ -671,7 +674,8 @@ class Ma2Widget(Widget):
         try:
             cmd = [s.lower() for s in cmd_str.split()]
             
-            #e.g. SET VEL <B_min> <B_max> LIN <value_min> <value_max> <n_digits>
+            #e.g. SET VEL <B_min> <B_max> LIN <value_min> <value_max> <stepsize>
+            # or TRANSFORM VEL <B_min> <B_max> LIN <shift> <scale> <stepsize>
             if cmd[0] == 'set':
                 parameter = cmd[1]
                 B_min = float(cmd[2])
@@ -701,7 +705,7 @@ class Ma2Widget(Widget):
                         note.setParameter(parameter, round(lin_value, 3))
                     return True
                 
-                # RND: random values between [value_min, value_max] between [B_min, B_max] (with n_digits digits)
+                # RND: random values between [value_min, value_max] between [B_min, B_max] (stepsize is resolution)
                 elif shape in ['random', 'rnd']:
                     min_value = float(cmd[5])
                     max_value = float(cmd[6])
@@ -715,6 +719,37 @@ class Ma2Widget(Widget):
                 elif shape == 'reset':
                     for note in affected_notes:
                         note.setParameter(parameter, None)
+                    return True
+
+                else:
+                    print('COMMAND NOT SUPPORTED:\n', cmd)
+                    return False
+
+            # or TRANSFORM VEL <B_min> <B_max> LIN <shift> <scale> <stepsize>
+            if cmd[0] == 'transform':
+                parameter = cmd[1]
+                B_min = float(cmd[2])
+                B_max = float(cmd[3])
+                shape = cmd[4]
+
+                if not self.getPattern() or not self.getPattern().notes:
+                    affected_notes = []
+                else:
+                    affected_notes = [n for n in self.getPattern().notes if n.note_on >= B_min and n.note_on < B_max]
+
+                # LIN: linear transformation
+                if shape in ['linear', 'lin']:
+                    lin_shift = float(cmd[5])
+                    lin_scale = float(cmd[6])
+                    # I don't know why it gets executed twice, but don't care because I want to switch to Qt anyway
+                    # replace lin_scale -> sqrt(lin_scale)
+                    # replace lin_shift -> lin_shift/(sqrt(lin_scale)+1)
+                    step_size = 1 if len(cmd) < 8 else float(cmd[7])
+                    for note in affected_notes:
+                        current_value = note.getParameter(parameter)
+                        transformed_value = lin_shift/(sqrt(lin_scale)+1) + sqrt(lin_scale) * current_value
+                        transformed_value = step_size * round(transformed_value / step_size)
+                        note.setParameter(parameter, round(transformed_value, 3))
                     return True
 
                 else:
@@ -758,6 +793,7 @@ class Ma2Widget(Widget):
 
         except Exception as exc:
             print('COMMAND ERRONEOUS (u stupid hobo):\n', cmd, '\n', type(exc))
+            print('idea for TODO: SHUFFLE NOTE POSITIONS BY EPSILON AMOUNTS\n')
             return False
 
 ############## ONLY THE MOST IMPORTANT FUNCTION! ############
@@ -847,7 +883,7 @@ class Ma2Widget(Widget):
         with open(synfile, mode='a') as filehandle:
             filehandle.write('\n' + formType + 4*' ' + formID + 4*' ' + formBody)
 
-        self.loadSynths() # TODO: automatically select new synth?
+        self.loadSynths()
 
     def synthDeactivate(self, drum = False):
         if drum:
@@ -906,11 +942,18 @@ class Ma2Widget(Widget):
         popup.bind(on_dismiss = self.handlePopupDismiss)
         popup.open()
 
+    def purgeEmptyPatterns(self):
+        actually_used_patterns = [m.pattern for t in self.tracks for m in t.modules]
+        for p in self.patterns[:]:
+            if p.isEmpty() and p not in actually_used_patterns:
+                print("PURGE EMPTY PATTERN:", p.name)
+                self.patterns.remove(p)
+
     def purgeUnusedPatterns(self):
         actually_used_patterns = [m.pattern for t in self.tracks for m in t.modules]
         for p in self.patterns[:]:
             if p not in actually_used_patterns:
-                print("PURGE EMPTY PATTERN:", p.name)
+                print("PURGE UNUSED PATTERN:", p.name)
                 self.patterns.remove(p)
 
 ############### UGLY KIVY EXPORT FUNCTIONS #####################
@@ -1029,6 +1072,8 @@ class Ma2Widget(Widget):
     def saveCSV(self):
         filename = self.getInfo('title') + '.may'
         
+        self.purgeEmptyPatterns()
+
         out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
@@ -1120,16 +1165,19 @@ class Ma2Widget(Widget):
                 of.write(timestamp + '\t' + countID + '\t' \
                                    + '\t'.join((rnd['id'] + '=' + str(rnd['value'])) for rnd in self.stored_randoms if rnd['store']) + '\n')
 
-        # get release times
+        # get release and predraw times
         syn_rel = []
+        syn_pre = []
         drum_rel = []
         max_rel = 0
         max_drum_rel = 0
         if self.MODE_debug: print(self.synatize_main_list)
         for m in self.synatize_main_list:
             rel = float(m['release']) if 'release' in m else 0
+            pre = float(m['predraw']) if 'predraw' in m else 0
             if m['type'] == 'main':
                 syn_rel.append(rel)
+                syn_pre.append(pre)
                 if m['id'] in actually_used_synths:
                     max_rel = max(max_rel, rel)
             elif m['type'] == 'maindrum':
@@ -1137,10 +1185,9 @@ class Ma2Widget(Widget):
                 max_drum_rel = max(max_drum_rel, rel)
 
         syn_rel.append(max_drum_rel)
+        syn_pre.append(0)
 
-        # number of drums - not required right now, maybe we need to add something later
-        nD = str(len(drum_rel))
-
+        nD = str(len(drum_rel)) # number of drums - not required right now, maybe we need to add something later
         drum_index = str(synths.index('D_Drums')+1)
 
         # get slide times
@@ -1202,6 +1249,8 @@ class Ma2Widget(Widget):
             tex += pack(fmt, float(t.getNorm()))
         for t in tracks:
             tex += pack(fmt, float(syn_rel[t.getSynthIndex()]))
+        for t in tracks:
+            tex += pack(fmt, float(syn_pre[t.getSynthIndex()]))
         for t in tracks:
             tex += pack(fmt, float(syn_slide[t.getSynthIndex()]))
         for t in tracks:

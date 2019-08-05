@@ -140,7 +140,8 @@ def interpretKeypress(key, modifiers, trkActive = False, ptnActive = False):
 def doesActionChangeState(action):
     
     if action in ['SONG RENAME',
-                  'SONG CHANGE PARAMETERS',
+                  'SONG ENTER COMMAND',
+                  'ENTER COMMAND',
                   'CURVE EDIT',
                   'SONG CLEAR'
                   'SONG LOAD',
