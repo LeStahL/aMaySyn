@@ -12,9 +12,11 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, Line, Ellipse
 from kivy.core.text import Label as CoreLabel
 from math import pi, sin, exp, ceil
+from random import randint
 
 import xml.etree.ElementTree as ET
 from ma2_selectableRV import *
+from ma2_patternRV import *
 
 import numpy as np
 from scipy import optimize
@@ -161,22 +163,24 @@ class TrackWidget(Widget):
             for m in self.marker_list:
                 draw_x = grid_l + self.marker_list[m] * beat_w
 
-                if m in self.marker_style and self.marker_style[m] == 2:
+                if m in self.marker_style and self.marker_style[m] == 'BPM':
                     line_bottom = draw_y - 10
                     line_top = draw_y
                     Color(.3,.3,.7,.7)
+                    m_text = m[3:]
                 else:
-                    line_bottom = draw_y - 2
+                    line_bottom = draw_y + 2
                     line_top = self.top - pad_t
                     Color(.7,0,.1,.7)
+                    m_text = m
                 Line(points = [draw_x, line_bottom, draw_x, line_top], width=1.5)
 
-                label = CoreLabel(text = m, font_size = font_size_small, font_name = self.font_name)
+                label = CoreLabel(text = m_text, font_size = font_size_small, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x - label.width/2, line_bottom - font_size_small - 6), texture = label.texture)
                 Rectangle(size = label.texture.size, pos = (draw_x - label.width/2 - .5, line_bottom - font_size_small - 6), texture = label.texture)
 
-#            ### PARAMETER VIEW ### -- damn, this makes little sense because I need so much information about the parameter segments themselves...
+#            ### PARAMETER VIEW ### -- damn, this makes little sense because I need so much information about the parameter segments themselves... --> next aMaySyn version!
 #            Color(.5, .4, 0)
 #            draw_x = self.x + pad_l
 #            draw_y = self.top - self.height + pad_b            
@@ -200,7 +204,7 @@ class TrackWidget(Widget):
 #                draw_x += beat_w
 
 
-    def updateMarker(self, label, position, style = 1):
+    def updateMarker(self, label, position, style = ''):
         self.marker_list.update({label: position})
         self.marker_style.update({label: style})
         
@@ -684,3 +688,44 @@ class ImportPatternDialog(ModalView):
 
 class ExportPatternDialog(ModalView):
     pass
+
+
+class SelectSynthDialog(ModalView):
+    selectSynthFilterInput = ObjectProperty(None)
+    selectSynthList = ObjectProperty(None)
+
+    synths = []
+    selected_synth = None
+    complete_synthlist = []
+
+    def __init__(self, **kwargs):
+        self.synths = kwargs.pop('synths')
+        self.selected_synth = kwargs.pop('current_synth')
+        super(SelectSynthDialog, self).__init__(**kwargs)
+        
+        self.complete_synthlist = []
+        for index, synth in enumerate(self.synths):
+            synth_name = synth[2:]
+            self.complete_synthlist.append({'text': synth_name, 'index': index})
+        self.selectSynthList.data = self.complete_synthlist
+
+    def applyFilter(self):
+        self.selectSynthList.data = [synth for synth in self.complete_synthlist if self.selectSynthFilterInput.text in synth['text']]
+        # check whether selected synth is in list or not..?
+
+    def clearFilter(self):
+        self.selectSynthList.data = self.complete_synthlist
+        self.selectSynthFilterInput.focus = True
+        # check whether selected synth is in list or not..?
+
+    def switchToSelected(self):
+        self.selected_synth = self.selectSynthList.getSelectedData()['index']
+        self.dismiss()
+
+    def switchToRandom(self):
+        self.selected_synth = randint(0, len(self.synths) - 2)
+        self.dismiss()
+
+    def dontSwitch(self):
+        self.selected_synth = None
+        self.dismiss()

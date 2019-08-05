@@ -152,10 +152,10 @@ class Track():
                 m.pattern = patterns[patterns.index(m.pattern)-1]
                 offset += m.pattern.length - pattern_to_delete.length
 
-    def switchSynth(self, inc, debug = False):
+    def switchSynth(self, inc, switch_to = None, debug = False):
         if self.synths:
             #make sure that only empty tracks can be assigned the special synths
-            if not self.isEmpty() and not debug:
+            if not self.isEmpty() and not debug and switch_to is None:
                 synth = self.synths[self.current_synth]
                 synth_type = synth[0]
                 if synth_type in ['I','_']:
@@ -167,7 +167,11 @@ class Track():
                     print("Can't switch synth if track is not empty, and not a synth track. Synth type: " + self.synths[self.current_synth][0])
             
             else:
-                self.current_synth = (self.current_synth + inc) % len(self.synths)
+                if switch_to is not None:
+                    self.current_synth = switch_to
+                else:
+                    self.current_synth = (self.current_synth + inc) % len(self.synths)
+
                 if self.getModulePattern():
                     self.getModulePattern().setTypeParam(synth_type = self.synths[self.current_synth][0])
 

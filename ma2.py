@@ -223,8 +223,9 @@ class Ma2Widget(Widget):
         elif action == 'SHADER CREATE':                 self.buildGLSL()
         elif action == 'UNDO':                          self.stepUndoStack(-1)
         elif action == 'REDO':                          self.stepUndoStack(+1)
-        elif action == 'SYNTH SELECT NEXT':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
-        elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(+1, debug = self.MODE_debug)
+        elif action == 'SYNTH SELECT NEXT':             self.getTrack().switchSynth(+1, debug = self.MODE_debug)
+        elif action == 'SYNTH SELECT':                  self.openSynthDialog()
+        elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
         elif action == 'PATTERN SELECT NEXT':           self.getTrack().switchModulePattern(self.getPattern(+1))
         elif action == 'PATTERN SELECT LAST':           self.getTrack().switchModulePattern(self.getPattern(-1))
         elif action == 'DIALOG PATTERN IMPORT':         self.importPattern()
@@ -436,7 +437,7 @@ class Ma2Widget(Widget):
                 marker_label = 'BPM' + GLfloat(bpmdict[beat])
                 if marker_label[-1] == '.':
                     marker_label = marker_label[:-1]
-                self.theTrkWidget.updateMarker(marker_label, beat, style = 2)
+                self.theTrkWidget.updateMarker(marker_label, beat, style = 'BPM')
             self.setInfo('BPM', ' '.join(bpmlist))
             return True
 
@@ -1484,6 +1485,17 @@ class Ma2Widget(Widget):
     def exportPattern(self):
         #TODO - export to XML, remember LMMS_lengthscale!
         pass
+
+    def openSynthDialog(self):
+        self.loadSynths()
+        popup = SelectSynthDialog(synths = synths, current_synth = self.getTrack().getSynthIndex())
+        popup.bind(on_dismiss = self.handleSynthDialog)
+        popup.open()
+    def handleSynthDialog(self, *args):
+        print("Switch Synth To:", args[0].selected_synth)
+        self.getTrack().switchSynth(0, switch_to = args[0].selected_synth)
+        self._keyboard_request()
+        self.update()
 
     def editCurve(self):
         popup = CurvePrompt(self, title = 'EDIT THE CURVE IF U DARE', title_font = self.font_name)

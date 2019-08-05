@@ -6,36 +6,37 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 
-class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout):
+class PatternRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout):
     pass
 
-class SelectableLabel(RecycleDataViewBehavior, Label):
+class PatternLabel(RecycleDataViewBehavior, Label):
     index = None
     selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
+    Pattern = BooleanProperty(True)
 
     def refresh_view_attrs(self, rv, index, data):
         self.index = index
-        return super(SelectableLabel, self).refresh_view_attrs(rv, index, data)
+        return super(PatternLabel, self).refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
-        if super(SelectableLabel, self).on_touch_down(touch):
+        if super(PatternLabel, self).on_touch_down(touch):
             return True
-        if self.collide_point(*touch.pos) and self.selectable:
+        if self.collide_point(*touch.pos) and self.Pattern:
             return self.parent.select_with_touch(self.index, touch)
 
     def apply_selection(self, rv, index, is_selected):
         self.selected = is_selected
         if is_selected:
             rv.selected_index = index
+            rv.enableImportButton()
 
-class SelectableRecycleView(RecycleView):
+class PatternRecycleView(RecycleView):
     selected_index = None
     empty_text = '<nothing available>'
     empty_data = [{'text': empty_text}]
 
     def __init__(self, **kwargs):
-        super(SelectableRecycleView, self).__init__(**kwargs)
+        super(PatternRecycleView, self).__init__(**kwargs)
         self.data = self.empty_data
 
     def getSelectedData(self):
@@ -43,3 +44,6 @@ class SelectableRecycleView(RecycleView):
             return self.data[self.selected_index] 
         else:
             return None
+
+    def enableImportButton(self):
+        self.parent.parent.importPatternButton.disabled = (self.getSelectedData() == None)

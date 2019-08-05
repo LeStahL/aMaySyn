@@ -213,7 +213,7 @@
                 size_hint: (0.1, 1)
                 on_release: root.clearFile()
 
-        SelectableRecycleView:
+        PatternRecycleView:
             id: importPatternListID
             size_hint: (0.8, .5)
             pos_hint: {'center_x': 0.5, 'center_y': 0.525}
@@ -236,7 +236,126 @@
             on_release:
                 self.parent.parent.dismiss()
 
+
+<PatternLabel>:
+    canvas.before:
+        Color:
+            rgba: (.6, 0, .3, .6) if self.selected else (0, 0, 0, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+
+<PatternRecycleView>:
+    viewclass: 'PatternLabel'
+    scroll_type: ['bars', 'content']
+    canvas.before:
+        Color:
+            rgb: (0, 0, 0)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    canvas.after:
+        Color:
+            rgb: (.8,.8,.8)
+        Line:
+            rectangle: (self.x, self.y, self.width, self.height)
+            width: 1.2
+            joint: 'miter'
+    PatternRecycleBoxLayout:
+        default_size: None, 28
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+
 <ExportPatternDialog>:
+
+<SelectSynthDialog>:
+    size_hint: .6, .9
+    title: ""
+    separator_height: 0
+
+#    selectSynthFilterInput: selectSynthFilterInputID
+    selectSynthList: selectSynthListID
+
+    canvas:
+        Color:
+            rgb: (.8, .8, .8)
+        Line:
+            rectangle: (self.x+2, self.y+2, self.width-4, self.height-4)
+            width: 2.4
+            joint: 'miter'
+
+    FloatLayout:
+
+        Label:
+            text: "Select Synth for current Track"
+            size_hint: (0.6, 0.1)
+            pos_hint: {'x':0.2, 'top':1}
+    
+#        BoxLayout:
+#            orientation: 'horizontal'
+#            size_hint: (0.8, None)
+#            height: 36
+#            pos_hint: {'x':0.1, 'top':.91}
+#            Label:
+#                text: "FILTER:"
+#                size_hint: (0.1, 1)
+#            TextInput:
+#                id: selectSynthFilterInputID
+#                text: ""
+#                size_hint: (0.7, 1)
+#                multiline: False
+#                focus: True
+#                on_text_validate:
+#                    root.applyFilter()
+#            RetroButton:
+#                text: "FILTER"
+#                size_hint: (0.1, 1)
+#                on_release:
+#                    root.applyFilter()
+#            RetroButton:
+#                text: "CLEAR"
+#                size_hint: (0.1, 1)
+#                on_release:
+#                    root.clearFilter()
+
+        SelectableRecycleView:
+            id: selectSynthListID
+            size_hint: (0.8, .76)
+            pos_hint: {'center_x': 0.5, 'center_y': 0.53}
+            
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: (0.8, .08)
+            pos_hint: {'x':0.1, 'y':.05}
+
+            RetroButton:
+                text: "choose selected"
+                on_release:
+                    root.switchToSelected()
+
+            Label:
+                text: ""
+                size_hint_x: 0.1
+
+            RetroButton:
+                text: "take random"
+                on_release:
+                    root.switchToRandom()
+
+            Label:
+                text: ""
+                size_hint_x: 0.1
+
+            RetroButton:
+                text: "do no shit"
+                on_release:
+                    root.dontSwitch()
 
 
 <SelectableLabel>:

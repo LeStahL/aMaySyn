@@ -25,8 +25,9 @@ global_keys  = {
                 'ctrl b'            : 'SHADER CREATE',
                 'ctrl z'            : 'UNDO',
                 'ctrl y'            : 'REDO',
-                'a'                 : 'SYNTH SELECT NEXT',
-                's'                 : 'SYNTH SELECT LAST',
+                'a'                 : 'SYNTH SELECT LAST',
+                's'                 : 'SYNTH SELECT',
+                'd'                 : 'SYNTH SELECT NEXT',
                 'pageup'            : 'PATTERN SELECT NEXT',
                 'pagedown'          : 'PATTERN SELECT LAST',
                 'ctrl i'            : 'DIALOG PATTERN IMPORT',
@@ -145,10 +146,12 @@ def doesActionChangeState(action):
                   'CURVE EDIT',
                   'SONG CLEAR'
                   'SONG LOAD',
+                  'SYNTH SELECT',
                   'SYNTH SELECT NEXT',
                   'SYNTH SELECT LAST',
                   'PATTERN SELECT NEXT',
                   'PATTERN SELECT LAST',
+                  'PURGE UNUSED PATTERNS',
                 ]:
         return True
     
