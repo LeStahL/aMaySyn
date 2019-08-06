@@ -145,12 +145,11 @@ class Ma2Widget(Widget):
         pattern_names = [p.name for p in self.patterns]
         return pattern_names.index(name) if name in pattern_names else -1
 
-    def getTimeOfBeat(self, beat):
-        return round(self.getTimeOfBeat_raw(beat), 6)
+    def getTimeOfBeat(self, beat, bpmlist = None):
+        return round(self.getTimeOfBeat_raw(beat, bpmlist = self.getInfo('BPM') if bpmlist is None else ' '.join(bpmlist)), 6)
 
-    def getTimeOfBeat_raw(self, beat):
+    def getTimeOfBeat_raw(self, beat, bpmlist):
         beat = float(beat)
-        bpmlist = self.getInfo('BPM')
         if(type(bpmlist) != str):
             return beat * 60./bpmlist
 
@@ -216,7 +215,7 @@ class Ma2Widget(Widget):
         elif action == 'MUTE':                          self.muteSound()
         elif action == 'SHADER PLAY':                   self.buildGLSL(compileGL = True)
         elif action == 'SHADER RENDER':                 self.buildGLSL(compileGL = True, renderWAV = True)
-        elif action == 'SHADER RENDER MODULEONLY':      self.buildGLSL(compileGL = True, onlyModule = True)            
+        elif action == 'SHADER RENDER CURRENT MODULE':  self.buildGLSL(compileGL = True, onlyModule = True)            
         elif action == 'SONG CLEAR':                    self.clearSong()
         elif action == 'SONG LOAD':                     self.loadCSV_prompt()
         elif action == 'SONG SAVE':                     self.saveCSV_prompt()
@@ -251,6 +250,7 @@ class Ma2Widget(Widget):
             elif action == 'MOD SHIFT END':             self.getTrack().moveModule(0, move_end = True, total_length = self.getTotalLength())
             elif action == 'MOD SHIFT ANYWHERE':        self.moveModuleAnywhereDialog()
             elif action == 'TRACK ADD NEW':             self.addTrack()
+            elif action == 'TRACK ADD CLONE':           self.cloneTrack()
             elif action == 'TRACK DELETE':              self.delTrack()
             elif action == 'MOD SELECT LEFT':           self.getTrack().switchModule(-1)
             elif action == 'MOD SELECT RIGHT':          self.getTrack().switchModule(+1)
@@ -499,8 +499,20 @@ class Ma2Widget(Widget):
         self.update()
 
     def addTrack(self, name = 'NJU TREK', synth = None):
-        self.tracks.append(Track(synths, name = name, synth = synth))
-        if len(self.tracks) == 1: self.current_track = 0
+        if not self.tracks:
+            self.tracks.append(Track(synths, name = name, synth = synth))
+            self.current_track = 0
+        elif self.current_track:
+            self.current_track += 1
+            self.tracks.insert(self.current_track, Track(synths, name = name, synth = synth))
+        self.update()
+
+    def cloneTrack(self):
+        clone = Track(synths, name = '^ CLONE')
+        clone.cloneTrack(self.getTrack())
+        self.current_track += 1
+        self.tracks.insert(self.current_track, clone)
+        print("lol")
         self.update()
 
     def switchTrack(self, inc):
@@ -1122,9 +1134,21 @@ class Ma2Widget(Widget):
             loop_mode = 'seamless'
             offset = 0
             max_mod_off = test_module.getModuleOff()
-            print(test_track)
-            print(tracks)
-            print(patterns)
+
+            # might need to shift
+            module_shift = self.getModule().mod_on
+            for part in self.getInfo('BPM').split():
+                bpm_point = float(part.split(':')[0])
+                if bpm_point <= module_shift:
+                    bpm_list = ['0:' + part.split(':')[1]]
+                else:
+                    bpm_list.append(str(bpm_point - module_shift) + ':' + part.split(':')[1])
+                print(part, module_shift, bpm_list)
+
+            if self.MODE_debug:
+                print(test_track)
+                print(tracks)
+                print(patterns)
 
         else:
             tracks = [t for t in self.tracks if t.modules and not t.mute] if self.track_solo is None else [self.tracks[self.track_solo]]
@@ -1133,6 +1157,7 @@ class Ma2Widget(Widget):
             loop_mode = self.getInfo('loop')
             offset = self.getInfo('B_offset')
             max_mod_off = max(t.getLastModuleOff() for t in tracks)
+            bpm_list = self.getInfo('BPM').split()
 
         track_sep = [0] + list(accumulate([len(t.modules) for t in tracks]))
         pattern_sep = [0] + list(accumulate([len(p.notes) for p in patterns]))
@@ -1204,16 +1229,16 @@ class Ma2Widget(Widget):
         defcode += '#define NNOT ' + nN + '\n'
         defcode += '#define NDRM ' + nD + '\n'
 
-        max_time = self.getTimeOfBeat(max_mod_off)
+        max_time = self.getTimeOfBeat(max_mod_off, bpm_list)
 
         # construct arrays for beat / time correspondence
-        pos_B = [float(part.split(':')[0]) for part in self.getInfo('BPM').split()] + [max_mod_off]
-        pos_t = [self.getTimeOfBeat(B) for B in pos_B]
+        pos_B = [B for B in (float(part.split(':')[0]) for part in bpm_list) if B < max_mod_off] + [max_mod_off]
+        pos_t = [self.getTimeOfBeat(B, bpm_list) for B in pos_B]
         pos_BPS = []
         pos_SPB = []
         for b in range(len(pos_B)-1):
-            pos_BPS.append((pos_B[b+1] - pos_B[b]) / (pos_t[b+1] - pos_t[b]))
-            pos_SPB.append(1./pos_BPS[-1])
+            pos_BPS.append(round((pos_B[b+1] - pos_B[b]) / (pos_t[b+1] - pos_t[b]), 4))
+            pos_SPB.append(round(1./pos_BPS[-1], 4))
 
         ntime = str(len(pos_B))
         ntime_1 = str(len(pos_B)-1)
@@ -1227,11 +1252,11 @@ class Ma2Widget(Widget):
         if loop_mode == 'seamless':
             loopcode = 'time = mod(time, ' + GLfloat(max_time) + ');\n' + 4*' '
         elif loop_mode == 'full':
-            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off + max_rel)) + ');\n' + 4*' '
+            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off + max_rel), bpm_list) + ');\n' + 4*' '
         else:
             loopcode = ''
         
-        if offset != 0: loopcode = 'time += ' + GLfloat(self.getTimeOfBeat(offset)) + ';\n' + 4*' ' + loopcode
+        if offset != 0: loopcode = 'time += ' + GLfloat(self.getTimeOfBeat(offset), bpm_list) + ';\n' + 4*' ' + loopcode
 
         print("START TEXTURE")
         
@@ -1543,7 +1568,7 @@ class Ma2Widget(Widget):
 
         if renderWAV:
             # determine number of samples for one songlength
-            song_length = max(t.getLastModuleOff() for t in self.tracks) / float(self.getInfo('BPM')) * 60
+            song_length = pos_t[-1]
             sound_framerate = 44100
             sound_channels = 2
             sound_samplewidth = 2

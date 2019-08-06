@@ -45,6 +45,11 @@ class Track():
     def selectTaggedModule(self):
         self.current_module = self.getFirstTaggedModuleIndex()
 
+    def cloneTrack(self, track):
+        self.modules = [m for m in track.modules]
+        self.current_module = track.current_module
+        self.current_synth = track.current_synth
+
     def addModule(self, pattern, transpose = 0):
         if not self.modules:
             self.modules.append(Module(0, pattern, transpose))

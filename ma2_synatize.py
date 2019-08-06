@@ -99,7 +99,6 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
             stored_random_values.update({form['id']: form['value']})
         
         if cmd == 'seg':
-            print(form)
             if form['shape'] == 'linear' and form['to'] is not None:
                 from_x = float(form['from'].split(',')[0])
                 from_y = float(form['from'].split(',')[1])
@@ -118,11 +117,12 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
                 
         for key in form.keys():
             if key not in defaults.keys() and key not in requirements and key != 'value':
-                print('PARSING - WARNING: ', key+'='+str(form[key]), 'IN FORM', form, '- supports', list(defaults.keys()))
+                print('PARSING - ERROR: ', key+'='+str(form[key]), 'IN FORM', form, '- supports', list(defaults.keys()))
+                quit()
         
         if cid in [f['id'] for f in form_list]:
-            print('PARSING - WARNING! ID \"' + cid + '\" already taken. Ignoring line.')
-            continue
+            print('PARSING - ERROR! ID \"' + cid + '\" already taken.')
+            quit()
 
         if cmd == 'main' or cmd == 'maindrum':
             main_list.append(form)
@@ -240,8 +240,11 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         phi = instance(form['freq']) + '*_PROG'
 
                     elif form['type'] == 'lfo':
-                        tvar = '*_BPROG' if 'global' not in form['mode'] else ('*_BEAT' if 'module' not in form['mode'] else '*_BMODPROG')
-                        if 'time' in form['mode']: tvar = '*_PROG' if 'global' not in form['mode'] else '*_TIME'
+                        tvar = '*_BPROG' if 'global' not in form['mode'] else '*_BEAT'
+                        if 'module' in form['mode']:
+                            tvar = '*_BMODPROG'
+                        elif 'time' in form['mode']:
+                            tvar = '*_PROG' if 'global' not in form['mode'] else '*_TIME'
                             
                         phi = instance(form['freq']) + tvar
                         if form['shape'] == 'squ': form['shape'] = 'psq'

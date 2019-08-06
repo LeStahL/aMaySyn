@@ -21,7 +21,7 @@ float fhelp(float x) { return 1. + .333*x; } // 1. + .33333*x + .1*x*x + .02381*
 //BEATHEADER
 float BPS, SPB, BT;
 
-const float Fsample = 44100.; // PRODUCTION: CHANGE THIS BACK TO 44100.
+const float Fsample = 44100.; // CAUTION: THIS SHOULD BE 44100. FOR NR4.
 const float Tsample = 1./Fsample;
 
 const float filterthreshold = 1e-3;

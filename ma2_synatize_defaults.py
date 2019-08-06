@@ -13,11 +13,9 @@ def set_remaining_defaults(cid, cmd, form):
         defaults.update({'min':'0', 'max':'1', 'digits':'3', 'store':False, 'tag':''})
 
     elif cmd == 'osc' or cmd == 'lfo':
-        defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0', 'overdrive':'0'})
+        defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0', 'overdrive':'0', 'shift':'0', 'scale':'1'})
 
-        if cmd == 'osc':
-            defaults.update({'shift':'0', 'scale':'1'})            
-        elif cmd == 'lfo':
+        if cmd == 'lfo' and ('shape' not in form or form['shape'] != 'fract'):
             defaults.update({'shift':'0.5', 'scale':'0.5'})
 
         try:
