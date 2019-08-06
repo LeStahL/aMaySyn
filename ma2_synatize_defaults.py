@@ -15,8 +15,8 @@ def set_remaining_defaults(cid, cmd, form):
     elif cmd == 'osc' or cmd == 'lfo':
         defaults.update({'shape':'sin', 'freq':'f', 'phase':'0', 'pw':'0', 'overdrive':'0', 'shift':'0', 'scale':'1'})
 
-        if cmd == 'lfo' and ('shape' not in form or form['shape'] != 'fract'):
-            defaults.update({'shift':'0.5', 'scale':'0.5'})
+        if cmd == 'lfo':
+            defaults.update({'freq':'1', 'shift':'0.5', 'scale':'0.5'})
 
         try:
             if form['shape'] == 'madd':
@@ -27,9 +27,10 @@ def set_remaining_defaults(cid, cmd, form):
                 defaults.update({'mix':'.5', 'amp':'1', 'peak':'500.', 'sigma':'200.', 'q': '2', 'ncut': '3', 'detune':'1e-3'})
             elif form['shape'] == 'fm':
                 defaults.update({'lv1':'1', 'lv2':'0', 'lv3':'0', 'lv4':'0', 'fr1':'1', 'fr2':'1', 'fr3':'1', 'fr4':'1', 'fb1':'0', 'fb2':'0', 'fb3':'0', 'fb4':'0', 'algo':'0', 'parscale':'1'})
-
             elif form['shape'] == 'noise':
                 defaults.update({'freq':'1.'})
+            elif form['shape'] == 'fract' and cmd == 'lfo':
+                defaults.update({'shift':'0', 'scale':'1'})
 
         except:
             pass
