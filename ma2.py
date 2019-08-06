@@ -23,7 +23,7 @@ from functools import partial
 from struct import pack, unpack
 from numpy import clip, ceil, sqrt
 from numpy.random import normal
-from math import sin, exp, pi, floor
+from math import sin, exp, pi, floor, inf
 from random import random
 from datetime import *
 from copy import copy, deepcopy
@@ -60,7 +60,7 @@ class Ma2Widget(Widget):
     thePtnWidget = ObjectProperty(None)
     somePopup = ObjectProperty(None)
 
-    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'loop': 'full', 'stereo_delay': 2e-4}
+    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'B_stop': inf, 'loop': 'full', 'stereo_delay': 2e-4}
 
     current_track = None
     tracks = []
@@ -841,6 +841,20 @@ class Ma2Widget(Widget):
                         self.theTrkWidget.removeMarkersContaining('OFFSET')
                     return True
 
+            elif cmd[0] == 'stop':
+                if len(cmd) == 1:
+                    self.lastSongCommand = 'STOP ' + str(self.getInfo('B_stop'))
+                    return False
+                else:
+                    value = float(cmd[1])
+                    if value > self.getInfo('B_offset') and value <= self.getTotalLength():
+                        self.setInfo('B_stop', value)
+                        self.theTrkWidget.updateMarker('STOP', self.getInfo('B_stop'))
+                    else:
+                        self.setInfo('B_stop', inf)
+                        self.theTrkWidget.removeMarkersContaining('STOP')
+                    return True
+
             elif cmd[0] == 'stereo':
                 if len(cmd) == 1:
                     self.lastSongCommand = 'STEREO ' + str(self.getInfo('stereo_delay'))
@@ -1072,10 +1086,13 @@ class Ma2Widget(Widget):
                 self.setInfo('B_offset', float(r[2]))
                 if self.getInfo('B_offset') > 0:
                     self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
+                self.setInfo('B_stop', float(r[3]))
+                if self.getInfo('B_stop') < inf:
+                    self.theTrkWidget.updateMarker('STOP', self.getInfo('B_stop'))
                 
-                c = 4
+                c = 5 # adjust this if you add some stored value beforehand
                 ### read tracks -- with modules assigned to dummy patterns
-                for _ in range(int(r[3])):
+                for _ in range(int(r[c-1])):
                     track = Track(synths, name = r[c], synth = synths.index(r[c+1]) if r[c+1] in synths else -1)
                     track.setParameters(norm = float(r[c+2].replace('m','')), mute = ('m' in r[c+2]))
 
@@ -1138,7 +1155,7 @@ class Ma2Widget(Widget):
         
         self.purgeEmptyPatterns()
 
-        out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(len(self.tracks))]) + '|'
+        out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(self.getInfo('B_stop')), str(len(self.tracks))]) + '|'
         
         for t in self.tracks:
             out_str += t.name + '|' + str(t.getSynthFullName()) + '|' + str(t.getNorm()) + t.mute * 'm' + '|' + str(len(t.modules)) + '|'
@@ -1207,7 +1224,7 @@ class Ma2Widget(Widget):
             patterns = [p for p in self.patterns if p in actually_used_patterns]
             loop_mode = self.getInfo('loop')
             offset = self.getInfo('B_offset')
-            max_mod_off = max(t.getLastModuleOff() for t in tracks)
+            max_mod_off = min(max(t.getLastModuleOff() for t in tracks), self.getInfo('B_stop'))
             bpm_list = self.getInfo('BPM').split()
 
         track_sep = [0] + list(accumulate([len(t.modules) for t in tracks]))
@@ -1280,8 +1297,6 @@ class Ma2Widget(Widget):
         defcode += '#define NNOT ' + nN + '\n'
         defcode += '#define NDRM ' + nD + '\n'
 
-        max_time = self.getTimeOfBeat(max_mod_off, bpm_list)
-
         # construct arrays for beat / time correspondence
         pos_B = [B for B in (float(part.split(':')[0]) for part in bpm_list) if B < max_mod_off] + [max_mod_off]
         pos_t = [self.getTimeOfBeat(B, bpm_list) for B in pos_B]
@@ -1300,14 +1315,16 @@ class Ma2Widget(Widget):
         beatheader += 'const float pos_BPS[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join(map(GLfloat, pos_BPS)) + ');\n'
         beatheader += 'const float pos_SPB[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join(map(GLfloat, pos_SPB)) + ');'
 
+        time_offset = self.getTimeOfBeat(offset, bpm_list)
+
         if loop_mode == 'seamless':
-            loopcode = 'time = mod(time, ' + GLfloat(max_time) + ');\n' + 4*' '
+            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off, bpm_list) - time_offset) + ');\n' + 4*' '
         elif loop_mode == 'full':
-            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off + max_rel), bpm_list) + ');\n' + 4*' '
+            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off + max_rel, bpm_list) - time_offset) + ');\n' + 4*' '
         else:
             loopcode = ''
         
-        if offset != 0: loopcode = 'time += ' + GLfloat(self.getTimeOfBeat(offset), bpm_list) + ';\n' + 4*' ' + loopcode
+        if offset != 0: loopcode += 'time += ' + GLfloat(time_offset) + ';\n' + 4*' '
 
         print("START TEXTURE")
         
