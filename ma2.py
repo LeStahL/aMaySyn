@@ -367,7 +367,13 @@ class Ma2Widget(Widget):
 
     def handleUndoStack(self):
         # is this everything I need to store?
-        state = {'info': deepcopy(self.info), 'tracks': deepcopy(self.tracks), 'patterns': deepcopy(self.patterns), 'current_track': self.current_track}
+        state = {
+            'info': deepcopy(self.info),
+            'tracks': deepcopy(self.tracks),
+            'patterns': deepcopy(self.patterns),
+            'current_track': self.current_track,
+            'track_solo': self.track_solo
+            }
 
         if self.MODE_undo:
             self.MODE_undo = False        
@@ -395,6 +401,7 @@ class Ma2Widget(Widget):
         self.info = state['info']
         self.tracks = state['tracks']
         self.current_track = state['current_track']
+        self.track_solo = state['track_solo']
         self.patterns = []
         for p in state['patterns']:
             self.patterns.append(p)
@@ -402,7 +409,6 @@ class Ma2Widget(Widget):
                 for m in t.modules:
                     if m.pattern.name == p.name:
                         m.setPattern(p)
-
         self.update()
 
     def renameSong(self):
@@ -730,17 +736,6 @@ class Ma2Widget(Widget):
                         note.setParameter(parameter, round(rnd_value, 2))
                     return True
 
-                # randomize: spread values around their current value in a gaussian fashion 
-                # e.g SET AUX <B_min> <B_max> RANDOMIZE <spread> <stepsize>
-                elif shape == 'randomize':
-                    gauss_spread = float(cmd[5])
-                    step_size = 1 if len(cmd) < 7 else float(cmd[6])
-                    for note in affected_notes:
-                        current_value = note.getParameter(parameter)
-                        rnd_value = step_size * round(normal(0, gauss_spread) / step_size)
-                        note.setParameter(parameter, round(current_value + rnd_value, 2))
-                    return True
-
                 elif shape == 'reset':
                     for note in affected_notes:
                         note.setParameter(parameter, None)
@@ -751,7 +746,7 @@ class Ma2Widget(Widget):
                     return False
 
             # or TRANSFORM VEL <B_min> <B_max> LIN <shift> <scale> <stepsize>
-            if cmd[0] == 'transform':
+            elif cmd[0] == 'transform':
                 parameter = cmd[1]
                 B_min = float(cmd[2])
                 B_max = float(cmd[3])
@@ -788,6 +783,42 @@ class Ma2Widget(Widget):
                 else:
                     print('COMMAND NOT SUPPORTED:\n', cmd)
                     return False
+
+            elif cmd[0] == 'randomize':
+                # randomize: spread values around their current value in a gaussian fashion
+                # e.g RANDOMIZE POS <B_min> <B_max> <spread> [<stepsize>]
+                parameter = cmd[1].lower()
+                B_min = float(cmd[2])
+                B_max = float(cmd[3])
+
+                if not self.getPattern() or not self.getPattern().notes:
+                    affected_notes = []
+                else:
+                    affected_notes = [n for n in self.getPattern().notes if n.note_on >= B_min and n.note_on < B_max]
+
+                gauss_spread = float(cmd[4])
+                step_size = 1 if parameter not in ['pos', 'len'] else 1/32
+                if len(cmd) > 5:
+                    parse_ratio = cmd[5].split('/')
+                    if len(parse_ratio) == 2:
+                        step_size = float(parse_ratio[0]) / float(parse_ratio[1])
+                    else:
+                        step_size = float(cmd[5])
+
+                if parameter in ['pos', 'len']:
+                    min_value = 0
+                    max_value = self.getPatternLen()
+                    precision = 6
+                else:
+                    min_value = None
+                    max_value = None
+                    precision = 2
+
+                for note in affected_notes:
+                    current_value = note.getParameter(parameter)
+                    rnd_value = step_size * round(normal(0, gauss_spread) / step_size)
+                    note.setParameter(parameter, round(current_value + rnd_value, precision), min_value = min_value, max_value = max_value)
+                return True
 
             elif cmd[0] == 'bpm':
                 if len(cmd) == 1:
@@ -826,7 +857,7 @@ class Ma2Widget(Widget):
 
         except Exception as exc:
             print('COMMAND ERRONEOUS (u stupid hobo):\n', cmd, '\n', type(exc))
-            print('idea for TODO: SHUFFLE NOTE POSITIONS BY EPSILON AMOUNTS\n')
+            raise
             return False
 
 ############## ONLY THE MOST IMPORTANT FUNCTION! ############

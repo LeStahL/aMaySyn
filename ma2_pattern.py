@@ -3,6 +3,7 @@ kivy.require('1.10.0') # replace with your current kivy version !
 from kivy.app import App
 from kivy.graphics import Color
 
+from numpy import clip
 import random
 
 class Pattern():
@@ -300,28 +301,53 @@ class Note():
             return self.note_slide
         elif parameter == 'aux':
             return self.note_aux
+        elif parameter == 'pos':
+            return self.note_on
+        elif parameter == 'len':
+            return self.note_len
+        elif parameter == 'pitch':
+            return self.note_pitch
         else:
             print("WARNING. TRIED TO GET NONEXISTENT PARAMETER:", parameter)
             return None
 
     ### PARAMETER SETTERS ###
-    def setParameter(self, parameter, value = None):
+    def setParameter(self, parameter, value = None, min_value = None, max_value = None):
+        if value is not None:
+            value = float(value)
+            if min_value and value < min_value: value = min_value
+            if max_value and value > max_value: value = max_value
         if parameter == 'pan':
-            setFunction = self.setPan
+            self.setPan(value)
         elif parameter == 'vel':
-            setFunction = self.setVelocity
+            self.setVelocity(value)
         elif parameter == 'slide':
-            setFunction = self.setSlide
+            self.setSlide(value)
         elif parameter == 'aux':
-            setFunction = self.setAuxParameter
+            self.setAuxParameter(value)
+        elif parameter == 'pos':
+            if min_value is None or max_value is None:
+                print("WARNING. TRIED TO SET PARAMETER WITHOUT BOUNDARIES:", parameter)
+                return
+            self.note_on = value
+            self.note_off = value + self.note_len
+            if self.note_off > max_value:
+                self.note_off = max_value
+                self.note_len = max_value - value
+        elif parameter == 'len':
+            if min_value is None or max_value is None:
+                print("WARNING. TRIED TO SET PARAMETER WITHOUT BOUNDARIES:", parameter)
+                return
+            self.note_len = value
+            self.note_off = self.note_on + value
+            if self.note_off > max_value:
+                self.note_off = max_value
+                self.note_len = max_value - self.note_on
+        elif parameter == 'pitch':
+            self.note_pitch = value
         else:
             print("WARNING. TRIED TO SET NONEXISTENT PARAMETER:", parameter)
             return
-
-        if value is None:
-            setFunction()
-        else:
-            setFunction((float(value)))
 
     def setPan(self, value = None):
         try:
