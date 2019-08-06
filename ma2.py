@@ -470,19 +470,19 @@ class Ma2Widget(Widget):
         self.update()
 
     def changeTrackParameters(self):
-        par_string = str(self.getTrack().getNorm())
-        popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR', title_font = self.font_name, default_text = par_string)
+        par_string = str(100 * self.getTrack().getNorm())
+        popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR IN %', title_font = self.font_name, default_text = par_string)
         popup.bind(on_dismiss = self.handleChangeTrackParameters)
         popup.open()
     def handleChangeTrackParameters(self, *args):
         self._keyboard_request()
         pars = args[0].text.split()
-        self.getTrack().setParameters(norm = pars[0])
+        self.getTrack().setParameters(norm = 0.01 * float(pars[0]))
         self.update()
 
 
     def promptSongCommand(self):
-        popup = InputPrompt(self, title = 'ENTER BPM ... / OFFSET ... / STEREO ...', title_font = self.font_name, default_text = self.lastSongCommand)
+        popup = InputPrompt(self, title = 'ENTER BPM / OFFSET / STOP / STEREO ...', title_font = self.font_name, default_text = self.lastSongCommand)
         popup.bind(on_dismiss = self.handlePromptSongCommand)
         popup.open()
     def handlePromptSongCommand(self, *args):
@@ -1580,6 +1580,9 @@ class Ma2Widget(Widget):
         pass
 
     def openSynthDialog(self):
+        if self.isDrumTrack():
+            return
+
         self.loadSynths()
         popup = SelectSynthDialog(synths = synths, current_synth = self.getTrack().getSynthIndex())
         popup.bind(on_dismiss = self.handleSynthDialog)
