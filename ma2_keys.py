@@ -26,8 +26,9 @@ global_keys  = {
                 'ctrl z'            : 'UNDO',
                 'ctrl y'            : 'REDO',
                 'a'                 : 'SYNTH SELECT LAST',
-                's'                 : 'SYNTH SELECT',
-                'd'                 : 'SYNTH SELECT NEXT',
+                's'                 : 'SYNTH SELECT NEXT',
+                'd'                 : 'SYNTH SELECT RANDOM',
+                'f'                 : 'SYNTH SELECT',
                 'pageup'            : 'PATTERN SELECT NEXT',
                 'pagedown'          : 'PATTERN SELECT LAST',
                 'ctrl i'            : 'DIALOG PATTERN IMPORT',
@@ -74,6 +75,7 @@ track_keys   = {
                 'f6'               : 'TRACK RENAME',
                 'e'                : 'SYNTH EDIT',
                 'ctrl e'           : 'SYNTH CLONE HARD',
+                'ctrl r'           : 'SYNTH FIX RANDOMS',
                }
 
 pattern_keys = {
@@ -115,6 +117,7 @@ pattern_keys = {
                 'f9'                  : 'DEBUG PRINT NOTES',
                 'e'                   : 'DRUMSYNTH EDIT',
                 'ctrl e'              : 'DRUMSYNTH CLONE HARD',
+                'ctrl r'              : 'DRUMSYNTH FIX RANDOMS',
                }
 
 # https://kivy.org/doc/stable/_modules/kivy/core/window.html
@@ -151,6 +154,7 @@ def doesActionChangeState(action):
                   'SYNTH SELECT',
                   'SYNTH SELECT NEXT',
                   'SYNTH SELECT LAST',
+                  'SYNTH SELECT RANDOM',
                   'PATTERN SELECT NEXT',
                   'PATTERN SELECT LAST',
                   'PURGE UNUSED PATTERNS',

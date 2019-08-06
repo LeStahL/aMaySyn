@@ -24,10 +24,11 @@ from struct import pack, unpack
 from numpy import clip, ceil, sqrt
 from numpy.random import normal
 from math import sin, exp, pi, floor, inf
-from random import random
+from random import random, randint
 from datetime import *
 from copy import copy, deepcopy
 from shutil import move, copyfile
+from hashlib import md5
 import pygame, wave
 import csv, re
 import operator
@@ -75,6 +76,7 @@ class Ma2Widget(Widget):
     synatize_param_list = []
     synatized_code_syn = ''
     synatized_code_drum = ''
+    synfile = ''
     
     MODE_debug = False
     MODE_numberInput = False
@@ -92,10 +94,13 @@ class Ma2Widget(Widget):
     #./run.sh <ID> -headless
     MODE_headless = False
     outdir = 'out/'
+    song_length = 0
+    file_extra_information = ''
 
     lastCommand = ''
     lastSongCommand = ''
     lastImportPatternFilename = ''
+    lastFixRandomsList = ''
 
     #helpers...
     def getTrack(self):                 return self.tracks[self.current_track] if self.current_track is not None else None
@@ -223,9 +228,10 @@ class Ma2Widget(Widget):
         elif action == 'SHADER CREATE':                 self.buildGLSL()
         elif action == 'UNDO':                          self.stepUndoStack(-1)
         elif action == 'REDO':                          self.stepUndoStack(+1)
+        elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
         elif action == 'SYNTH SELECT NEXT':             self.getTrack().switchSynth(+1, debug = self.MODE_debug)
         elif action == 'SYNTH SELECT':                  self.openSynthDialog()
-        elif action == 'SYNTH SELECT LAST':             self.getTrack().switchSynth(-1, debug = self.MODE_debug)
+        elif action == 'SYNTH SELECT RANDOM':           self.switchToRandomSynth()
         elif action == 'PATTERN SELECT NEXT':           self.getTrack().switchModulePattern(self.getPattern(+1))
         elif action == 'PATTERN SELECT LAST':           self.getTrack().switchModulePattern(self.getPattern(-1))
         elif action == 'DIALOG PATTERN IMPORT':         self.importPattern()
@@ -264,6 +270,7 @@ class Ma2Widget(Widget):
             elif action == 'MOD DELETE':                self.getTrack().delModule()
             elif action == 'TRACK RENAME':              self.renameTrack()
             elif action == 'SYNTH CLONE HARD':          self.synthClone(hard = True)
+            elif action == 'SYNTH FIX RANDOMS':         self.promptFixRandoms()
             elif action == 'SYNTH EDIT':                self.editSynth()
             elif action == 'SCROLL UP':                 self.theTrkWidget.scroll(axis = 'vertical', inc = -1)
             elif action == 'SCROLL DOWN':               self.theTrkWidget.scroll(axis = 'vertical', inc = +1)
@@ -312,6 +319,7 @@ class Ma2Widget(Widget):
             elif action == 'PATTERN RENAME':            self.renamePattern()
             elif action == 'DEBUG PRINT NOTES':         self.getPattern().printNoteList()
             elif action == 'DRUMSYNTH CLONE HARD':      self.synthClone(drum = True, hard = True)
+            elif action == 'DRUMSYNTH FIX RANDOMS':     self.promptFixRandoms(drum = True)
             elif action == 'DRUMSYNTH EDIT':            self.editSynth(drum = True)
             elif action == 'SCROLL UP':                 self.thePtnWidget.scroll(axis = 'vertical', inc = +1, is_drum = self.isDrumTrack())
             elif action == 'SCROLL DOWN':               self.thePtnWidget.scroll(axis = 'vertical', inc = -1, is_drum = self.isDrumTrack())
@@ -505,6 +513,7 @@ class Ma2Widget(Widget):
                 self.lastCommand = args[0].text
         self.update()
 
+
     def addTrack(self, name = 'NJU TREK', synth = None):
         if not self.tracks:
             self.tracks.append(Track(synths, name = name, synth = synth))
@@ -531,9 +540,10 @@ class Ma2Widget(Widget):
 
     def delTrack(self):
         if self.tracks and self.current_track is not None:
-            if len(self.tracks) == 1: self.tracks.append(Track(synths)) # have to have one
             del self.tracks[self.current_track]
             self.current_track = min(self.current_track, len(self.tracks)-1)
+            if not self.tracks:
+                self.clearSong(no_renaming = True)
 
     def moveAllTracks(self, inc):
         for t in self.tracks:
@@ -639,9 +649,7 @@ class Ma2Widget(Widget):
         del self.tracks[:]
         del self.patterns[:]
         self.tracks = [Track(synths = ['__None'], name = 'NJU TREK')]
-        self.patterns = [Pattern()]
-        self.tracks[0].addModule(self.patterns[0])
-
+        self.patterns = []
         self.current_track = 0
 
         if not no_renaming: self.renameSong()
@@ -887,11 +895,11 @@ class Ma2Widget(Widget):
         global synths, drumkit
         old_drumkit = drumkit
 
-        synfile = self.getInfo('title') + '.syn'
-        if not os.path.exists(synfile): synfile = def_synfile
+        self.synfile = self.getInfo('title') + '.syn'
+        if not os.path.exists(self.synfile): self.synfile = def_synfile
 
         self.synatize_form_list, self.synatize_main_list, drumkit, self.stored_randoms, self.synatize_param_list \
-            = synatize(synfile, stored_randoms = self.stored_randoms, reshuffle_randoms = reshuffle_randoms)
+            = synatize(self.synfile, stored_randoms = self.stored_randoms, reshuffle_randoms = reshuffle_randoms)
 
         synths = ['I_' + m['id'] for m in self.synatize_main_list if m['type']=='main']
         synths.extend(def_synths)
@@ -914,7 +922,7 @@ class Ma2Widget(Widget):
         copyfile(def_synfile, synfile)
         print("New", synfile, "copied from", def_synfile, "and old version kept as", synfile + '.bak')
 
-    def synthClone(self, hard = False, drum = False):
+    def synthClone(self, hard = False, drum = False, formID = None):
         self.loadSynths()
         if not self.synatized_code_syn:
             print("No code in memory! Compile once before you clone!")
@@ -925,23 +933,25 @@ class Ma2Widget(Widget):
         if drum and self.getTrackSynthType() != 'D':
             return
         if not drum and self.getTrackSynthType() == 'D':
-            print("Current Track is drum track, go do Pattern (TAB) to clone single drums")
+            print("Current Track is drum track, go do Pattern (SHIFT+TAB) to clone single drums")
             return
 
         count = 0
         if drum:
             oldID = drumkit[self.getPattern().getDrumIndex()]
-            while True:
-                formID = oldID + str(count)
-                if formID not in drumkit: break
-                count += 1
+            if formID is None:
+                while True:
+                    formID = oldID + str(count)
+                    if formID not in drumkit: break
+                    count += 1
         else:
             oldID = self.getTrack().getSynthName()
-            while True:
-                formID = oldID + '.' + str(count)
-                print("TRYING", formID, synths)
-                if 'I_' + formID not in synths: break
-                count += 1
+            if formID is None:
+                while True:
+                    formID = oldID + '.' + str(count)
+                    print("TRYING", formID, synths)
+                    if 'I_' + formID not in synths: break
+                    count += 1
 
         try:
             formTemplate = next(form for form in self.last_synatized_forms if form['id'] == oldID)
@@ -962,6 +972,54 @@ class Ma2Widget(Widget):
             filehandle.write('\n' + formType + 4*' ' + formID + 4*' ' + formBody)
 
         self.loadSynths()
+
+
+    def promptFixRandoms(self, drum = False):
+        prompt_title = 'Enter List of blah=.1337 etc. to fix '
+        if drum:
+            if self.getTrackSynthType() != 'D': return
+            formID = drumkit[self.getPattern().getNote().note_pitch]
+            prompt_title += 'DRUM ' + formID
+        else:
+            formID = self.getTrack().getSynthName()
+            prompt_title += 'SYNTH ' + formID
+        popup = InputPrompt(self, title = prompt_title, title_font = self.font_name, default_text = self.lastFixRandomsList, extra_parameters = {'formID': formID, 'drum': drum})
+        popup.bind(on_dismiss = self.handlePromptFixRandoms)
+        popup.open()
+    def handlePromptFixRandoms(self, *args):
+        self._keyboard_request()
+        if args[0].validated:
+            self.synthCloneWithFixedRandoms(args[0].text, **args[0].extra_parameters)
+            self.lastFixRandomsList = args[0].text
+        self.update()
+
+    def synthCloneWithFixedRandoms(self, fixlist, formID, drum):
+        if drum:
+            pretend_synths, pretend_drums = ('D_Drums', formID)
+        else:
+            pretend_synths, pretend_drums = ('I_' + formID, None)
+
+        fixed_randoms = {}
+        fixlist = fixlist.replace('\t', ' ').replace('\n', '')
+        for fix in fixlist.split():
+            if '=' in fix:
+                random_ID, random_fix = fix.split('=')
+                fixed_randoms.update({random_ID: float(random_fix)})
+
+        for form in self.stored_randoms:
+            if form['id'] in fixed_randoms:
+                form['value'] = fixed_randoms[form['id']]
+                print("found", form['id'], form['value'], '\n')
+
+        formID = formID + '.' + md5(fixlist.encode('utf8')).hexdigest()[0:4]
+
+        self.synatize_form_list, self.synatize_main_list, drumkit, self.stored_randoms, self.synatize_param_list\
+            = synatize(self.synfile, stored_randoms = self.stored_randoms, reshuffle_randoms = False)
+        self.synatized_code_syn, self.synatized_code_drum, paramcode, filtercode, self.last_synatized_forms\
+            = synatize_build(self.synatize_form_list, self.synatize_main_list, self.synatize_param_list, pretend_synths, pretend_drums)
+
+        self.synthClone(hard = True, drum = drum, formID = formID)
+
 
     def synthDeactivate(self, drum = False):
         if drum:
@@ -1083,12 +1141,16 @@ class Ma2Widget(Widget):
                 self.patterns = []
                 self.setInfo('title', r[0])
                 self.tryToSetBPM(r[1])
-                self.setInfo('B_offset', float(r[2]))
-                if self.getInfo('B_offset') > 0:
-                    self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
-                self.setInfo('B_stop', float(r[3]))
-                if self.getInfo('B_stop') < inf:
-                    self.theTrkWidget.updateMarker('STOP', self.getInfo('B_stop'))
+                B_offset = float(r[2])
+                B_stop = float(r[3])
+
+                self.setInfo('B_offset', B_offset)
+                if B_offset > 0:
+                    self.theTrkWidget.updateMarker('OFFSET', B_offset)
+                B_stop = B_stop if B_stop > 0 else inf
+                self.setInfo('B_stop', B_stop)
+                if B_stop < inf:
+                    self.theTrkWidget.updateMarker('STOP', B_stop)
                 
                 c = 5 # adjust this if you add some stored value beforehand
                 ### read tracks -- with modules assigned to dummy patterns
@@ -1227,6 +1289,9 @@ class Ma2Widget(Widget):
             max_mod_off = min(max(t.getLastModuleOff() for t in tracks), self.getInfo('B_stop'))
             bpm_list = self.getInfo('BPM').split()
 
+        if self.MODE_headless:
+            loop_mode = 'full'
+
         track_sep = [0] + list(accumulate([len(t.modules) for t in tracks]))
         pattern_sep = [0] + list(accumulate([len(p.notes) for p in patterns]))
 
@@ -1250,11 +1315,18 @@ class Ma2Widget(Widget):
         self.synatized_code_syn, self.synatized_code_drum, paramcode, filtercode, self.last_synatized_forms = \
             synatize_build(self.synatize_form_list, self.synatize_main_list, self.synatize_param_list, actually_used_synths, actually_used_drums)
 
+        if self.MODE_headless:
+            print("ACTUALLY USED SYNTHS:", actually_used_synths)
+            names_of_actually_used_drums = [drumkit[d] for d in actually_used_drums] 
+            print("ACTUALLY USED DRUMS:", names_of_actually_used_drums)
+            if len(actually_used_drums) == 1:
+                self.file_extra_information += names_of_actually_used_drums[0] + '_'
+
 	# TODO: would be really nice: option to not re-shuffle the last throw of randoms, but export these to WAV on choice... TODOTODOTODOTODO!
 	# TODO LATER: great plans -- live looping ability (how bout midi input?)
         if self.stored_randoms:
             timestamp = datetime.datetime.now().strftime('%Y/%m/%d %H:%M')[2:]
-            countID = str(self.getWAVFileCount()) if renderWAV else '(unsaved)'
+            countID = self.file_extra_information + (str(self.getWAVFileCount()) if renderWAV else '(unsaved)')
             with open(self.getInfo('title') + '.rnd', 'a') as of:
                 of.write(timestamp + '\t' + countID + '\t' \
                                    + '\t'.join((rnd['id'] + '=' + str(rnd['value'])) for rnd in self.stored_randoms if rnd['store']) + '\n')
@@ -1315,14 +1387,14 @@ class Ma2Widget(Widget):
         beatheader += 'const float pos_BPS[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join(map(GLfloat, pos_BPS)) + ');\n'
         beatheader += 'const float pos_SPB[' + ntime_1 + '] = float[' + ntime_1 + '](' + ','.join(map(GLfloat, pos_SPB)) + ');'
 
-        time_offset = self.getTimeOfBeat(offset, bpm_list)
+        self.song_length = self.getTimeOfBeat(max_mod_off, bpm_list)
+        if loop_mode == 'full':
+            self.song_length = self.getTimeOfBeat(max_mod_off + max_rel, bpm_list)
 
-        if loop_mode == 'seamless':
-            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off, bpm_list) - time_offset) + ');\n' + 4*' '
-        elif loop_mode == 'full':
-            loopcode = 'time = mod(time, ' + GLfloat(self.getTimeOfBeat(max_mod_off + max_rel, bpm_list) - time_offset) + ');\n' + 4*' '
-        else:
-            loopcode = ''
+        time_offset = self.getTimeOfBeat(offset, bpm_list)
+        self.song_length -= time_offset
+
+        loopcode = ('time = mod(time, ' + GLfloat(self.song_length) + ');\n' + 4*' ') if loop_mode != 'none' else ''
         
         if offset != 0: loopcode += 'time += ' + GLfloat(time_offset) + ';\n' + 4*' '
 
@@ -1580,9 +1652,7 @@ class Ma2Widget(Widget):
         pass
 
     def openSynthDialog(self):
-        if self.isDrumTrack():
-            return
-
+        if self.isDrumTrack(): return
         self.loadSynths()
         popup = SelectSynthDialog(synths = synths, current_synth = self.getTrack().getSynthIndex())
         popup.bind(on_dismiss = self.handleSynthDialog)
@@ -1593,6 +1663,10 @@ class Ma2Widget(Widget):
         self._keyboard_request()
         self.update()
 
+    def switchToRandomSynth(self):
+        self.getTrack().switchSynth(0, switch_to = randint(0, len(synths) - 4)) # Assumption: last three are drums / gfx / none, and randint() includes endpoints.
+        self.update()
+    
     def editCurve(self):
         popup = CurvePrompt(self, title = 'EDIT THE CURVE IF U DARE', title_font = self.font_name)
         popup.bind(on_dismiss = self.handleEditCurve)
@@ -1639,13 +1713,12 @@ class Ma2Widget(Widget):
 
         if renderWAV:
             # determine number of samples for one songlength
-            song_length = pos_t[-1]
             sound_framerate = 44100
             sound_channels = 2
             sound_samplewidth = 2
-            total_samples = int(song_length * sound_framerate * sound_channels * sound_samplewidth + 1)
+            total_samples = int(self.song_length * sound_framerate * sound_channels * sound_samplewidth + 1)
 
-            sfile = wave.open(self.getWAVFileName(self.getWAVFileCount()),'w')
+            sfile = wave.open(self.getWAVFileName(self.file_extra_information + self.getWAVFileCount()),'w')
             sfile.setframerate(sound_framerate)
             sfile.setnchannels(sound_channels)
             sfile.setsampwidth(sound_samplewidth)
@@ -1661,11 +1734,13 @@ class InputPrompt(ModalView):
     
     text = ''
     validated = False
+    extra_parameters = {}
 
     def __init__(self, parent, **kwargs):
         title = kwargs.pop('title')
         title_font = kwargs.pop('title_font')
         default_text = kwargs.pop('default_text')
+        self.extra_parameters = kwargs.pop('extra_parameters') if 'extra_parameters' in kwargs else {}
         self.text = default_text
         super(InputPrompt, self).__init__(**kwargs)
 
