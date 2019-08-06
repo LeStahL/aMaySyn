@@ -1,0 +1,143 @@
+drum shaker shape=fmnoise attack=0.03 decay=0.1 sustain=0.1 timbre1=0.9 timbre2=0.9
+maindrum SHK src=.2*shaker 
+
+osc nois_lpnoise1 shape=lpnoise freq=11196.
+osc nois_lpnoise2 shape=lpnoise freq=17896.
+osc nois_carrier2 shape=saw freq=12345 phase=.7*nois_lpnoise2
+env nois_decay1 shape=expdecay exponent=80
+env nois_decay2 shape=expdecay exponent=70
+maindrum NOISCHH1 src=vel*nois_decay1*nois_lpnoise1+vel*nois_decay2*nois_carrier2+.17*nois_decay2*nois_carrier2 release=.3
+
+maindrum    NDV.NSNR      src="((clamp(1.43*_tri(drop_phase(_t,.182,153.909,76.006)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_t-.152))+1.428*clamp(.707*_tri(drop_phase(_t,.182,153.909,76.006)+1.428*lpnoise(_t,760.989)),-1.,1.)*exp(-8.556*_t)+.066*lpnoise(_t,13562.653)*(1.-smoothstep(0.,.24,_t-.088))+.724*lpnoise(_t,4127.819)*exp(-_t*3.662)+.295*lpnoise(_t,7269.681)*exp(-_t*2.313))*smoothstep(0.,.05,_t))"
+maindrum    NDV.CMB1     src="(.837*(.541*lpnoise(_t,2041.774)+.798*lpnoise(_t,8260.482)+.931*lpnoise(_t,8317.984))*(smoothstep(0.,.007,_t)-smoothstep(0.,.37,_t-.05))+_sin(drop_phase(_t,.033,464.443,270.029))*exp(-_t*32.249)*.841+_sin(drop_phase(_t*659.983,.033,464.443,270.029))*exp(-_t*33.)*.618)"
+maindrum    NDV.D24     src="(fract(sin(_t*100.*1.)*50000.*1.)*doubleslope(_t,.001,.05,.1)+lpnoise(_t,12000.)*smoothstep(0.,0.,_t)*(1.-smoothstep(0.,.25,_t-0.-0.))+clip((1.+.41)*(_tri(drop2_phase(_t,.02,.028,2271.,341.,225.)))+1.34*fract(sin(_t*90.)*4.5e4)*doubleslope(_t,.04,.3,.01))*doubleslope(_t,0.,.1,0.)*(1.-smoothstep(.1,.1+.2,_t)))"
+maindrum    NDV.D25     src="(.1*env_AHDSR(_t,tL,.02,0.,.45,.05,0.)*(1.00*(_sq_(13870.2*((_t-0.00)-0.00*(1.+1.*_sin(.239*(_t-0.00)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.))))+_sq_(13870.2*((_t-0.00)-1.50e-02*(1.+1.*_sin(.239*(_t-0.00)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.))))+_sq_(13870.2*((_t-0.00)-3.00e-02*(1.+1.*_sin(.239*(_t-0.00)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.))))+_sq_(13870.2*((_t-0.00)-4.50e-02*(1.+1.*_sin(.239*(_t-0.00)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.)))))+8.00e-02*(_sq_(13870.2*((_t-1.23e-01)-0.00*(1.+1.*_sin(.239*(_t-1.23e-01)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.))))+_sq_(13870.2*((_t-1.23e-01)-1.50e-02*(1.+1.*_sin(.239*(_t-1.23e-01)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.))))+_sq_(13870.2*((_t-1.23e-01)-3.00e-02*(1.+1.*_sin(.239*(_t-1.23e-01)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.))))+_sq_(13870.2*((_t-1.23e-01)-4.50e-02*(1.+1.*_sin(.239*(_t-1.23e-01)))),.02+.33*(.5+(.5*(2.*fract(4843.75*Bprog+0.)-1.))))))+.3*(lpnoise((_t-0.00*(1.+.5*_sin(.127*_t))),7182.81+1471.07*(7182.81+(1471.07*(2.*fract(2258.7*Bprog+0.)-1.))))*smoothstep(0.,.1,(_t-0.00*(1.+.5*_sin(.127*_t))))*(1.-(1.-.05)*smoothstep(0.,.15,(_t-0.00*(1.+.5*_sin(.127*_t)))-.1-0.))+lpnoise((_t-2.40e-02*(1.+.5*_sin(.127*_t))),7182.81+1471.07*(7182.81+(1471.07*(2.*fract(2258.7*Bprog+0.)-1.))))*smoothstep(0.,.1,(_t-2.40e-02*(1.+.5*_sin(.127*_t))))*(1.-(1.-.05)*smoothstep(0.,.15,(_t-2.40e-02*(1.+.5*_sin(.127*_t)))-.1-0.))+lpnoise((_t-4.80e-02*(1.+.5*_sin(.127*_t))),7182.81+1471.07*(7182.81+(1471.07*(2.*fract(2258.7*Bprog+0.)-1.))))*smoothstep(0.,.1,(_t-4.80e-02*(1.+.5*_sin(.127*_t))))*(1.-(1.-.05)*smoothstep(0.,.15,(_t-4.80e-02*(1.+.5*_sin(.127*_t)))-.1-0.))+lpnoise((_t-7.20e-02*(1.+.5*_sin(.127*_t))),7182.81+1471.07*(7182.81+(1471.07*(2.*fract(2258.7*Bprog+0.)-1.))))*smoothstep(0.,.1,(_t-7.20e-02*(1.+.5*_sin(.127*_t))))*(1.-(1.-.05)*smoothstep(0.,.15,(_t-7.20e-02*(1.+.5*_sin(.127*_t)))-.1-0.))))"
+maindrum    NDV.OHH0     src="lpnoise(_t,10000.)*smoothstep(0.,.01,_t)*(1.-(1.-.13)*smoothstep(0.,.12,_t-.01-0.))-.3*(1.00*lpnoise((_t-0.00),10000.)*smoothstep(0.,.01,(_t-0.00))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-0.00)-.01-0.))+6.10e-01*lpnoise((_t-1.20e-03),10000.)*smoothstep(0.,.01,(_t-1.20e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-1.20e-03)-.01-0.))+3.72e-01*lpnoise((_t-2.40e-03),10000.)*smoothstep(0.,.01,(_t-2.40e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-2.40e-03)-.01-0.)))"
+maindrum    NDV.SBD0     src="(protokick(_t,195.819,60.842,.373,.333,.39,1.147,.197,.876,.379,.619,.958))"
+maindrum    NDV.D29     src="((clamp(1.43*_tri(drop_phase(_t,.182,153.909,76.006)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_t-.152))+1.428*clamp(.707*_tri(drop_phase(_t,.182,153.909,76.006)+1.428*lpnoise(_t,760.989)),-1.,1.)*exp(-8.556*_t)+.066*lpnoise(_t,13562.653)*(1.-smoothstep(0.,.24,_t-.088))+.724*lpnoise(_t,4127.819)*exp(-_t*3.662)+.295*lpnoise(_t,7269.681)*exp(-_t*2.313))*smoothstep(0.,.05,_t))"
+maindrum    NDV.LSNR     src="(.741*(.24*lpnoise(_t,9139.286)+.961*lpnoise(_t,6306.874)+.865*lpnoise(_t,7962.971))*(smoothstep(0.,.004,_t)-smoothstep(0.,.798,_t-.05))+_sin(drop_phase(_t,.06,2239.905,159.335))*exp(-_t*15.463)*.672+_sin(drop_phase(_t*642.32,.06,2239.905,159.335))*exp(-_t*3.375)*.195)"
+maindrum    NDV.TOM0     src=".01*lpnoise(_t,10000.)*smoothstep(0.,.1,_t)*(1.-(1.-.1)*smoothstep(0.,.32,_t-.1-0.))"
+maindrum    NDV.HAT0     src=".4*(.6+(.25*_psq(4.*B)))*fract(sin(_t*100.*.3)*50000.*2.)*doubleslope(_t,0.,.05,0.)"
+
+drum hut shape=fmnoise attack=0 decay=0.09 sustain=0.05 timbre1=.3 timbre2=2
+lfo acclfo shape=squ freq=4. mode=beat,global shift=.6 scale=.25
+env hut_decay shape=expdecay exponent=1.3
+maindrum HUT src=.6*acclfo*hut*hut_decay release=.2
+
+random pfreq0 min=120 max=200 digits=0 store
+random pfreq1 min=40 max=120 digits=0 store
+random pfreqdecay min=.005 max=0.02 digits=3 store
+random phold min=.02 max=.2 digits=2 store
+random pdecay min=.02 max=.2 digits=2 store
+random pdrive min=1 max=10 digits=2 store
+random pdetune min=0 max=1e-2 digits=4 store
+random prev_amount min=0 max=1 digits=2 store
+random prev_hold min=.02 max=.3 digits=2 store
+random prev_decay min=.01 max=.5 digits=2 store
+random prev_drive min=.5 max=10 digits=2 store
+drum protkick shape=protokick freq0=pfreq0 freq1=pfreq1 freqdecay=pfreqdecay hold=phold decay=pdecay drive=pdrive detune=pdetune rev_amount=prev_amount rev_hold=prev_hold rev_decay=prev_decay rev_drive=prev_drive
+maindrum PKIK src=protkick release=.2
+
+drum kcky_body shape=protokick freq0=242 freq1=55 freqdecay=.036 hold=.088 decay=.0666 drive=1.42 detune=.01 rev_amount=0.45 rev_hold=0.1 rev_decay=0.15 rev_drive=.5
+drum kcky_trans shape=protokick freq0=3333 freq1=340 freqdecay=.008 hold=0 decay=.01 drive=2. detune=2.4 rev_amount=0
+maindrum KCKY src=kcky_body+.66*kcky_trans release=.04
+
+maindrum CLCK src=kcky_trans release=.04
+
+osc scrm_mod1 shape=saw  phase=.4 freq=30.
+osc scrm_mod2 shape=lpnoise freq=666. overdrive=1
+osc scrm_mod3 shape=sin freq=1666
+env scrm_decay shape=expdecay exponent=1.45 shift=400 scale=1111
+osc scrm_trans shape=sin freq=scrm_decay phase=scrm_mod1+scrm_mod2+scrm_mod3
+form scrm_transquant quantize bits=5024 src=scrm_trans
+env scrm_limitlength shape=limitlength factor=.34 release=.29
+env scrm_attack attack=.09 sustain=1
+form scrm_tqdelay delay src=scrm_limitlength*scrm_transquant number=6 delay=.5 gain=.311 mode=beat
+maindrum SCRM src=.4*scrm_attack*scrm_tqdelay release=3.
+
+random snoiseamp    min=.1  max=1   digits=2    store
+random stoneamp     min=.1  max=1   digits=2    store
+random sfreq0       min=400 max=700 digits=0    store
+random sfreq1       min=150 max=350 digits=0    store
+random sfreqdecay   min=.001 max=.05  digits=2  store
+random sfmtoneamp   min=.1  max=1   digits=2    store
+random sfmtonefreq  min=250 max=2e3 digits=0    store
+#random snoise1amt   min=.1  max=1   digits=2   store
+random snoise1freq  min=250 max=3e3 digits=0    store
+#random snoise2amt   min=.1  max=1   digits=2   store
+random snoise2freq  min=250 max=3e3 digits=0    store
+#random snoise3amt   min=.1  max=1   digits=2   store
+random snoise3freq  min=250 max=3e3 digits=0    store
+random snoise1amt   min=0  max=0   digits=2     store
+random snoise2amt   min=0  max=0   digits=2     store
+random snoise3amt   min=0  max=0   digits=2     store
+random sattack      min=0   max=.02  digits=2   store
+random sdecay       min=0   max=1  digits=2     store
+random srelease     min=0   max=1  digits=2     store
+random stonedecayexp min=.2 max=10  digits=1    store
+random sfmtonedecayexp min=.2 max=10 digits=1   store
+drum protsnare shape=protosnare noise_amp=snoiseamp tone_amp=stoneamp freq0=sfreq0 freq1=sfreq1 freqdecay=sfreqdecay fmtone_amp=sfmtoneamp fmtone_freq=sfmtonefreq noise1_amount=snoise1amt noise1_freq=snoise1freq noise2_amount=snoise2amt noise2_freq=snoise2freq noise3_amount=snoise3amt noise3_freq=snoise3freq attack=sattack decay=sdecay release=srelease tone_decayexp=stonedecayexp fmtone_decayexp=sfmtonedecayexp
+maindrum PSNR src=protsnare release=.15
+
+maindrum    KICKSUB0    src="protokick(_PROG,326.,138.,.09,.16,.26,1.47,.0021,.81,.19,.62,1.07)" release=.2 relpower=1 slidetime=.125
+maindrum    KICKSUB1    src="protokick(_PROG,179.,57.,.21,.11,.82,.79,.0063,.9,.17,.45,.6)" release=.2 relpower=1 slidetime=.125
+maindrum    PKIK3    src="protokick(_PROG,224.,49.,.04,.04,.67,1.58,.0082,.42,.28,.8,1.18)" release=.2 relpower=1 slidetime=.125
+maindrum    KICKSUB4    src="protokick(_PROG,221.,73.,.12,.11,.19,2.97,.0079,.92,.25,.14,1.57)" release=.2 relpower=1 slidetime=.125
+maindrum    PKIK5    src="protokick(_PROG,272.,95.,.04,.05,.52,7.26,.0004,.24,.2,.53,8.81)" release=.2 relpower=1 slidetime=.125
+maindrum    PSNR1    src=".12*(.47*lpnoise(_PROG,2689.)+.43*lpnoise(_PROG,2535.)+.36*lpnoise(_PROG,1208.))*(smoothstep(0.,.06,_PROG)-smoothstep(0.,.84,_PROG-.47))+_sin(drop_phase(_PROG,.22,444.,238.))*exp(-_PROG*10.5)*.44+_sin(drop_phase(_PROG*1901.,.22,444.,238.))*exp(-_PROG*3.3)*.87" release=.15 relpower=1 slidetime=.125
+
+random afreq0           min=140     max=350     digits=0    store
+random afreq1           min=50      max=120     digits=0    store
+random afreqdecay       min=.01     max=.1      digits=2    store
+random aattack          min=2e-3    max=1e-2    digits=3    store
+random adecay           min=0.01    max=0.3     digits=2    store       
+random adrive           min=.5      max=3       digits=2    store
+random arev1_amt        min=0       max=1       digits=2    store
+random arev1_tone       min=500     max=9999    digits=0    store
+random arev1_exp        min=1       max=30      digits=2    store
+random arev1_drive      min=0       max=1       digits=2    store
+random arev2_amt        min=0       max=1       digits=2    store
+random arev2_tone       min=500     max=9999    digits=0    store
+random arev2_exp        min=1       max=30      digits=2    store
+random arev3_amt        min=0       max=1       digits=2    store
+random arev3_tone       min=500     max=9999    digits=0    store
+random arev3_exp        min=1       max=30      digits=2    store
+random anoise_amt       min=0       max=0.1     digits=2    store
+random anoise_hold      min=.01     max=.99     digits=2    store
+random anoise_decay     min=.01     max=.99     digits=2    store
+random anoise_tone      min=999     max=19999   digits=0    store
+drum protkickass shape=protokickass freq0=afreq0 freq1=afreq1 freqdecay=afreqdecay attack=aattack decay=adecay drive=adrive rev1_amt=arev1_amt rev2_amt=arev2_amt rev3_amt=arev3_amt rev1_tone=arev1_tone rev2_tone=arev2_tone rev3_tone=arev3_tone rev1_exp=arev1_exp rev2_exp=arev2_exp rev3_exp=arev3_exp rev1_drive=arev1_drive noise_amt=anoise_amt noise_hold=anoise_hold noise_decay=anoise_decay noise_tone=anoise_tone
+maindrum ASSK src=protkickass release=.00
+
+random shkamp           min=2      max=20       digits=2    store
+random shktimbre        min=.1      max=9       digits=2    store
+random shkdecay         min=.005    max=.02     digits=3    store
+random shkrelease       min=0       max=.03     digits=3    store
+drum protshake shape=protoshake amp=shkamp timbre=shktimbre decay=shkdecay release=shkrelease
+maindrum SHAG src=protshake release=0
+
+form NOISSNRsrc define src="(clamp(.72*_tri(drop_phase(_PROG,.07,227.,107.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.69*clamp(.94*_tri(drop_phase(_PROG,.07,227.,107.)+.69*lpnoise(_PROG,8709.)),-1.,1.)*exp(-13.89*_PROG)+.06*lpnoise(_PROG,18745.)*(1.-smoothstep(0.,.67,_PROG-.17))+.28*lpnoise(_PROG,7506.)*exp(-_PROG*12.44)+.82*lpnoise(_PROG,2600.)*exp(-_PROG*17.54))*smoothstep(0.,.004,_PROG)"
+form NOISSNRshp sinshape src=NOISSNRsrc amount=.6 parts=9
+env NOISSNRenv shape=expdecay exponent=10 shift=.3 scale=.7
+maindrum    NOISSNRdist src=NOISSNRenv*NOISSNRshp release=.4 relpower=1 slidetime=.125
+
+maindrum    ASSK0    src="(clamp(4.63*_tri(drop_phase(_PROG,.04,245.,72.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.23))+.96*clamp(.98*_tri(drop_phase(_PROG,.04,245.,72.)+.96*lpnoise(_PROG,8333.)),-1.,1.)*exp(-28.24*_PROG)+.11*lpnoise(_PROG,19622.)*(1.-smoothstep(0.,.06,_PROG-.27))+.79*lpnoise(_PROG,5824.)*exp(-_PROG*1.81)+.22*lpnoise(_PROG,8242.)*exp(-_PROG*3.33))*smoothstep(0.,.01,_PROG)" release=.4 relpower=1 slidetime=.125
+maindrum    SHAG0    src=".54*lpnoise(_PROG,1.+5.51*_PROG)*(smoothstep(0.,2.,_PROG)-smoothstep(0.,.016,_PROG-1.))" release=0 relpower=1 slidetime=.125
+maindrum    ASSK1    src="(clamp(1.53*_tri(drop_phase(_PROG,.08,213.,103.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.99))+.91*clamp(.16*_tri(drop_phase(_PROG,.08,213.,103.)+.91*lpnoise(_PROG,7763.)),-1.,1.)*exp(-21.58*_PROG)+.65*lpnoise(_PROG,7650.)*(1.-smoothstep(0.,.98,_PROG-.26))+.37*lpnoise(_PROG,8300.)*exp(-_PROG*21.35)+.8*lpnoise(_PROG,8062.)*exp(-_PROG*1.14))*smoothstep(0.,.008,_PROG)" release=.4 relpower=1 slidetime=.125
+maindrum    SHAG1   src=".79*lpnoise(_PROG,1.+3.31*_PROG)*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,.018,_PROG-.196))" release=0 relpower=1 slidetime=.125
+maindrum    SHAG1    src=".79*lpnoise(_PROG,1.+3.31*_PROG)*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,.018,_PROG-.196))" release=0.2 relpower=1 slidetime=.125
+maindrum    ASS-SNR3 src="(clamp(1.09*_tri(drop_phase(_PROG,.08,249.,77.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.04))+.97*clamp(.99*_tri(drop_phase(_PROG,.08,249.,77.)+.97*lpnoise(_PROG,9855.)),-1.,1.)*exp(-21.22*_PROG)+.03*lpnoise(_PROG,10655.)*(1.-smoothstep(0.,.58,_PROG-.81))+.71*lpnoise(_PROG,7520.)*exp(-_PROG*16.22)+.57*lpnoise(_PROG,4386.)*exp(-_PROG*29.48))*smoothstep(0.,.005,_PROG)" release=.4 relpower=1 slidetime=.125
+maindrum    ASSK4 src=.57*ASSK4src release=.4 relpower=1 slidetime=.125
+
+
+form ASSK5src define src="(clamp(2.24*_tri(drop_phase(_PROG,.08,217.,64.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.29))+.7*clamp(.84*_tri(drop_phase(_PROG,.08,217.,64.)+.7*lpnoise(_PROG,1936.)),-1.,1.)*exp(-23.11*_PROG)+.08*lpnoise(_PROG,5166.)*(1.-smoothstep(0.,.16,_PROG-.55))+.77*lpnoise(_PROG,6784.)*exp(-_PROG*29.89)+.53*lpnoise(_PROG,4404.)*exp(-_PROG*24.64))*smoothstep(0.,.002,_PROG)"
+maindrum    ASSK5    src=.42*ASSK5src release=.00 relpower=1 slidetime=.125
+maindrum    PSNR2    src=".57*(0.*lpnoise(_PROG,981.)+0.*lpnoise(_PROG,950.)+0.*lpnoise(_PROG,2937.))*(smoothstep(0.,0.,_PROG)-smoothstep(0.,.13,_PROG-.76))+_sin(drop_phase(_PROG,.04,607.,288.))*exp(-_PROG*4.5)*.46+_sin(drop_phase(_PROG*1076.,.04,607.,288.))*exp(-_PROG*9.6)*.49" release=.15 relpower=1 slidetime=.125
+
+maindrum    ASSK2    src="(clamp(1.32*_tri(drop_phase(_PROG,.06,308.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.82*clamp(.49*_tri(drop_phase(_PROG,.06,308.,80.)+.82*lpnoise(_PROG,4595.)),-1.,1.)*exp(-1.97*_PROG)+.09*lpnoise(_PROG,4032.)*(1.-smoothstep(0.,.97,_PROG-.79))+.1*lpnoise(_PROG,1111.)*exp(-_PROG*12.69)+.6*lpnoise(_PROG,7795.)*exp(-_PROG*1.08))*smoothstep(0.,.003,_PROG)" release=.00 relpower=1 slidetime=.125
+maindrum    ASSK6    src="(clamp(1.32*_tri(drop_phase(_PROG,.06,308.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.82*clamp(.49*_tri(drop_phase(_PROG,.06,308.,80.)+.82*lpnoise(_PROG,4595.)),-1.,1.)*exp(-1.97*_PROG)+.09*lpnoise(_PROG,4032.)*(1.-smoothstep(0.,.97,_PROG-.79))+.1*lpnoise(_PROG,1111.)*exp(-_PROG*12.69)+.6*lpnoise(_PROG,7795.)*exp(-_PROG*1.08))*smoothstep(0.,.003,_PROG)" release=.00 relpower=1 slidetime=.125
+maindrum    BELL0    src=".27*(0.*lpnoise(_PROG,1993.)+0.*lpnoise(_PROG,2349.)+0.*lpnoise(_PROG,2522.))*(smoothstep(0.,.02,_PROG)-smoothstep(0.,.57,_PROG-.08))+_sin(drop_phase(_PROG,.05,687.,306.))*exp(-_PROG*9.7)*.95+_sin(drop_phase(_PROG*674.,.05,687.,306.))*exp(-_PROG*4.4)*.46" release=.15 relpower=1 slidetime=.125
+maindrum    RIDE0    src=".61*(0.*lpnoise(_PROG,385.)+0.*lpnoise(_PROG,2973.)+0.*lpnoise(_PROG,1554.))*(smoothstep(0.,.01,_PROG)-smoothstep(0.,.54,_PROG-.02))+_sin(drop_phase(_PROG,.03,638.,304.))*exp(-_PROG*9.7)*.1+_sin(drop_phase(_PROG*1541.,.03,638.,304.))*exp(-_PROG*2.8)*.91" release=.15 relpower=1 slidetime=.125
+maindrum    CYMBLTOM    src=".25*(0.*lpnoise(_PROG,260.)+0.*lpnoise(_PROG,868.)+0.*lpnoise(_PROG,454.))*(smoothstep(0.,.01,_PROG)-smoothstep(0.,.91,_PROG-.91))+_sin(drop_phase(_PROG,.02,559.,252.))*exp(-_PROG*5.5)*.4+_sin(drop_phase(_PROG*1444.,.02,559.,252.))*exp(-_PROG*6.9)*.3" release=.15 relpower=1 slidetime=.125
+
+
