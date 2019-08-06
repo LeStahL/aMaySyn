@@ -22,6 +22,7 @@ from itertools import accumulate
 from functools import partial
 from struct import pack, unpack
 from numpy import clip, ceil, sqrt
+from numpy.random import normal
 from math import sin, exp, pi, floor
 from random import random
 from datetime import *
@@ -693,7 +694,7 @@ class Ma2Widget(Widget):
                 parameter = cmd[1]
                 B_min = float(cmd[2])
                 B_max = float(cmd[3])
-                shape = cmd[4]
+                shape = cmd[4].lower()
 
                 if not self.getPattern() or not self.getPattern().notes:
                     affected_notes = []
@@ -715,7 +716,7 @@ class Ma2Widget(Widget):
                     for note in affected_notes:
                         lin_delta = (max_value - min_value) * (note.note_on - B_min) / (B_max - B_min)
                         lin_value = min_value + step_size * floor(lin_delta / step_size)
-                        note.setParameter(parameter, round(lin_value, 3))
+                        note.setParameter(parameter, round(lin_value, 2))
                     return True
                 
                 # RND: random values between [value_min, value_max] between [B_min, B_max] (stepsize is resolution)
@@ -726,7 +727,18 @@ class Ma2Widget(Widget):
                     rnd_scale = floor((max_value - min_value)/step_size)
                     for note in affected_notes:
                         rnd_value = min_value + step_size * floor((rnd_scale + 1) * random.random())
-                        note.setParameter(parameter, round(rnd_value, 3))
+                        note.setParameter(parameter, round(rnd_value, 2))
+                    return True
+
+                # randomize: spread values around their current value in a gaussian fashion 
+                # e.g SET AUX <B_min> <B_max> RANDOMIZE <spread> <stepsize>
+                elif shape == 'randomize':
+                    gauss_spread = float(cmd[5])
+                    step_size = 1 if len(cmd) < 7 else float(cmd[6])
+                    for note in affected_notes:
+                        current_value = note.getParameter(parameter)
+                        rnd_value = step_size * round(normal(0, gauss_spread) / step_size)
+                        note.setParameter(parameter, round(current_value + rnd_value, 2))
                     return True
 
                 elif shape == 'reset':
@@ -743,7 +755,7 @@ class Ma2Widget(Widget):
                 parameter = cmd[1]
                 B_min = float(cmd[2])
                 B_max = float(cmd[3])
-                shape = cmd[4]
+                shape = cmd[4].lower()
 
                 if not self.getPattern() or not self.getPattern().notes:
                     affected_notes = []
@@ -763,6 +775,14 @@ class Ma2Widget(Widget):
                         transformed_value = lin_shift/(sqrt(lin_scale)+1) + sqrt(lin_scale) * current_value
                         transformed_value = step_size * round(transformed_value / step_size)
                         note.setParameter(parameter, round(transformed_value, 3))
+                    return True
+
+                if shape == 'clamp':
+                    min_value = float(cmd[5])
+                    max_value = float(cmd[6])
+                    for note in affected_notes:
+                        current_value = note.getParameter(parameter)
+                        note.setParameter(parameter, clip(current_value, min_value, max_value))
                     return True
 
                 else:
