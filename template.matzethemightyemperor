@@ -416,7 +416,7 @@ vec2 mainSynth(float time)
 
 void main()
 {
-   float t = (iBlockOffset + (gl_FragCoord.x - .5) + (gl_FragCoord.y - .5)*iTexSize)/iSampleRate;
+   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
    vec2 y = mainSynth(t);
    vec2 v  = floor((0.5+0.5*y)*65535.0);
    vec2 vl = mod(v,256.0)/255.0;

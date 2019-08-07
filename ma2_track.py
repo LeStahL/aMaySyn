@@ -46,7 +46,7 @@ class Track():
         self.current_module = self.getFirstTaggedModuleIndex()
 
     def cloneTrack(self, track):
-        self.modules = [m for m in track.modules]
+        self.modules = [deepcopy(m) for m in track.modules] # TODO CHECK: does deepcopy work?? 
         self.current_module = track.current_module
         self.current_synth = track.current_synth
 

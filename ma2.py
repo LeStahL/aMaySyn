@@ -516,9 +516,9 @@ class Ma2Widget(Widget):
 
     def addTrack(self, name = 'NJU TREK', synth = None):
         if not self.tracks:
-            self.tracks.append(Track(synths, name = name, synth = synth))
+            self.tracks = [Track(synths, name = name, synth = synth)]
             self.current_track = 0
-        elif self.current_track:
+        else:
             self.current_track += 1
             self.tracks.insert(self.current_track, Track(synths, name = name, synth = synth))
         self.update()
@@ -840,13 +840,9 @@ class Ma2Widget(Widget):
                     self.lastSongCommand = 'OFFSET ' + str(self.getInfo('B_offset'))
                     return False
                 else:
-                    value = float(cmd[1])
-                    if value > 0:
-                        self.setInfo('B_offset', value)
-                        self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
-                    else:
-                        self.setInfo('B_offset', 0)
-                        self.theTrkWidget.removeMarkersContaining('OFFSET')
+                    self.setOffsetMarker(float(cmd[1]))
+                    if len(cmd) > 2:
+                        self.setStopMarker(float(cmd[2]))
                     return True
 
             elif cmd[0] == 'stop':
@@ -854,13 +850,7 @@ class Ma2Widget(Widget):
                     self.lastSongCommand = 'STOP ' + str(self.getInfo('B_stop'))
                     return False
                 else:
-                    value = float(cmd[1])
-                    if value > self.getInfo('B_offset') and value <= self.getTotalLength():
-                        self.setInfo('B_stop', value)
-                        self.theTrkWidget.updateMarker('STOP', self.getInfo('B_stop'))
-                    else:
-                        self.setInfo('B_stop', inf)
-                        self.theTrkWidget.removeMarkersContaining('STOP')
+                    self.setStopMarker(float(cmd[1]))
                     return True
 
             elif cmd[0] == 'stereo':
@@ -881,6 +871,24 @@ class Ma2Widget(Widget):
             print('COMMAND ERRONEOUS (u stupid hobo):\n', cmd, '\n', type(exc))
             raise
             return False
+
+    def setOffsetMarker(self, value):
+        if value > 0:
+            if value >= self.getInfo('B_stop'):
+                self.setStopMarker(value + self.getInfo('B_stop') - self.getInfo('B_offset'))
+            self.setInfo('B_offset', value)
+            self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
+        else:
+            self.setInfo('B_offset', 0)
+            self.theTrkWidget.removeMarkersContaining('OFFSET')
+
+    def setStopMarker(self, value):
+        if value > self.getInfo('B_offset') and value <= self.getTotalLength():
+            self.setInfo('B_stop', value)
+            self.theTrkWidget.updateMarker('STOP', self.getInfo('B_stop'))
+        else:
+            self.setInfo('B_stop', inf)
+            self.theTrkWidget.removeMarkersContaining('STOP')
 
 ############## ONLY THE MOST IMPORTANT FUNCTION! ############
 
@@ -1200,6 +1208,8 @@ class Ma2Widget(Widget):
                         for p in self.patterns:
                             if m.pattern.name == p.name:
                                 m.setPattern(p)
+
+                self.current_track = len(self.tracks) - 1
 
                 ### further information ###
                 c += 1
@@ -1764,7 +1774,7 @@ class InputPrompt(ModalView):
         tfield.bind(focus = self.dismiss)
         
     def release(self, *args):
-        self.text = args[0].text
+        self.text = args[0].text.replace('\t', ' ').strip()
         self.validated = True
         self.dismiss()
 
