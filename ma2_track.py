@@ -1,6 +1,7 @@
 import kivy
 kivy.require('1.10.0')
 from kivy.app import App
+from copy import copy
 
 from ma2 import Ma2Widget
 
@@ -46,7 +47,7 @@ class Track():
         self.current_module = self.getFirstTaggedModuleIndex()
 
     def cloneTrack(self, track):
-        self.modules = [deepcopy(m) for m in track.modules] # TODO CHECK: does deepcopy work?? 
+        self.modules = [copy(m) for m in track.modules]
         self.current_module = track.current_module
         self.current_synth = track.current_synth
 

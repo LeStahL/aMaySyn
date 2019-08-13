@@ -535,7 +535,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
         
         except:
             print("PARSING - UNEXPECTED UNEXPECTEDNESS (which was not expected) - IN FORM", form if form else str(ID), '', sep='\n')
-            raise
+            quit()
 
     def param(ID, key):
         form = next((f for f in form_list if f['id']==ID), None)

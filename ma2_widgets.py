@@ -110,9 +110,11 @@ class TrackWidget(Widget):
                 ### GRID ###
                 draw_x = grid_l
                 Color(*((.2,.2,.2) if index != current_track else (.5,.2,.2)), 1 - 0.5 * t.mute)
+                max_visible_beats = 0
                 while draw_x + beat_w <= self.right - pad_r:
                     Rectangle(pos = (draw_x, draw_y), size = (beat_w-1,row_h))
                     draw_x += beat_w
+                    max_visible_beats += 1
 
                 ### TRACK INFO ###
                 Color(1,1,1,.7)
@@ -129,22 +131,30 @@ class TrackWidget(Widget):
 
                 ### MODULES ###
                 for m in t.modules:
+                    mod_on = m.mod_on - self.offset_h
+                    mod_len = m.pattern.length
+                    if mod_on < 0:
+                        mod_len += mod_on
+                        mod_on = 0
+                    if mod_len <= 0 or mod_on > max_visible_beats:
+                        continue
+
                     Color(*m.pattern.color, 0.4)
-                    Rectangle(pos=(grid_l + beat_w * m.mod_on, draw_y), size=(beat_w * m.pattern.length - 1,row_h))
+                    Rectangle(pos=(grid_l + beat_w * mod_on, draw_y), size=(beat_w * mod_len - 1,row_h))
                     
                     Color(*(0.5+0.5*c for c in m.pattern.color),1)
                     label = CoreLabel(text = m.pattern.name[0:3*int(m.pattern.length)], font_size = font_size_small, font_name = self.font_name)
                     label.refresh()
-                    Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y-1), texture = label.texture)
+                    Rectangle(size = label.texture.size, pos = (grid_l + beat_w * mod_on, draw_y-1), texture = label.texture)
                     
                     if m.transpose != 0:
                         label = CoreLabel(text = "%+d" % m.transpose, font_size = font_size_small, font_name = self.font_name)
                         label.refresh()
-                        Rectangle(size = label.texture.size, pos = (grid_l + beat_w * m.mod_on, draw_y + row_h/2 - 2), texture = label.texture)
+                        Rectangle(size = label.texture.size, pos = (grid_l + beat_w * mod_on, draw_y + row_h/2 - 2), texture = label.texture)
 
                     if m == t.getModule() and index == current_track:
                         Color(1,.5,.5,.8)
-                        Line(rectangle = (grid_l + beat_w * m.mod_on - 1 , draw_y - 1, beat_w * m.pattern.length, row_h + 2), width = 1.5)
+                        Line(rectangle = (grid_l + beat_w * mod_on - 1 , draw_y - 1, beat_w * mod_len, row_h + 2), width = 1.5)
 
             draw_x = grid_l
             draw_y = self.top - pad_t - (number_visible_tracks+.5)*(row_h+gap_h) - 4
@@ -154,14 +164,17 @@ class TrackWidget(Widget):
             # BEAT ENUMERATION
             for i in range(beat_max+1):
                 Color(.6,.8,.8)
-                label = CoreLabel(text = str(i), font_size = 12, font_name = self.font_name)
+                label = CoreLabel(text = str(i + self.offset_h), font_size = 12, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y+2), texture = label.texture)
 
                 draw_x += beat_w
             
             for m in self.marker_list:
-                draw_x = grid_l + self.marker_list[m] * beat_w
+                marker_pos = self.marker_list[m] - self.offset_h
+                if marker_pos < 0 or marker_pos > max_visible_beats: continue
+                    
+                draw_x = grid_l + marker_pos * beat_w
 
                 if m in self.marker_style and self.marker_style[m] == 'BPM':
                     line_bottom = draw_y - 10

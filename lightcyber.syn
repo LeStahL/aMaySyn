@@ -92,6 +92,22 @@ seg    fmabaseg4 shape=linear from=2.375,.8 to=3.125,.6
 seg    fmabaseg5 shape=linear from=3.125,.6 to=4,0
 main   FMabash  src=FManiaC*Fmanienv0*FMabaparam+.6*Fmanienv0*FMabafrm0 release=.1 slidetime=.08
 
+env    FMpluckE2 attack=1e-4 decay=dec2 sustain=sus2 hold=hld2 mode=beat
+env    FMpluckE3 attack=1e-4 decay=dec3 sustain=sus3 hold=hld3 mode=beat
+env    FMpluckE4 attack=1e-4 decay=dec4 sustain=sus4 hold=hld4 mode=beat
+random lfofrq0  min=0.01 max=0.3 digits=2
+random lfofrq1  min=0.01 max=0.5 digits=2
+random lfoamt0  min=0.01  max=0.3 digits=3
+random lfoamt1  min=0.001  max=0.1 digits=4
+lfo    FMplucklfo0 sin freq=lfofrq1 mode=beat
+lfo    FMplucklfo1 sin freq=lfofrq0 mode=beat
+osc    FMpluckA shape=fm lv1=lev1 lv2=FMpluckE2*lev2 lv3=FMpluckE3*lev3 lv4=FMpluckE4*lev4 fr1=0.999 fr3=1+lfoamt1*FMplucklfo1 fr4=2. fb1=fbk1 fb2=fbk2 fb3=fbk3 fb4=fbk4 algo=alg0 parscale=127
+env    FMpluckE attack=1e-4 decay=dec0 sustain=sus0 hold=hld0 release=rel0 mode=beat
+form   FMpluckB op=chorus src=FMpluckA number=2 step=4e-1 intensity=lfoamt0*FMplucklfo0 rate=0.1
+form   FMpluckW op=sinshape src=FMpluckA amount=0.03*aux
+main   FMpluck  src=vel*FMpluckW*FMpluckE release=.2 slidetime=.1337
+
+
 #1/127 = 7.87e-3
 const  vel1       pow(vel,12.*7.87e-3)
 const  vel2       pow(vel,63.*7.87e-3)
@@ -236,6 +252,7 @@ form carp_frm03 quantize bits=7888 src=carp_frm02
 form carp_frm01 chorus src=.5*carp_frm02 number=2 step=.1 intensity=.1 rate=.025*SPB
 #main carp src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.3 slidetime=.08
 main carp src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.14 slidetime=.35
+main carpfast src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.14 slidetime=.05
 
 env pling_env00 shape=expdecay exponent=11
 env pling_env01 attack=1e-2 hold=0 decay=.1+.5*vel sustain=.01 release=.4
@@ -433,3 +450,25 @@ param strichr11_volume segments=seg11_rise,8,12 default=1
 seg seg11_rise shape=linear from=0,0.4 to=4,1
 form strichr11_src define src="vel*env_AHDSR(_PROG,tL,.249,0.,.1,1.,.37)*waveshape(MADD(_PROG,f,0.,256,1,-.383,(7365.+(1083.*clip((1.+.916)*_sin(.525*B)))),18.724,1.488,1.24,.022,-.27,0),-.27,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.249,0.,.1,1.,.37)*MADD(_PROG,.501*f,0.,64,1,-.383,(7365.+(1083.*clip((1.+.916)*_sin(.525*B)))),18.724,1.488,1.24,.022,.2*-.27,0)"
 main    strichr.11   src=strichr11_volume*strichr11_src release=0.4 relpower=1 slidetime=.125
+
+main    FMpluck.0    src="QFM(_PROG,f,0.,.00787*18.,.00787*env_AHDSR(_BPROG,L,.0001,.22,.185,.419,0.)*97.,.00787*env_AHDSR(_BPROG,L,.0001,.009,.14,.266,0.)*92.,.00787*env_AHDSR(_BPROG,L,.0001,.233,.101,.237,0.)*120.,.999,1.,1.+.0031*(.5+(.5*_sin(.06*_BPROG))),2.,.00787*102.,.00787*28.,.00787*37.,.00787*55.,7.)*env_AHDSR(_BPROG,L,.0001,.019,.067,.34,.17)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.1    src="QFM(_PROG,f,0.,.00787*125.,.00787*env_AHDSR(_BPROG,L,.0001,.097,.244,.195,0.)*88.,.00787*env_AHDSR(_BPROG,L,.0001,.134,.246,.471,0.)*120.,.00787*env_AHDSR(_BPROG,L,.0001,.051,.162,.161,0.)*91.,.999,1.,1.+.0939*(.5+(.5*_sin(.3*_BPROG))),2.,.00787*101.,.00787*86.,.00787*1.,.00787*98.,8.)*env_AHDSR(_BPROG,L,.0001,.032,.185,.109,.048)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.2    src="QFM(_PROG,f,0.,.00787*97.,.00787*env_AHDSR(_BPROG,L,.0001,.192,.088,.486,0.)*106.,.00787*env_AHDSR(_BPROG,L,.0001,.111,.191,.084,0.)*1.,.00787*env_AHDSR(_BPROG,L,.0001,.178,.221,.449,0.)*9.,.999,1.,1.+.0875*(.5+(.5*_sin(.08*_BPROG))),2.,.00787*77.,.00787*42.,.00787*35.,.00787*83.,6.)*env_AHDSR(_BPROG,L,.0001,.005,.169,.945,.158)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.3    src="QFM(_PROG,f,0.,.00787*85.,.00787*env_AHDSR(_BPROG,L,.0001,.07,.093,.148,0.)*33.,.00787*env_AHDSR(_BPROG,L,.0001,.085,.2,.357,0.)*68.,.00787*env_AHDSR(_BPROG,L,.0001,.244,.181,.003,0.)*120.,.999,1.,1.+.0849*(.5+(.5*_sin(.25*_BPROG))),2.,.00787*10.,.00787*53.,.00787*115.,.00787*38.,9.)*env_AHDSR(_BPROG,L,.0001,.034,.163,.13,.129)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.4    src="QFM(_PROG,f,0.,.00787*87.,.00787*env_AHDSR(_BPROG,L,.0001,.159,.166,.449,0.)*78.,.00787*env_AHDSR(_BPROG,L,.0001,.024,.066,.115,0.)*7.,.00787*env_AHDSR(_BPROG,L,.0001,.056,.232,.35,0.)*29.,.999,1.,1.+.0147*(.5+(.5*_sin(.21*_BPROG))),2.,.00787*9.,.00787*52.,.00787*7.,.00787*18.,10.)*env_AHDSR(_BPROG,L,.0001,.074,.154,.06,.07)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.5    src="vel*sinshape(QFM(_PROG,f,0.,.00787*103.,.00787*env_AHDSR(_BPROG,L,.0001,.024,.11,.185,0.)*0.,.00787*env_AHDSR(_BPROG,L,.0001,.19,.161,.096,0.)*2.,.00787*env_AHDSR(_BPROG,L,.0001,.16,.197,.035,0.)*85.,.999,1.,1.+.0084*(.5+(.5*_sin(.01*_BPROG))),2.,.00787*30.,.00787*37.,.00787*117.,.00787*32.,11.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.015,.071,.66,.003)" release=.2 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.6    src="vel*sinshape(QFM(_PROG,f,0.,.00787*67.,.00787*env_AHDSR(_BPROG,L,.0001,.131,.165,.193,0.)*75.,.00787*env_AHDSR(_BPROG,L,.0001,.12,.162,.071,0.)*48.,.00787*env_AHDSR(_BPROG,L,.0001,.237,.203,.236,0.)*100.,.999,1.,1.+.0711*(.5+(.5*_sin(.01*_BPROG))),2.,.00787*0.,.00787*75.,.00787*25.,.00787*15.,2.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.039,.08,.301,.013)" release=.2 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.7    src="vel*sinshape(QFM(_PROG,f,0.,.00787*125.,.00787*env_AHDSR(_BPROG,L,.0001,.047,.01,.404,0.)*20.,.00787*env_AHDSR(_BPROG,L,.0001,.151,.071,.069,0.)*110.,.00787*env_AHDSR(_BPROG,L,.0001,.232,.08,.003,0.)*65.,.999,1.,1.+.0799*(.5+(.5*_sin(.18*_BPROG))),2.,.00787*109.,.00787*21.,.00787*94.,.00787*0.,11.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.03,.167,.796,.114)" release=.2 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.8    src="vel*sinshape(QFM(_PROG,f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.0001,.213,.215,.02,0.)*39.,.00787*env_AHDSR(_BPROG,L,.0001,.216,.123,.054,0.)*122.,.00787*env_AHDSR(_BPROG,L,.0001,.214,.243,.174,0.)*21.,.999,1.,1.+.0285*(.5+(.5*_sin(.24*_BPROG))),2.,.00787*28.,.00787*43.,.00787*95.,.00787*115.,10.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.03,.15,.177,.102)" release=.2 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.9    src="vel*sinshape(QFM(_PROG,f,0.,.00787*95.,.00787*env_AHDSR(_BPROG,L,.0001,.001,.106,.373,0.)*4.,.00787*env_AHDSR(_BPROG,L,.0001,.219,.242,.133,0.)*66.,.00787*env_AHDSR(_BPROG,L,.0001,.156,.142,.07,0.)*48.,.999,1.,1.+.0264*(.5+(.5*_sin(.25*_BPROG))),2.,.00787*45.,.00787*2.,.00787*84.,.00787*7.,8.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.078,.031,.665,.069)" release=.6 slidetime=.1337 relpower=1 predraw=0
+
+osc  fett_noise shape=lpnoise freq=500
+env  fett_noisedec shape=expdecay exponent=10
+lfo  fett_shapelfo freq=.21 mode=beat scale=.6 shift=.4
+osc  fett_osc0 shape=madd freq=.5*f nmax=8 mix=fett_shapelfo cutoff=2000 q=100 res=5 resq=100 pw=.7 phase=fett_noise*fett_noisedec
+form fett_frm4 detune src=fett_osc0 factor=1.01,2.005,.499
+form fett_frm3 mix src=fett_frm4+.2*fett_noisedec*fett_noise
+form fett_frm2 saturate src=fett_frm3 gain=23
+form fett_frm1 delay src=fett_frm2 number=3 delay=.064 gain=.38
+env  fett_env1 attack=.05 decay=.05 sustain=.8 release=.5
+main fett src=fett_env1*fett_frm2 release=.5 relpower=8

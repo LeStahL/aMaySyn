@@ -39,7 +39,7 @@ class SFXGLWidget():
         self.duration = 60. # seconds of sound
         self.samplerate = 44100 #TODO: add selector to code
         self.nsamples = 2*self.duration*self.samplerate
-        self.texs = 1024 # 1024 is enough for about 20 bars (but probably dependant on BPM) - there is still something off here..!
+        self.texs = 900 # 1024 is enough for about 20 bars (but probably dependant on BPM) - there is still something off here..!
         self.blocksize = self.texs*self.texs;
         self.nblocks = int(ceil(float(self.nsamples)/float(self.blocksize)))
 
@@ -111,8 +111,6 @@ class SFXGLWidget():
 
         originalViewport = glGetIntegerv(GL_VIEWPORT);
         glViewport(0,0,self.texs,self.texs)
-
-        print("Uniforms", self.texs, self.blocksize, self.samplerate)
 
         for i in range(self.nblocks) :
             glUseProgram(self.program)
