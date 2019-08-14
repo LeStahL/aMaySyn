@@ -195,7 +195,7 @@ osc hutrev shape=lpnoise freq=6000
 drum hut shape=fmnoise attack=0 decay=0.1 sustain=.1 timbre1=30 timbre2=20
 form whut sinshape src=hut+hutrev parts=5 amount=1
 env hutdecay shape=expdecay exponent=2
-maindrum WHAT src=0.2*whut*hutdecay release=.25
+maindrum WHAT src=0.25*whut*hutdecay release=.25
 
 
 param  someshit  segments=someseg,1,8,someshit_lfo,8,12 default=4
@@ -395,7 +395,7 @@ main strichr src=.7*vel*stricher_env*stricher_synOD+0.6*vel*stricher_env*striche
 
 main    strichr.0    src="vel*env_AHDSR(_PROG,tL,.253,0.,.1,1.,.094)*waveshape(MADD(_PROG,f,0.,256,1,.7,(1308.+(1523.*clip((1.+.57)*_sin(.785*B)))),2.675,.692,2.18,.02,-.41,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
 main    strichr.1    src="vel*env_AHDSR(_PROG,tL,.366,0.,.1,1.,.404)*waveshape(MADD(_PROG,f,0.,256,1,.7,(1429.+(1715.*clip((1.+.273)*_sin(.427*B)))),2.965,.675,5.47,.002,-.86,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
-main    strichr.2    src="vel*env_AHDSR(_PROG,tL,.498,0.,.1,1.,.338)*waveshape(MADD(_PROG,f,0.,256,1,-1.,(1422.+(2572.*clip((1.+.297)*_sin(.661*B)))),12.267,.594,8.74,.008,-.75,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
+main    strichr.2    src="vel*env_AHDSR(_PROG,tL,.398,0.,.1,1.,.388)*waveshape(MADD(_PROG,f,0.,80,1,-.95,(1922.+(1572.*clip((1.+.0297)*_sin((.861-.088*aux)*B)))),12.267,.594,8.74,.008,-.75,0),0.,.1,.5,.2,.5,.6)" release=0.35 relpower=3 slidetime=.125
 main    strichr.3    src="vel*env_AHDSR(_PROG,tL,.286,0.,.1,1.,.274)*waveshape(MADD(_PROG,f,0.,256,1,-1.,(6316.+(341.*clip((1.+.056)*_sin(.877*B)))),12.671,1.006,4.96,.024,.08,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
 main    strichr.4    src="vel*env_AHDSR(_PROG,tL,.365,0.,.1,1.,.336)*waveshape(MADD(_PROG,f,0.,256,1,-.741,(3602.+(2717.*clip((1.+.161)*_sin(.517*B)))),.735,1.194,3.04,.03,-.15,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
 main    strichr.5    src="vel*env_AHDSR(_PROG,tL,.457,0.,.1,1.,.24)*waveshape(MADD(_PROG,f,0.,256,1,-.755,(4169.+(2267.*clip((1.+.008)*_sin(.234*B)))),1.361,.251,8.87,.019,.1,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125

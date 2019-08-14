@@ -449,7 +449,6 @@ class Ma2Widget(Widget):
                     raise
                 bpmdict.update({float(part.split(':')[0]): float(part.split(':')[1])})
             # now... everything in input is good? good.
-            print(bpmlist, bpmdict)
             self.theTrkWidget.removeMarkersContaining('BPM')
             for beat in bpmdict:
                 marker_label = 'BPM' + GLfloat(bpmdict[beat])
@@ -1320,7 +1319,6 @@ class Ma2Widget(Widget):
 
             actually_used_patterns = [m.pattern for t in tracks for m in t.modules] # if m.getModuleOff() >= offset and m.getModuleOn() <= max_mod_off
             patterns = [p for p in self.patterns if p in actually_used_patterns]
-            print('ACTUAL PATTERN LIST:', patterns, sep='\n')
 
             for t in tracks:
                 t.selected_modules = [m for m in t.modules if m.pattern in patterns]
