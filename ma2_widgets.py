@@ -65,7 +65,7 @@ class TrackWidget(Widget):
         char_w = 10
         chars_name = 13
         chars_synth = 13
-        font_size_small = int(10 * min(self.scale_v, self.scale_h))
+        font_size_small = int(11 * min(self.scale_v, self.scale_h))
 
         max_visible_tracks = int((trackview_h - 2. * font_size) / (row_h + gap_h))
         number_visible_tracks = min(len(tracklist), max_visible_tracks)
@@ -270,7 +270,7 @@ class PatternWidget(Widget):
     def drawPianoRoll(self, parent):
 
         pattern = parent.getPattern()
-        transpose = parent.getModuleTranspose()
+        transpose = 0 # don't display parent.getModuleTranspose() anymore
         isDrum = parent.isDrumTrack()
 
         def isKeyBlack(key): return self.isKeyBlack(key) if not isDrum else (key % 2 == 0)
@@ -494,12 +494,6 @@ class PatternWidget(Widget):
             else:
                 print("tried scrolling on some weird axis:", axis)
 
-
-    def updateDrumkit(self, drumkit):
-        if len(drumkit) < len(self.drumkit):
-            self.offset_drum_v += len(self.drumkit) - len(drumkit)
-        self.drumkit = drumkit
-
     def scaleByFactor(self, axis, factor, is_drum = False):
         if is_drum:
             if axis == 'horizontal':
@@ -516,6 +510,13 @@ class PatternWidget(Widget):
             else:
                 print("tried scaling by some weird axis:", axis)
 
+                
+    def updateDrumkit(self, drumkit):
+        if len(drumkit) < len(self.drumkit):
+            self.offset_drum_v += len(self.drumkit) - len(drumkit)
+        self.drumkit = drumkit
+
+                            
 #    def updateScale(self, scale_v = None, scale_h = None, delta_h = 0, delta_v = 0):
 #        if scale_v and scale_v > 0: self.scale_v = scale_v
 #        if scale_h and scale_h > 0: self.scale_h = scale_h

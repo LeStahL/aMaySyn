@@ -155,9 +155,12 @@ class Pattern():
         for n in self.notes:
             n.tagged = False
 
-    def switchNote(self, inc, to = -1):
+    def switchNote(self, inc, to = -1, same_pitch = False):
         if self.notes:
             if inc != 0:
+                if same_pitch:
+                    while self.getNote(offset = inc).note_pitch != self.getNote().note_pitch and abs(inc) < len(self.notes):
+                        inc += 1 if inc > 0 else -1
                 self.current_note = (self.current_note + inc) % len(self.notes)
             else:
                 self.current_note = (len(self.notes) + to) % len(self.notes)

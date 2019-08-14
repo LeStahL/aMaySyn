@@ -22,7 +22,8 @@ do
 	k=$(printf "%03d" $i)
 
 	drumname=$(grep 'ACTUALLY USED DRUMS' $outfile | sed -e "s/.*\['//" -e "s/'\]//")
-	mv -v 'out/'$name'_001.wav' 'out/_'$name'_'$drumname'.wav'
+	# mv -v 'out/'$name'_001.wav' 'out/_'$name'_'$drumname'.wav'
+
 done
 
 ###################

@@ -99,8 +99,10 @@ pattern_keys = {
                 'ctrl +'              : 'PATTERN ADD NEW',
                 'ctrl *'              : 'PATTERN ADD CLONE',
                 'ctrl delete'         : 'PATTERN DELETE',
-                'left'                : 'NOTE SELECT LEFT',
-                'right'               : 'NOTE SELECT RIGHT',
+                'down'                : 'NOTE SELECT LEFT',
+                'up'                  : 'NOTE SELECT RIGHT',
+                'left'                : 'NOTE SELECT SAME LEFT',
+                'right'               : 'NOTE SELECT SAME RIGHT',
                 'home'                : 'NOTE SELECT FIRST',
                 'end'                 : 'NOTE SELECT LAST',
                 '+'                   : 'NOTE ADD NEW',
@@ -123,10 +125,11 @@ pattern_keys = {
 # https://kivy.org/doc/stable/_modules/kivy/core/window.html
 
 def interpretKeypress(key, modifiers, trkActive = False, ptnActive = False):
-
+    
     key = correctForNumpad(key, key)
     if 'shift' in modifiers: key = 'shift ' + key
     if 'ctrl' in modifiers: key = 'ctrl ' + key
+    if 'alt' in modifiers and 'shift' not in modifiers and 'ctrl' not in modifiers: key = 'alt ' + key
     
     action = None
 

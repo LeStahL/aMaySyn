@@ -276,8 +276,8 @@ class Ma2Widget(Widget):
             elif action == 'SCROLL DOWN':               self.theTrkWidget.scroll(axis = 'vertical', inc = +1)
             elif action == 'SCROLL LEFT':               self.theTrkWidget.scroll(axis = 'horizontal', inc = -1)
             elif action == 'SCROLL RIGHT':              self.theTrkWidget.scroll(axis = 'horizontal', inc = +1)
-            elif action == 'ZOOM VERT IN':              self.theTrkWidget.scaleByFactor(axis = 'vertical', factor = 1.1)
-            elif action == 'ZOOM VERT OUT':             self.theTrkWidget.scaleByFactor(axis = 'vertical', factor = .91)
+            elif action == 'ZOOM VERT IN':              self.theTrkWidget.scaleByFactor(axis = 'vertical', factor = .91)
+            elif action == 'ZOOM VERT OUT':             self.theTrkWidget.scaleByFactor(axis = 'vertical', factor = 1.1)
             elif action == 'ZOOM HORZ OUT':             self.theTrkWidget.scaleByFactor(axis = 'horizontal', factor = .91)
             elif action == 'ZOOM HORZ IN':              self.theTrkWidget.scaleByFactor(axis = 'horizontal', factor = 1.1)
 
@@ -304,6 +304,8 @@ class Ma2Widget(Widget):
             elif action == 'NOTE SELECT RIGHT':         self.getPattern().switchNote(+1)
             elif action == 'NOTE SELECT FIRST':         self.getPattern().switchNote(0, to = 0)
             elif action == 'NOTE SELECT LAST':          self.getPattern().switchNote(0, to = -1)
+            elif action == 'NOTE SELECT SAME LEFT':     self.getPattern().switchNote(-1, same_pitch = True)
+            elif action == 'NOTE SELECT SAME RIGHT':    self.getPattern().switchNote(+1, same_pitch = True)
             elif action == 'NOTE TRANSPOSE UP':         self.getPattern().shiftNote(+1)
             elif action == 'NOTE TRANSPOSE DOWN':       self.getPattern().shiftNote(-1)
             elif action == 'NOTE ADD NEW':              self.getPattern().addNote(self.getNote(), append = True)
@@ -1220,7 +1222,21 @@ class Ma2Widget(Widget):
                 self.lastImportPatternFilename = r[c] if os.path.isfile(r[c]) else ''
                 c += 1
                 self.setInfo('stereo_delay', float(r[c]))
-                                
+                c += 1
+                self.theTrkWidget.scale_h = float(r[c])
+                self.theTrkWidget.scale_v = float(r[c+1])
+                self.theTrkWidget.offset_h = int(r[c+2])
+                self.theTrkWidget.offset_v = int(r[c+3])
+                self.thePtnWidget.scale_h = float(r[c+4])
+                self.thePtnWidget.scale_v = float(r[c+5])
+                self.thePtnWidget.offset_h = int(r[c+6])
+                self.thePtnWidget.offset_v = int(r[c+7])
+                self.thePtnWidget.scale_drum_h = float(r[c+8])
+                self.thePtnWidget.scale_drum_v = float(r[c+9])
+                self.thePtnWidget.offset_drum_h = int(r[c+10])
+                self.thePtnWidget.offset_drum_v = int(r[c+11])
+                c += 12
+    
 
     def saveCSV(self):
         filename = self.getInfo('title') + '.may'
@@ -1245,7 +1261,10 @@ class Ma2Widget(Widget):
         out_str += '|' + (str(int(self.track_solo)) if self.track_solo is not None else '-1') \
                  + '|' + self.getInfo('loop') \
                  + '|' + self.lastImportPatternFilename \
-                 + '|' + str(self.getInfo('stereo_delay'))
+                 + '|' + str(self.getInfo('stereo_delay')) \
+                 + '|' + '|'.join(str(x) for x in [self.theTrkWidget.scale_h, self.theTrkWidget.scale_v, self.theTrkWidget.offset_h, self.theTrkWidget.offset_v, \
+                    self.thePtnWidget.scale_h, self.thePtnWidget.scale_v, self.thePtnWidget.offset_h, self.thePtnWidget.offset_v, \
+                    self.thePtnWidget.scale_drum_h, self.thePtnWidget.scale_drum_v, self.thePtnWidget.offset_drum_h, self.thePtnWidget.offset_drum_v])                    
 
         # write to file
         out_csv = open(filename, "w")
@@ -1268,6 +1287,7 @@ class Ma2Widget(Widget):
             test_module = deepcopy(self.getModule())
             test_module.move(0)
             test_track.modules = [test_module]
+            test_track.selected_modules = test_track.modules
             tracks = [test_track]
             patterns = [test_module.pattern]
             actually_used_patterns = patterns
@@ -1292,17 +1312,22 @@ class Ma2Widget(Widget):
 
         else:
             tracks = [t for t in self.tracks if t.modules and not t.mute] if self.track_solo is None else [self.tracks[self.track_solo]]
-            actually_used_patterns = [m.pattern for t in tracks for m in t.modules]
-            patterns = [p for p in self.patterns if p in actually_used_patterns]
-            loop_mode = self.getInfo('loop')
-            offset = self.getInfo('B_offset')
             max_mod_off = min(max(t.getLastModuleOff() for t in tracks), self.getInfo('B_stop'))
+            offset = self.getInfo('B_offset')
+            loop_mode = self.getInfo('loop')
             bpm_list = self.getInfo('BPM').split()
+
+            actually_used_patterns = [m.pattern for t in tracks for m in t.modules if m.getModuleOff() >= offset and m.getModuleOn() <= max_mod_off]
+            patterns = [p for p in self.patterns if p in actually_used_patterns]
+            print('ACTUAL PATTERN LIST:', patterns, sep='\n')
+
+            for t in tracks:
+                t.selected_modules = [m for m in t.modules if m.pattern in patterns]
 
         if self.MODE_headless:
             loop_mode = 'full'
 
-        track_sep = [0] + list(accumulate([len(t.modules) for t in tracks]))
+        track_sep = [0] + list(accumulate([len(t.selected_modules) for t in tracks]))
         pattern_sep = [0] + list(accumulate([len(p.notes) for p in patterns]))
 
         nT  = str(len(tracks))
@@ -1430,16 +1455,16 @@ class Ma2Widget(Widget):
         for t in tracks:
             tex += pack(fmt, float(syn_slide[t.getSynthIndex()]))
         for t in tracks:
-            for m in t.modules:
+            for m in t.selected_modules:
                 tex += pack(fmt, float(m.mod_on))
         for t in tracks:
-            for m in t.modules:
+            for m in t.selected_modules:
                 tex += pack(fmt, float(m.getModuleOff()))
         for t in tracks:
-            for m in t.modules:
+            for m in t.selected_modules:
                 tex += pack(fmt, float(patterns.index(m.pattern))) # this could use some purge-non-used-patterns beforehand...
         for t in tracks:
-            for m in t.modules:
+            for m in t.selected_modules:
                 tex += pack(fmt, float(m.transpose))
         for s in pattern_sep:
             tex += pack(fmt, float(s))
@@ -1699,7 +1724,9 @@ class Ma2Widget(Widget):
 
         starttime = datetime.datetime.now()
 
-        glwidget = SFXGLWidget(self)                 
+        samplerate = 44100
+
+        glwidget = SFXGLWidget(self, duration = self.song_length, samplerate = samplerate, texsize = 888)
         self.log = glwidget.newShader(full_shader)
         print(self.log)
         self.music = glwidget.music
@@ -1723,13 +1750,12 @@ class Ma2Widget(Widget):
 
         if renderWAV:
             # determine number of samples for one songlength
-            sound_framerate = 44100
             sound_channels = 2
             sound_samplewidth = 2
-            total_samples = int(self.song_length * sound_framerate * sound_channels * sound_samplewidth + 1)
+            total_samples = int(self.song_length * samplerate * sound_channels * sound_samplewidth + 1)
 
             sfile = wave.open(self.getWAVFileName(self.file_extra_information + self.getWAVFileCount()),'w')
-            sfile.setframerate(sound_framerate)
+            sfile.setframerate(samplerate)
             sfile.setnchannels(sound_channels)
             sfile.setsampwidth(sound_samplewidth)
             sfile.writeframesraw(self.music[:total_samples])

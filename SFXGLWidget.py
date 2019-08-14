@@ -28,7 +28,7 @@ from numpy import *
 from struct import *
 
 class SFXGLWidget():
-    def __init__(self, parent):
+    def __init__(self, parent, duration, samplerate, texsize):
         self.program = 0
         self.iSampleRateLocation = 0
         self.iBlockOffsetLocation = 0
@@ -36,12 +36,8 @@ class SFXGLWidget():
 
         self.hasShader = False
         self.parent = parent
-        self.duration = 60. # seconds of sound
-        self.samplerate = 44100 #TODO: add selector to code
-        self.nsamples = 2*self.duration*self.samplerate
-        self.texs = 900 # 1024 is enough for about 20 bars (but probably dependant on BPM) - there is still something off here..!
-        self.blocksize = self.texs*self.texs;
-        self.nblocks = int(ceil(float(self.nsamples)/float(self.blocksize)))
+        
+        self.setParameters(duration = duration, samplerate = samplerate, texsize = texsize)
 
         self.image = None
         self.music = None
@@ -53,6 +49,20 @@ class SFXGLWidget():
         self.values = []
 
         self.initializeGL()
+
+    def setParameters(self, duration = None, samplerate = None, texsize = None):
+        if samplerate is not None:
+            self.samplerate = samplerate
+        if duration is not None:
+            self.duration = duration
+        if texsize is not None:
+            self.texs = texsize
+
+        self.nsamples = int(ceil(2 * self.duration * self.samplerate))
+        self.blocksize = self.texs * self.texs
+        self.nblocks = int(ceil(float(self.nsamples) / float(self.blocksize)))
+
+        print("GL parameters set.\nduration:", self.duration, "\nsamplerate:", self.samplerate, "\nsamples:", self.nsamples, "\ntexsize:", self.texs, "\nnblocks:", self.nblocks)
         
     def initializeGL(self):
 
@@ -93,7 +103,7 @@ class SFXGLWidget():
         
         status = glGetProgramiv(self.program, GL_LINK_STATUS)
         if status != GL_TRUE :
-            return 'status != GL_TRUE... ' + glGetProgramInfoLog(self.program)
+            return 'status != GL_TRUE... ' + str(glGetProgramInfoLog(self.program))
                 
         glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
         glUseProgram(self.program)
