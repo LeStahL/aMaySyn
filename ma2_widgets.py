@@ -11,7 +11,7 @@ from kivy.config import Config
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, Line, Ellipse
 from kivy.core.text import Label as CoreLabel
-from math import pi, sin, exp, ceil
+from math import pi, sin, exp, ceil, sqrt
 from random import randint
 
 import xml.etree.ElementTree as ET
@@ -33,8 +33,7 @@ LMMS_scalebars = 4
 class TrackWidget(Widget):
     active = BooleanProperty(True)
 
-    marker_list = {}
-    marker_style = {}
+    marker_list = []
     scale_h = 1
     scale_v = 1
     offset_h = 0
@@ -170,22 +169,23 @@ class TrackWidget(Widget):
 
                 draw_x += beat_w
             
+            # MARKERS
             for m in self.marker_list:
-                marker_pos = self.marker_list[m] - self.offset_h
+                marker_pos = m['pos'] - self.offset_h
                 if marker_pos < 0 or marker_pos > max_visible_beats: continue
                     
                 draw_x = grid_l + marker_pos * beat_w
 
-                if m in self.marker_style and self.marker_style[m] == 'BPM':
+                if m['style'] == 'BPM':
                     line_bottom = draw_y - 10
                     line_top = draw_y
                     Color(.3,.3,.7,.7)
-                    m_text = m[3:]
+                    m_text = m['label'][3:]
                 else:
                     line_bottom = draw_y + 2
                     line_top = self.top - pad_t
                     Color(.7,0,.1,.7)
-                    m_text = m
+                    m_text = m['label']
                 Line(points = [draw_x, line_bottom, draw_x, line_top], width=1.5)
 
                 label = CoreLabel(text = m_text, font_size = font_size_small, font_name = self.font_name)
@@ -217,18 +217,19 @@ class TrackWidget(Widget):
 #                draw_x += beat_w
 
 
-    def updateMarker(self, label, position, style = ''):
-        self.marker_list.update({label: position})
-        self.marker_style.update({label: style})
+    def addMarker(self, label, position, style = ''):
+        self.marker_list.append({'label': label, 'pos': position, 'style': style})
         
-        markers_to_remove = {l:p for l,p in self.marker_list.items() if p<0}
+        markers_to_remove = [m for m in self.marker_list if m['pos']<0]
         for m in markers_to_remove:
-            del self.marker_list[m]
+            self.marker_list.remove(m)
+
+        print(self.marker_list, markers_to_remove)
 
     def removeMarkersContaining(self, label):
-        markers_to_remove = {l:p for l,p in self.marker_list.items() if label in l}
+        markers_to_remove = [m for m in self.marker_list if label in m['label']]
         for m in markers_to_remove:
-            del self.marker_list[m]
+            self.marker_list.remove(m)
 
     def scroll(self, axis, inc):
         if axis == 'horizontal':
@@ -296,9 +297,9 @@ class PatternWidget(Widget):
         key_h = int(9 * scale_v * (1 if not isDrum else 3))
         key_w = int(32 * scale_h)
         font_size = int(11 * min(scale_h, scale_v))
+        par_font_size = font_size * sqrt(scale_h)
         bars = 4 * (0 if not pattern else max(0, pattern.length - offset_h))
         bar_w = int(48 * scale_h)
-        #for now: no length > 16 bars! TODO
 
         #all the note_visible functions!
         #function to clearly calculate position of note TODO, draw current note, draw grid TODO but this time, respect pattern length!
@@ -445,10 +446,10 @@ class PatternWidget(Widget):
 
                     if n.note_pan != 0:
                         Color(*(mixcolor((1,1,1),pattern.color)))
-                        label = CoreLabel(text = strfloat(n.note_pan), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
+                        label = CoreLabel(text = strfloat(n.note_pan), font_size = par_font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
                         label.refresh()
                         Rectangle(size = label.texture.size, \
-                                  pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height - key_h), \
+                                  pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height - (1 if not isDrum else 0.5) * key_h), \
                                   texture = label.texture)
 
                     vel_and_aux_info = ''
@@ -458,7 +459,7 @@ class PatternWidget(Widget):
                         vel_and_aux_info += strfloat(n.note_vel)
                     if vel_and_aux_info != '':
                         Color(*(mixcolor((0,0,0),pattern.color) if n == pattern.getNote() else mixcolor((1,1,1),pattern.color)))
-                        label = CoreLabel(text = vel_and_aux_info, font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
+                        label = CoreLabel(text = vel_and_aux_info, font_size = par_font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
                         label.refresh()
                         Rectangle(size = label.texture.size, \
                                   pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height + 1), \
@@ -466,7 +467,7 @@ class PatternWidget(Widget):
 
                     if n.note_slide != 0:
                         Color(*(mixcolor((1,1,1),pattern.color)))
-                        label = CoreLabel(text = strfloat(n.note_slide), font_size = font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
+                        label = CoreLabel(text = strfloat(n.note_slide), font_size = par_font_size + (-1 if n.note_len >= .125 else -2), font_name = self.font_name)
                         label.refresh()
                         Rectangle(size = label.texture.size, \
                                   pos = (draw_x + 4 * bar_w * n.note_len - label.width - 2, draw_y - .25*label.height + 1 + key_h), \

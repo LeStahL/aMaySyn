@@ -363,8 +363,8 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         ns_sus = instance(form['noise_sustain'])
                         overdr = instance(form['overdrive'])
                         
-                        freq_env = '('+freq_2+'+('+freq_0+'-'+freq_1+')*smoothstep(-'+fdec01+',0.,-_PROG)+('+freq_1+'-'+freq_2+')*smoothstep(-'+fdec01+'-'+fdec12+',-'+fdec01+',-_PROG))'
-                        return 'clip((1.+'+overdr+')*(_tri(_PROG*'+freq_env+')*smoothstep(-'+envrel+',-'+fdec01+'-'+fdec12+',-_PROG) + '+ns_amt+'*fract(sin(_PROG*90.)*4.5e4)*doubleslope(_PROG,'+ns_att+','+ns_dec+','+ns_sus+'),-1., 1.)*doubleslope(_PROG,0.,'+envdec+','+envsus+'))'
+                        freq_env = '('+freq_2+'+('+freq_0+'-'+freq_1+')*(1.-smoothstep(0.,'+fdec01+',_PROG))+('+freq_1+'-'+freq_2+')*(1.-smoothstep('+fdec01+','+fdec01+'+'+fdec12+',_PROG)))'
+                        return '(clip((1.+'+overdr+')*(_tri(_PROG*'+freq_env+')*(1.-smoothstep('+fdec01+'+'+fdec12+','+envrel+'+'+fdec01+'+'+fdec12+',_PROG))) + '+ns_amt+'*pseudorandom(_PROG)*doubleslope(_PROG,'+ns_att+','+ns_dec+','+ns_sus+'))*doubleslope(_PROG,0.,'+envdec+','+envsus+'))'
                         
                     elif form['shape'] == 'fmnoise':
                         env_attack = instance(form['attack'])

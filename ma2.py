@@ -449,12 +449,13 @@ class Ma2Widget(Widget):
                     raise
                 bpmdict.update({float(part.split(':')[0]): float(part.split(':')[1])})
             # now... everything in input is good? good.
+            print(bpmlist, bpmdict)
             self.theTrkWidget.removeMarkersContaining('BPM')
             for beat in bpmdict:
                 marker_label = 'BPM' + GLfloat(bpmdict[beat])
                 if marker_label[-1] == '.':
                     marker_label = marker_label[:-1]
-                self.theTrkWidget.updateMarker(marker_label, beat, style = 'BPM')
+                self.theTrkWidget.addMarker(marker_label, beat, style = 'BPM')
             self.setInfo('BPM', ' '.join(bpmlist))
             return True
 
@@ -875,22 +876,22 @@ class Ma2Widget(Widget):
             return False
 
     def setOffsetMarker(self, value):
+        self.theTrkWidget.removeMarkersContaining('OFFSET')
         if value > 0:
             if value >= self.getInfo('B_stop'):
                 self.setStopMarker(value + self.getInfo('B_stop') - self.getInfo('B_offset'))
             self.setInfo('B_offset', value)
-            self.theTrkWidget.updateMarker('OFFSET', self.getInfo('B_offset'))
+            self.theTrkWidget.addMarker('OFFSET', self.getInfo('B_offset'))
         else:
             self.setInfo('B_offset', 0)
-            self.theTrkWidget.removeMarkersContaining('OFFSET')
 
     def setStopMarker(self, value):
+        self.theTrkWidget.removeMarkersContaining('STOP')
         if value > self.getInfo('B_offset') and value <= self.getTotalLength():
             self.setInfo('B_stop', value)
-            self.theTrkWidget.updateMarker('STOP', self.getInfo('B_stop'))
+            self.theTrkWidget.addMarker('STOP', self.getInfo('B_stop'))
         else:
             self.setInfo('B_stop', inf)
-            self.theTrkWidget.removeMarkersContaining('STOP')
 
 ############## ONLY THE MOST IMPORTANT FUNCTION! ############
 
@@ -1156,11 +1157,11 @@ class Ma2Widget(Widget):
 
                 self.setInfo('B_offset', B_offset)
                 if B_offset > 0:
-                    self.theTrkWidget.updateMarker('OFFSET', B_offset)
+                    self.theTrkWidget.addMarker('OFFSET', B_offset)
                 B_stop = B_stop if B_stop > 0 else inf
                 self.setInfo('B_stop', B_stop)
                 if B_stop < inf:
-                    self.theTrkWidget.updateMarker('STOP', B_stop)
+                    self.theTrkWidget.addMarker('STOP', B_stop)
                 
                 c = 5 # adjust this if you add some stored value beforehand
                 ### read tracks -- with modules assigned to dummy patterns
@@ -1727,7 +1728,7 @@ class Ma2Widget(Widget):
 
         samplerate = 44100
 
-        glwidget = SFXGLWidget(self, duration = self.song_length, samplerate = samplerate, texsize = 888)
+        glwidget = SFXGLWidget(self, duration = self.song_length, samplerate = samplerate, texsize = 930)
         self.log = glwidget.newShader(full_shader)
         print(self.log)
         self.music = glwidget.music

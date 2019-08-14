@@ -191,33 +191,12 @@ drum fmnoise2 shape=fmnoise attack=0.0 decay=0.03 sustain=0.1 timbre1=.5 timbre2
 env decnoise2 shape=expdecay exponent=13
 maindrum fmnois2 src=fmnoise2*decnoise2 release=0
 
-drum hut shape=fmnoise attack=0 decay=0.05 sustain=0 timbre1=.3 timbre2=2
-lfo acclfo shape=squ freq=4. mode=beat,global shift=.6 scale=.25
-maindrum HAT src=acclfo*hut release=.25
+osc hutrev shape=lpnoise freq=6000
+drum hut shape=fmnoise attack=0 decay=0.1 sustain=.1 timbre1=30 timbre2=20
+form whut sinshape src=hut+hutrev parts=5 amount=1
+env hutdecay shape=expdecay exponent=2
+maindrum WHAT src=whut*hutdecay release=.25
 
-drum snr shape=snare freq0=6000 freq1=800 freq2=350 freqdecay0=0.01 freqdecay1=0.01 decay=0.25 sustain=0.3 release=0.1 noise_amount=.7 noise_attack=0.05 noise_decay=0.3 noise_sustain=0.3 overdrive=1.6
-maindrum SNR src=snr
-
-#osc crsh_noise shape=noise freq=0 phase=2.*crsh_osc2+-5.
-osc crsh_noise shape=lpnoise freq=10396
-form crsh_noise_mod sinshape src=crsh_noise amount=.3 parts=7
-osc crsh_noise2 shape=noise freq=2.5
-osc crsh_osc1 shape=tri freq=1301 phase=crsh_env2*.8*crsh_noise+2.*crsh_osc2*crsh_env1
-osc crsh_osc2 shape=saw freq=4920
-osc crsh_osc3 shape=tri freq=325 phase=.4*crsh_noise2
-env crsh_env1 attack=.3 hold=.1 decay=.6 sustain=.2
-env crsh_env2 attack=.21 hold=.18 decay=.54 sustain=.2 release=.3
-env crsh_env0 shape=expdecay exponent=8
-#maindrum crash src=crsh_env0*crsh_osc1
-maindrum crash src=crsh_noise_mod*crsh_env0
-
-maindrum    ASSK2    src="vel*(clamp(1.32*_tri(drop_phase(_PROG,.06,308.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.82*clamp(.49*_tri(drop_phase(_PROG,.06,308.,80.)+.82*lpnoise(_PROG,4595.)),-1.,1.)*exp(-1.97*_PROG)+.09*lpnoise(_PROG,4032.)*(1.-smoothstep(0.,.97,_PROG-.79))+.1*lpnoise(_PROG,1111.)*exp(-_PROG*12.69)+.6*lpnoise(_PROG,7795.)*exp(-_PROG*1.08))*smoothstep(0.,.003,_PROG)" release=.00 relpower=1 slidetime=.125
-
-env lin_sweep shape=linear scale=6 shift=1 mode=relative
-osc noise_sweep shape=lpnoise freq=80000
-osc noise_low shape=lpnoise freq=1000
-form noise_shape sinshape src=noise_low amount=lin_sweep parts=23
-maindrum SWEEP src=noise_shape
 
 param  someshit  segments=someseg,1,8,someshit_lfo,8,12 default=4
 lfo someshit_lfo freq=.33 mode=module
@@ -229,11 +208,11 @@ osc testsomeshitA shape=sin freq=.5*f overdrive=.5*someshit
 osc testsomeshit1 shape=badd freq=.5*f mix=.8 amp=3 peak=300 sigma=50 ncut=8 detune=.001
 osc testsomeshit2 shape=badd freq=.5*f mix=.8 amp=3 peak=400 sigma=10 ncut=4 detune=.001
 osc testsomeshit3 shape=badd freq=f mix=.8 amp=3 peak=1000 sigma=100 ncut=3 detune=.005
-main SOMESHIT src=.1*testsomeshitA*testdecay+.2*testsomeshape*testdecay !+testsomeshit1+testsomeshit2+testsomeshit3 release=.05
+#main SOMESHIT src=.1*testsomeshitA*testdecay+.2*testsomeshape*testdecay !+testsomeshit1+testsomeshit2+testsomeshit3 release=.05
 
 osc testsomesin shape=sin freq=.5*f overdrive=2
 form testsomemod modsync src=testsomesin freq=someshit*f
-main SOMEMOD src=testsomemod release=.05
+#main SOMEMOD src=testsomemod release=.05
 
 env carp_env01 attack=.125 sustain=1
 env carp_env02 attack=.1+.001*aux release=.15
@@ -247,7 +226,7 @@ form carp_frm03 quantize bits=7888 src=carp_frm02
 form carp_frm01 chorus src=.5*carp_frm02 number=2 step=.1 intensity=.1 rate=.025*SPB
 #main carp src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.3 slidetime=.08
 main carp src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.14 slidetime=.35
-main carpfast src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.19 slidetime=.05 predraw=0.04
+main carpfast src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.19 slidetime=.05 predraw=0.06
 
 env pling_env00 shape=expdecay exponent=11
 env pling_env01 attack=1e-2 hold=0 decay=.1+.5*vel sustain=.01 release=.4
@@ -264,7 +243,6 @@ main pling src=pling_env00*pling_env01*pling_frm01+.4*pling_env00*pling_env03*pl
 
 main    pling.0    src="theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.01,0.,.1+.5*vel,.01,.4)*clip((1.+theta(_BPROG)*exp(-11.*_BPROG))*_tri(f*_PROG+.2*env_AHDSR(_BPROG,L,.5,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))+.2*vel*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*(2.*fract(3.97*f*_PROG+0.)-1.)))+.4*theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))*env_AHDSR(_BPROG,L,0.,0.,.2+.2*vel,.01,.4)+.4*env_AHDSR(_BPROG,L,0.,0.,.05,0.,0.)*lpnoise(_PROG+0.,6000.+200.*note_pitch(_note))" release=.4 relpower=2 slidetime=.125
 main    pling.1    src="theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.01,0.,.1+.5*vel,.01,.4)*clip((1.+theta(_BPROG)*exp(-11.*_BPROG))*_tri(f*_PROG+.2*env_AHDSR(_BPROG,L,.5,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))+.2*vel*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*(2.*fract(3.97*f*_PROG+0.)-1.)))+.4*theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))*env_AHDSR(_BPROG,L,0.,0.,.2+.2*vel,.01,.4)+.4*env_AHDSR(_BPROG,L,0.,0.,.05,0.,0.)*lpnoise(_PROG+0.,6000.+200.*note_pitch(_note))" release=.4 relpower=2 slidetime=.125
-maindrum    crash0    src="theta(_BPROG)*exp(-3.*_BPROG)*_tri(9301.*_PROG+env_AHDSR(_BPROG,L,.21,.18,.54,.2,.3)*.1*pseudorandom(1.*_PROG+0.)+10.*(2.*fract(3920.*_PROG+.4*pseudorandom(1.*_PROG+0.))-1.)*env_AHDSR(_BPROG,L,.3,.1,.6,0.,0.))" release=0 relpower=1 slidetime=.125
 
 env brasspad_env1 shape=linear shift=100 scale=600
 env brasspad_env0 shape=linear shift=-1 scale=.6 mode=relative
@@ -515,7 +493,6 @@ maindrum    SHAG0    src=".54*lpnoise(_PROG,1.+5.51*_PROG)*(smoothstep(0.,2.,_PR
 maindrum    ASSK1    src="(clamp(1.53*_tri(drop_phase(_PROG,.08,213.,103.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.99))+.91*clamp(.16*_tri(drop_phase(_PROG,.08,213.,103.)+.91*lpnoise(_PROG,7763.)),-1.,1.)*exp(-21.58*_PROG)+.65*lpnoise(_PROG,7650.)*(1.-smoothstep(0.,.98,_PROG-.26))+.37*lpnoise(_PROG,8300.)*exp(-_PROG*21.35)+.8*lpnoise(_PROG,8062.)*exp(-_PROG*1.14))*smoothstep(0.,.008,_PROG)" release=.4 relpower=1 slidetime=.125
 maindrum    SHAG1    src=".79*lpnoise(_PROG,1.+3.31*_PROG)*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,.018,_PROG-.196))" release=0.2 relpower=1 slidetime=.125
 maindrum    ASS-SNR3 src="(clamp(1.09*_tri(drop_phase(_PROG,.08,249.,77.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.04))+.97*clamp(.99*_tri(drop_phase(_PROG,.08,249.,77.)+.97*lpnoise(_PROG,9855.)),-1.,1.)*exp(-21.22*_PROG)+.03*lpnoise(_PROG,10655.)*(1.-smoothstep(0.,.58,_PROG-.81))+.71*lpnoise(_PROG,7520.)*exp(-_PROG*16.22)+.57*lpnoise(_PROG,4386.)*exp(-_PROG*29.48))*smoothstep(0.,.005,_PROG)" release=.4 relpower=1 slidetime=.125
-maindrum    ASSK4 src=.57*ASSK4src release=.4 relpower=1 slidetime=.125
 
 
 form ASSK5src define src="(clamp(2.24*_tri(drop_phase(_PROG,.08,217.,64.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.29))+.7*clamp(.84*_tri(drop_phase(_PROG,.08,217.,64.)+.7*lpnoise(_PROG,1936.)),-1.,1.)*exp(-23.11*_PROG)+.08*lpnoise(_PROG,5166.)*(1.-smoothstep(0.,.16,_PROG-.55))+.77*lpnoise(_PROG,6784.)*exp(-_PROG*29.89)+.53*lpnoise(_PROG,4404.)*exp(-_PROG*24.64))*smoothstep(0.,.002,_PROG)"
@@ -534,3 +511,58 @@ form bell0dst sinshape src=bell0src amount=vel parts=30
 maindrum    BELL01    src=bell0dst release=.15 relpower=1 slidetime=.125 predraw=0
 
 maindrum    ASSK3    src="(clamp(1.15*_tri(drop_phase(_PROG,.06,310.,95.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.26))+.83*clamp(.14*_tri(drop_phase(_PROG,.06,310.,95.)+.83*lpnoise(_PROG,5850.)),-1.,1.)*exp(-4.73*_PROG)+.1*lpnoise(_PROG,19556.)*(1.-smoothstep(0.,.07,_PROG-.41))+.03*lpnoise(_PROG,9325.)*exp(-_PROG*18.19)+.26*lpnoise(_PROG,1487.)*exp(-_PROG*8.6))*smoothstep(0.,.004,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+
+
+maindrum    SNRK1    src="(clamp(2.65*_tri(drop_phase(_PROG,.06,205.,52.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.91*clamp(.95*_tri(drop_phase(_PROG,.06,205.,52.)+.91*lpnoise(_PROG,8869.)),-1.,1.)*exp(-14.86*_PROG)+.04*lpnoise(_PROG,16440.)*(1.-smoothstep(0.,.77,_PROG-.52))+.16*lpnoise(_PROG,1524.)*exp(-_PROG*6.23)+.07*lpnoise(_PROG,5944.)*exp(-_PROG*13.51))*smoothstep(0.,.004,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+
+drum kcky_body shape=protokick freq0=242 freq1=55 freqdecay=.036 hold=.088 decay=.0666 drive=1.42 detune=.01 rev_amount=0.45 rev_hold=0.1 rev_decay=0.15 rev_drive=.5
+drum kcky_trans shape=protokick freq0=3333 freq1=340 freqdecay=.008 hold=0 decay=.01 drive=2. detune=2.4 rev_amount=0
+maindrum KCKY src=kcky_body+.66*kcky_trans release=.04
+
+maindrum CLCK src=kcky_trans release=.04
+
+maindrum    ASSK4    src="(clamp(2.77*_tri(drop_phase(_PROG,.04,346.,71.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.93*clamp(.5*_tri(drop_phase(_PROG,.04,346.,71.)+.93*lpnoise(_PROG,8131.)),-1.,1.)*exp(-27.17*_PROG)+.05*lpnoise(_PROG,8351.)*(1.-smoothstep(0.,.7,_PROG-.56))+.22*lpnoise(_PROG,6693.)*exp(-_PROG*8.03)+.66*lpnoise(_PROG,6124.)*exp(-_PROG*14.68))*smoothstep(0.,.003,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK7    src="(clamp(1.18*_tri(drop_phase(_PROG,.07,170.,94.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.12))+.08*clamp(.41*_tri(drop_phase(_PROG,.07,170.,94.)+.08*lpnoise(_PROG,8015.)),-1.,1.)*exp(-8.8*_PROG)+.03*lpnoise(_PROG,1351.)*(1.-smoothstep(0.,.35,_PROG-.3))+.62*lpnoise(_PROG,2610.)*exp(-_PROG*18.02)+.27*lpnoise(_PROG,4995.)*exp(-_PROG*27.9))*smoothstep(0.,.009,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+
+drum snr shape=snare freq0=6666 freq1=1000 freq2=660 freqdecay0=0.003 freqdecay1=0.01 decay=0.05 sustain=0.3 release=0.1 noise_amount=1 noise_attack=0.005 noise_decay=0.8 noise_sustain=0.6 overdrive=0
+form sinr sinshape src=snr amount=1 parts=777
+#maindrum SNR src=sinr release=.1
+
+#osc crsh_noise shape=noise freq=0 phase=2.*crsh_osc2+-5.
+osc crsh_noise shape=lpnoise freq=10396
+form crsh_noise_mod sinshape src=crsh_noise amount=.3 parts=7
+osc crsh_noise2 shape=noise freq=2.5
+osc crsh_osc1 shape=tri freq=1301 phase=crsh_env2*.8*crsh_noise+2.*crsh_osc2*crsh_env1
+osc crsh_osc2 shape=saw freq=4920
+osc crsh_osc3 shape=tri freq=325 phase=.4*crsh_noise2
+env crsh_env1 attack=.3 hold=.1 decay=.6 sustain=.2
+env crsh_env2 attack=.21 hold=.18 decay=.54 sustain=.2 release=.3
+env crsh_env0 shape=expdecay exponent=8
+#maindrum crash src=crsh_env0*crsh_osc1
+maindrum crash src=crsh_noise_mod*crsh_env0
+
+form    ASSK2src define    src="vel*(clamp(1.32*_tri(drop_phase(_PROG,.06,308.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.82*clamp(.49*_tri(drop_phase(_PROG,.06,308.,80.)+.82*lpnoise(_PROG,4595.)),-1.,1.)*exp(-1.97*_PROG)+.09*lpnoise(_PROG,4032.)*(1.-smoothstep(0.,.97,_PROG-.79))+.1*lpnoise(_PROG,1111.)*exp(-_PROG*12.69)+.6*lpnoise(_PROG,7795.)*exp(-_PROG*1.08))*smoothstep(0.,.003,_PROG)"
+maindrum ASSK72 src=ASSK2src+.5*ASSK7src 
+
+env lin_sweep shape=linear scale=6 shift=1 mode=relative
+osc noise_sweep shape=lpnoise freq=80000
+osc noise_low shape=lpnoise freq=1000
+form noise_shape sinshape src=noise_low amount=lin_sweep parts=23
+#maindrum SWEEP src=noise_shape
+
+form    ASSK7src    define src="(clamp(1.35*_tri(drop_phase(_PROG,.07,244.,112.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.27*clamp(.03*_tri(drop_phase(_PROG,.07,244.,112.)+.27*lpnoise(_PROG,5148.)),-1.,1.)*exp(-24.07*_PROG)+0.*lpnoise(_PROG,1959.)*(1.-smoothstep(0.,.98,_PROG-.64))+.43*lpnoise(_PROG,8238.)*exp(-_PROG*25.54)+.11*lpnoise(_PROG,3803.)*exp(-_PROG*10.51))*smoothstep(0.,.006,_PROG)"
+form    ASSK8src    define src="(clamp(1.72*_tri(drop_phase(_PROG,.1,176.,66.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.13))+.06*clamp(.83*_tri(drop_phase(_PROG,.1,176.,66.)+.06*lpnoise(_PROG,6942.)),-1.,1.)*exp(-24.14*_PROG)+.07*lpnoise(_PROG,5757.)*(1.-smoothstep(0.,.84,_PROG-.18))+.6*lpnoise(_PROG,8812.)*exp(-_PROG*6.46)+.57*lpnoise(_PROG,4023.)*exp(-_PROG*9.28))*smoothstep(0.,.004,_PROG)"
+maindrum ASSK78  src=ASSK7src+ASSK8src release=.02
+maindrum    crash0    src="theta(_BPROG)*exp(-3.*_BPROG)*_tri(9301.*_PROG+env_AHDSR(_BPROG,L,.21,.18,.54,.2,.3)*.1*pseudorandom(1.*_PROG+0.)+10.*(2.*fract(3920.*_PROG+.4*pseudorandom(1.*_PROG+0.))-1.)*env_AHDSR(_BPROG,L,.3,.1,.6,0.,0.))" release=0 relpower=1 slidetime=.125
+
+maindrum    ASSK8    src="(clamp(2.45*_tri(drop_phase(_PROG,.09,237.,81.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.27))+.84*clamp(.82*_tri(drop_phase(_PROG,.09,237.,81.)+.84*lpnoise(_PROG,8968.)),-1.,1.)*exp(-5.35*_PROG)+.1*lpnoise(_PROG,3502.)*(1.-smoothstep(0.,.42,_PROG-.38))+.46*lpnoise(_PROG,5409.)*exp(-_PROG*12.61)+.47*lpnoise(_PROG,677.)*exp(-_PROG*25.25))*smoothstep(0.,.006,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK9    src="(clamp(2.58*_tri(drop_phase(_PROG,.05,156.,91.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.04))+.35*clamp(.44*_tri(drop_phase(_PROG,.05,156.,91.)+.35*lpnoise(_PROG,6183.)),-1.,1.)*exp(-7.56*_PROG)+.08*lpnoise(_PROG,7245.)*(1.-smoothstep(0.,.58,_PROG-.2))+.72*lpnoise(_PROG,2591.)*exp(-_PROG*5.48)+.73*lpnoise(_PROG,3597.)*exp(-_PROG*29.4))*smoothstep(0.,.01,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK10    src="(clamp(1.42*_tri(drop_phase(_PROG,.02,261.,53.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.28))+.86*clamp(.04*_tri(drop_phase(_PROG,.02,261.,53.)+.86*lpnoise(_PROG,3210.)),-1.,1.)*exp(-20.77*_PROG)+.03*lpnoise(_PROG,2325.)*(1.-smoothstep(0.,.42,_PROG-.01))+.28*lpnoise(_PROG,4276.)*exp(-_PROG*14.57)+.72*lpnoise(_PROG,3219.)*exp(-_PROG*9.93))*smoothstep(0.,.007,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK100    src="((clamp(1.42*_tri(drop_phase(_PROG,.02,261.,53.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.28))+.86*clamp(.04*_tri(drop_phase(_PROG,.02,261.,53.)+.86*lpnoise(_PROG,3210.)),-1.,1.)*exp(-20.77*_PROG)+.03*lpnoise(_PROG,2325.)*(1.-smoothstep(0.,.42,_PROG-.01))+.28*lpnoise(_PROG,4276.)*exp(-_PROG*14.57)+.72*lpnoise(_PROG,3219.)*exp(-_PROG*9.93))*smoothstep(0.,.007,_PROG))" release=.00 relpower=1 slidetime=.125 predraw=0
+
+maindrum    NDV.NSNR      src="((clamp(1.43*_tri(drop_phase(_t,.182,153.909,76.006)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_t-.152))+1.428*clamp(.707*_tri(drop_phase(_t,.182,153.909,76.006)+1.428*lpnoise(_t,760.989)),-1.,1.)*exp(-8.556*_t)+.066*lpnoise(_t,13562.653)*(1.-smoothstep(0.,.24,_t-.088))+.724*lpnoise(_t,4127.819)*exp(-_t*3.662)+.295*lpnoise(_t,7269.681)*exp(-_t*2.313))*smoothstep(0.,.05,_t))"
+maindrum    NDV.CMB1     src="(.837*(.541*lpnoise(_t,2041.774)+.798*lpnoise(_t,8260.482)+.931*lpnoise(_t,8317.984))*(smoothstep(0.,.007,_t)-smoothstep(0.,.37,_t-.05))+_sin(drop_phase(_t,.033,464.443,270.029))*exp(-_t*32.249)*.841+_sin(drop_phase(_t*659.983,.033,464.443,270.029))*exp(-_t*33.)*.618)"
+maindrum    NDV.LSNR     src="(.741*(.24*lpnoise(_t,9139.286)+.961*lpnoise(_t,6306.874)+.865*lpnoise(_t,7962.971))*(smoothstep(0.,.004,_t)-smoothstep(0.,.798,_t-.05))+_sin(drop_phase(_t,.06,2239.905,159.335))*exp(-_t*15.463)*.672+_sin(drop_phase(_t*642.32,.06,2239.905,159.335))*exp(-_t*3.375)*.195)"
+
+maindrum    CLASP    src="(clamp(2.27*_tri(drop_phase(_PROG,.03,241.,72.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.01))+.91*clamp(.9*_tri(drop_phase(_PROG,.03,241.,72.)+.91*lpnoise(_PROG,8164.)),-1.,1.)*exp(-20.76*_PROG)+.05*lpnoise(_PROG,10466.)*(1.-smoothstep(0.,.18,_PROG-.56))+.56*lpnoise(_PROG,7123.)*exp(-_PROG*5.45)+.11*lpnoise(_PROG,1134.)*exp(-_PROG*13.82))*smoothstep(0.,.004,_PROG)" release=.2 relpower=3 slidetime=.125 predraw=0
+maindrum    ASSK12    src="(clamp(.55*_tri(drop_phase(_PROG,.01,192.,54.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.8*clamp(.84*_tri(drop_phase(_PROG,.01,192.,54.)+.8*lpnoise(_PROG,5057.)),-1.,1.)*exp(-6.09*_PROG)+.05*lpnoise(_PROG,12188.)*(1.-smoothstep(0.,.27,_PROG-.56))+.89*lpnoise(_PROG,3778.)*exp(-_PROG*13.78)+.08*lpnoise(_PROG,5266.)*exp(-_PROG*15.79))*smoothstep(0.,.008,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
