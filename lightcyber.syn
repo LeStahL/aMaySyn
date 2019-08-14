@@ -195,7 +195,7 @@ osc hutrev shape=lpnoise freq=6000
 drum hut shape=fmnoise attack=0 decay=0.1 sustain=.1 timbre1=30 timbre2=20
 form whut sinshape src=hut+hutrev parts=5 amount=1
 env hutdecay shape=expdecay exponent=2
-maindrum WHAT src=whut*hutdecay release=.25
+maindrum WHAT src=0.2*whut*hutdecay release=.25
 
 
 param  someshit  segments=someseg,1,8,someshit_lfo,8,12 default=4
@@ -357,7 +357,7 @@ lfo chappy_lfo shape=sin freq=2 phase=.4 scale=chplfoscale shift=chplfoshift mod
 env chappy_env shape=adsr attack=1e-4 decay=chpdecay sustain=chpsustain release=.4
 main chappy src=vel*chappy_env*chappy_syn release=.4
 
-main    chippy.0    src="env_AHDSR(_PROG,tL,0.,0.,.063,.402,.003)*MADD(_PROG,f,0.,128,1,-.6,(1175.+(583.*_sin_(2.*B,.4))),24.,44.37,24.05,.015,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=.12 relpower=2 slidetime=.125
+main    chippy.0    src="env_AHDSR(_PROG,tL,1e-3,0.,.063,.402,.003)*MADD(_PROG,f,0.,128,1,-.6,(1175.+(583.*_sin_(2.*B,.4))),24.,44.37,24.05,.015,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=.12 relpower=2 slidetime=.125
 main    chippy.1    src="vel*env_AHDSR(_PROG,tL,0.,0.,.173,.289,.019)*MADD(floor(8000.*_PROG+.5)/8000.,f,0.,128,1,-.25,(1342.+(216.*_sin_(2.*B,.4))),23.,0.,14.43,.018,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
 main    chippy.2    src="vel*env_AHDSR(_PROG,tL,0.,0.,.072,.865,.001)*MADD(floor(8000.*_PROG+.5)/8000.,f,0.,128,1,-.49,(1265.+(535.*_sin_(2.*B,.4))),15.,0.,10.28,.016,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
 main    chippy.3    src="vel*env_AHDSR(_PROG,tL,.012,0.,.197,.91,.014)*MADD(floor(16000.*_PROG+.5)/16000.,f,0.,128,1,-.57,(1309.+(645.*_sin_(2.*B,.4))),5.,0.,14.95,.019,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
