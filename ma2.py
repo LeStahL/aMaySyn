@@ -480,7 +480,7 @@ class Ma2Widget(Widget):
         self.update()
 
     def changeTrackParameters(self):
-        par_string = str(100 * self.getTrack().getNorm())
+        par_string = str(round(100 * self.getTrack().getNorm(), 2))
         popup = InputPrompt(self, title = 'ENTER TRACK NORM FACTOR IN %', title_font = self.font_name, default_text = par_string)
         popup.bind(on_dismiss = self.handleChangeTrackParameters)
         popup.open()
@@ -1317,12 +1317,13 @@ class Ma2Widget(Widget):
             loop_mode = self.getInfo('loop')
             bpm_list = self.getInfo('BPM').split()
 
-            actually_used_patterns = [m.pattern for t in tracks for m in t.modules if m.getModuleOff() >= offset and m.getModuleOn() <= max_mod_off]
+            actually_used_patterns = [m.pattern for t in tracks for m in t.modules] # if m.getModuleOff() >= offset and m.getModuleOn() <= max_mod_off
             patterns = [p for p in self.patterns if p in actually_used_patterns]
             print('ACTUAL PATTERN LIST:', patterns, sep='\n')
 
             for t in tracks:
                 t.selected_modules = [m for m in t.modules if m.pattern in patterns]
+
 
         if self.MODE_headless:
             loop_mode = 'full'
