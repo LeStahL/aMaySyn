@@ -225,6 +225,7 @@ class TrackWidget(Widget):
             self.marker_list.remove(m)
 
     def removeMarkersContaining(self, label):
+
         markers_to_remove = [m for m in self.marker_list if label in m['label']]
         for m in markers_to_remove:
             self.marker_list.remove(m)

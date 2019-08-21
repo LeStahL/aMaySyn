@@ -7,7 +7,7 @@ float _unisin(float a,float b) { return (.5*_sin(a) + .5*_sin((1.+b)*a)); }
 float _sq(float a) { return sign(2.*fract(a) - 1.); }
 float _sq_(float a,float pwm) { return sign(2.*fract(a) - 1. + pwm); }
 float _psq(float a) { return clip(50.*_sin(a)); }
-float _psq_(float a, float pwm) { return clip(50.*(_sin(a) - pwm)); } 
+float _psq_(float a, float pwm) { return clip(50.*(_sin(a) - pwm)); }
 float _tri(float a) { return (4.*abs(fract(a)-.5) - 1.); }
 float _saw(float a) { return (2.*fract(a) - 1.); }
 float freqC1(float note){ return 32.7 * pow(2., note/12.); }
@@ -30,7 +30,7 @@ const float filterthreshold = 1e-3;
 
 float s_atan(float a) { return 2./PI * atan(a); }
 float s_crzy(float amp) { return clamp( s_atan(amp) - 0.1*cos(0.9*amp*exp(amp)), -1., 1.); }
-float squarey(float a, float edge) { return abs(a) < edge ? a : floor(4.*a+.5)*.25; } 
+float squarey(float a, float edge) { return abs(a) < edge ? a : floor(4.*a+.5)*.25; }
 
 float doubleslope(float t, float a, float d, float s)
 {
@@ -73,7 +73,7 @@ float blackmannoise(float t, float ton, float M)
     float facM = 2.*PI/M;
     float w, n;
     for(float m=1.; m<=M; m+=1.)
-    {        
+    {
         n = m -.5*M;
         w = .42 - .5 * cos(n*facM) - .08 * cos(2.*n*facM);
         s -= w*pseudorandom(t-m*Tsample);
@@ -136,7 +136,7 @@ float waveshape(float s, float amt, float A, float B, float C, float D, float E)
         w = D + (E-D) * (1.5*_s*(1.-.33*_s*_s));
     }
     else return 1.;
-    
+
     return m*mix(s,w,amt);
 }
 
@@ -161,7 +161,7 @@ float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, 
     float ret = 0.;
     float INR = keyF==1 ? 1./CO : f/CO;
     float IRESQ = keyF==1 ? 1./RES_Q : 1./(RES_Q*f);
-    
+
     float p = f*t;
     float float_N, inv_N, comp_mix, filter_N;
     for(int N=1; N<=NMAX; N+=NINC)
@@ -175,7 +175,7 @@ float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, 
         if(abs(comp_mix) < 1e-6) continue;
 
         filter_N = pow(1. + pow(float_N*INR,NDECAY),-.5) + RES * exp(-pow((float_N*f-CO)*IRESQ,2.));
-                
+
         ret += comp_mix * filter_N * (_sin_(float_N * p, p0) + _sin_(float_N * p * (1.+DET), p0));
     }
     return s_atan(ret);
@@ -220,10 +220,10 @@ float QFM(float t, float f, float phase, float LV1, float LV2, float LV3, float 
     float PH2 = FR2 * f * t + phase;
     float PH3 = FR3 * f * t + phase;
     float PH4 = FR4 * f * t + phase;
-    
-    float LINK41 = 0., LINK42 = 0., LINK43 = 0., LINK32 = 0., LINK31 = 0., LINK21 = 0.; 
+
+    float LINK41 = 0., LINK42 = 0., LINK43 = 0., LINK32 = 0., LINK31 = 0., LINK21 = 0.;
     if(iALGO == 1)       {LINK43 = 1.; LINK32 = 1.; LINK21 = 1.;}
-    else if(iALGO == 2)  {LINK42 = 1.; LINK32 = 1.; LINK21 = 1.;}    
+    else if(iALGO == 2)  {LINK42 = 1.; LINK32 = 1.; LINK21 = 1.;}
     else if(iALGO == 3)  {LINK41 = 1.; LINK32 = 1.; LINK21 = 1.;}
     else if(iALGO == 4)  {LINK42 = 1.; LINK43 = 1.; LINK31 = 1.; LINK21 = 1.;}
     else if(iALGO == 5)  {LINK41 = 1.; LINK31 = 1.; LINK21 = 1.;}
@@ -238,12 +238,12 @@ float QFM(float t, float f, float phase, float LV1, float LV2, float LV3, float 
     float OP3 = LV3 * _sin(PH3 + QFM_FB(PH3, FB3) + LINK43*OP4);
     float OP2 = LV2 * _sin(PH2 + QFM_FB(PH2, FB2) + LINK42*OP4 + LINK32*OP3);
     float OP1 = LV1 * _sin(PH1 + QFM_FB(PH1, FB1) + LINK41*OP4 + LINK31*OP3 + LINK32*OP2);
-    
+
     float sum = OP1;
     if(LINK21 > 0.) sum += OP2;
     if(LINK31 + LINK32 > 0.) sum += OP3;
     if(LINK41 + LINK42 + LINK43 > 0.) sum += OP4;
-    
+
     return s_atan(sum);
 }
 
@@ -255,7 +255,7 @@ float protokick(float t, float f_start, float f_end, float fdecay, float hold, f
     float rev_phi = phi + reverb_phase(t, 1.);
     return clamp(drive*.5*(_sin(phi)+_sin((1.-detune)*phi)),-1.,1.) * exp(-max(t-hold, 0.)/decay)
          + rev_amount*clamp(rev_drive*.5*(_sin(rev_phi)+_sin((1.-detune)*rev_phi)),-1.,1.) * exp(-max(t-rev_hold, 0.)/rev_decay);
-} 
+}
 
 float bitexplosion(float time, float B, float dmaxN, float fvar, float B2amt, float var1, float var2, float var3, float decay)
 {
@@ -319,7 +319,7 @@ vec2 mainSynth(float time)
     BPS = pos_BPS[_it];
     SPB = pos_SPB[_it];
     BT = pos_B[_it] + (time - pos_t[_it]) * BPS;
-    
+
     float time2 = time - STEREO_DELAY;
     float sidechain = 1.;
 
@@ -334,8 +334,8 @@ vec2 mainSynth(float time)
         syn = trk_syn(trk);
         rel = trk_rel(trk);
         pre = trk_pre(trk);
- 
-        for(_modU = tsep0; (_modU < tsep1 - 1) && (BT > mod_on(_modU + 1) - pre); _modU++);             
+
+        for(_modU = tsep0; (_modU < tsep1 - 1) && (BT > mod_on(_modU + 1) - pre); _modU++);
         for(_modL = tsep0; (_modL < tsep1 - 1) && (BT >= mod_off(_modL) + rel); _modL++);
 
         for(int _mod = _modL; _mod <= _modU; _mod++)
@@ -345,7 +345,7 @@ vec2 mainSynth(float time)
             ptn   = mod_ptn(_mod);
             psep0 = ptn_sep(ptn);
             psep1 = ptn_sep(ptn + 1);
-                         
+
             for(_noteU = psep0; (_noteU < psep1 - 1) && (B > note_on(_noteU + 1) - pre); _noteU++);
             for(_noteL = psep0; (_noteL < psep1 - 1) && (B >= note_off(_noteL) + rel); _noteL++);
 
@@ -411,14 +411,14 @@ vec2 mainSynth(float time)
             }
         }
     }
-    return vec2(s_atan(sidechain * sL + dL), s_atan(sidechain * sR + dR));
+    return vec2(s_atan(TURN_DOWN*(sidechain * sL + dL)), s_atan(TURN_DOWN*(sidechain * sR + dR)));
 }
 
 void main()
 {
-   float t = (iBlockOffset + (gl_FragCoord.x) + (gl_FragCoord.y)*iTexSize)/iSampleRate;
-   vec2 y = mainSynth(t);
-   vec2 v  = floor((0.5+0.5*y)*65535.0);
+   float t = (iBlockOffset + gl_FragCoord.x + gl_FragCoord.y*iTexSize) / iSampleRate;
+   vec2 s = mainSynth(t);
+   vec2 v  = floor((0.5+0.5*s)*65535.0);
    vec2 vl = mod(v,256.0)/255.0;
    vec2 vh = floor(v/256.0)/255.0;
    gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);

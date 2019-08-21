@@ -61,7 +61,7 @@ class Ma2Widget(Widget):
     thePtnWidget = ObjectProperty(None)
     somePopup = ObjectProperty(None)
 
-    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'B_stop': inf, 'loop': 'full', 'stereo_delay': 2e-4}
+    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'B_stop': inf, 'loop': 'full', 'stereo_delay': 2e-4, 'turn_down': .8}
 
     current_track = None
     tracks = []
@@ -77,7 +77,7 @@ class Ma2Widget(Widget):
     synatized_code_syn = ''
     synatized_code_drum = ''
     synfile = ''
-    
+
     MODE_debug = False
     MODE_numberInput = False
     numberInput = ''
@@ -87,7 +87,7 @@ class Ma2Widget(Widget):
     undo_stack = []
     undo_max_steps = 50
     undo_pos = 0
-    MODE_undo = False    
+    MODE_undo = False
     stateChanged = True
 
     #headless mode just renders to file
@@ -125,16 +125,16 @@ class Ma2Widget(Widget):
 
     def getSameTypePatterns(self):
         return [p for p in self.patterns if p.synth_type in [self.getTrackSynthType(),'_']]
-    
+
     def getSameTypePatternIndex(self):
         return self.getSameTypePatterns().index(self.getPattern()) if self.getPattern() and self.getPattern() in self.getSameTypePatterns() else -1
-    
+
     def getTrackSynthType(self, track=None):
         return synths[(track if track else self.getTrack()).current_synth][0]
-    
+
     def isDrumTrack(self):
         return self.getTrackSynthType() == 'D'
-    
+
     def getDefaultMaxNote(self, ptype=None):
         return 88 if not (ptype[0]=='D' if ptype else self.isDrumTrack()) else len(drumkit)
 
@@ -185,11 +185,11 @@ class Ma2Widget(Widget):
     def _keyboard_request(self, *args):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down = self._on_keyboard_down)
-        
+
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down = self._on_keyboard_down)
         self._keyboard = None
-        
+
     def _on_keyboard_down(self, keyboard, keycode, keytext, modifiers):
         if self.stateChanged:
             self.handleUndoStack()
@@ -216,12 +216,12 @@ class Ma2Widget(Widget):
         elif action == 'ENTER COMMAND':                 self.promptCommand()
         elif action == 'SONG CHANGE LOOPING OPTION':    self.changeSongLoopingOption()
         elif action == 'SYNTH RELOAD':                  self.loadSynths()
-        elif action == 'SYNTH RELOAD NEW RANDOMS':      self.loadSynths(reshuffle_randoms = True) 
+        elif action == 'SYNTH RELOAD NEW RANDOMS':      self.loadSynths(reshuffle_randoms = True)
         elif action == 'CURVE EDIT':                    self.editCurve()
         elif action == 'MUTE':                          self.muteSound()
         elif action == 'SHADER PLAY':                   self.buildGLSL(compileGL = True)
         elif action == 'SHADER RENDER':                 self.buildGLSL(compileGL = True, renderWAV = True)
-        elif action == 'SHADER RENDER CURRENT MODULE':  self.buildGLSL(compileGL = True, onlyModule = True)            
+        elif action == 'SHADER RENDER CURRENT MODULE':  self.buildGLSL(compileGL = True, onlyModule = True)
         elif action == 'SONG CLEAR':                    self.clearSong()
         elif action == 'SONG LOAD':                     self.loadCSV_prompt()
         elif action == 'SONG SAVE':                     self.saveCSV_prompt()
@@ -331,7 +331,7 @@ class Ma2Widget(Widget):
             elif action == 'ZOOM VERT OUT':             self.thePtnWidget.scaleByFactor(axis = 'vertical', factor = .91, is_drum = self.isDrumTrack())
             elif action == 'ZOOM HORZ OUT':             self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = .91, is_drum = self.isDrumTrack())
             elif action == 'ZOOM HORZ IN':              self.thePtnWidget.scaleByFactor(axis = 'horizontal', factor = 1.1, is_drum = self.isDrumTrack())
-      
+
             if keytext:
                 if keytext.isdigit() or keytext in ['.', '-']:
                     self.setNumberInput(keytext)
@@ -345,12 +345,12 @@ class Ma2Widget(Widget):
             self.printDebug(verbose = True)
 
         return True
-        
+
     def update(self, dt = 0):
-        self.theTrkWidget.drawTrackList(self) 
+        self.theTrkWidget.drawTrackList(self)
         self.thePtnWidget.drawPianoRoll(self)
         self.updateLabels()
-            
+
     def updateLabels(self, dt = 0):
         self.btnTitle.text = 'TITLE: ' + self.getInfo('title') + ' (LOOP: ' + self.getInfo('loop') + ')'
         self.btnPtnTitle.text = 'PTN: ' + self.getPatternName() + ' (' + str(self.getSameTypePatternIndex()+1) + '/' + str(len(self.getSameTypePatterns())) + ') ' + pattern_types[self.getPatternSynthType()]
@@ -386,7 +386,7 @@ class Ma2Widget(Widget):
             }
 
         if self.MODE_undo:
-            self.MODE_undo = False        
+            self.MODE_undo = False
             self.undo_stack = self.undo_stack[:len(self.undo_stack) + self.undo_pos]
             self.undo_pos = 0
 
@@ -432,7 +432,7 @@ class Ma2Widget(Widget):
 
     def tryToSetBPM(self, bpmlist):
         if type(bpmlist) == str:
-            bpmlist = bpmlist.split()            
+            bpmlist = bpmlist.split()
         if len(bpmlist) == 1:
             if ':' not in bpmlist[0]:
                 bpmlist = ['0:' + bpmlist[0]]
@@ -530,7 +530,6 @@ class Ma2Widget(Widget):
         clone.cloneTrack(self.getTrack())
         self.current_track += 1
         self.tracks.insert(self.current_track, clone)
-        print("lol")
         self.update()
 
     def switchTrack(self, inc):
@@ -588,7 +587,7 @@ class Ma2Widget(Widget):
                 return self.patterns[0]
         else:
             return None
-        
+
     def addPattern(self, name = "", length = None, select = False, clone_current = False):
         if name == "":
             popup = InputPrompt(self, title = 'ENTER PATTERN NAME', title_font = self.font_name, default_text = 'som seriösly nju pettorn')
@@ -596,7 +595,7 @@ class Ma2Widget(Widget):
             popup.open()
         if not length:
             length = self.getPatternLen()
-            
+
         self.patterns.append(Pattern(name = name, length = length, synth_type = self.getTrackSynthType(), max_note = self.getDefaultMaxNote()))
 
         if clone_current:
@@ -626,7 +625,7 @@ class Ma2Widget(Widget):
 
     def addModuleWithNewPattern(self):
         self.addPattern()
-        self.getTrack().addModule(self.patterns[-1]) 
+        self.getTrack().addModule(self.patterns[-1])
 
     def renamePattern(self):
         popup = InputPrompt(self, title = 'ENTER PATTERN NAME', title_font = self.font_name, default_text = self.getPatternName())
@@ -681,10 +680,10 @@ class Ma2Widget(Widget):
 
         if '-headless' in sys.argv: self.MODE_headless = True
         if '-debug' in sys.argv: self.toggleDebugMode()
-        
+
         self.loadSynths(update = False)
         self.setupTest()
-        
+
         if len(sys.argv) > 1:
             self.setInfo('title', sys.argv[1].split('.')[0])
         elif os.path.exists('.last'):
@@ -703,7 +702,7 @@ class Ma2Widget(Widget):
     def executeCommand(self, cmd_str = ''):
         try:
             cmd = [s.lower() for s in cmd_str.split()]
-            
+
             #e.g. SET VEL <B_min> <B_max> LIN <value_min> <value_max> <stepsize>
             # or TRANSFORM VEL <B_min> <B_max> LIN <shift> <scale> <stepsize>
             if cmd[0] == 'set':
@@ -734,7 +733,7 @@ class Ma2Widget(Widget):
                         lin_value = min_value + step_size * floor(lin_delta / step_size)
                         note.setParameter(parameter, round(lin_value, 2))
                     return True
-                
+
                 # RND: random values between [value_min, value_max] between [B_min, B_max] (stepsize is resolution)
                 elif shape in ['random', 'rnd']:
                     min_value = float(cmd[5])
@@ -864,7 +863,17 @@ class Ma2Widget(Widget):
                     print("stereo_delay was", self.getInfo('stereo_delay'), "- is now", value)
                     self.setInfo('stereo_delay', value)
                     return True
-                    
+
+            elif cmd[0] == 'turndown':
+                if len(cmd) == 1:
+                    self.lastSongCommand = 'TURNDOWN ' + str(self.getInfo('turn_down'))
+                    return False
+                else:
+                    value = float(cmd[1])
+                    print("global volume turn_down factor was", self.getInfo('turn_down'), "- is now", value)
+                    self.setInfo('turn_down', value)
+                    return True
+
             else:
                 print('COMMAND NOT SUPPORTED:\n', cmd)
                 return False
@@ -901,7 +910,7 @@ class Ma2Widget(Widget):
 ################## AND THE OTHER ONE... #####################
 
     def loadSynths(self, update = True, reshuffle_randoms = False):
-        
+
         global synths, drumkit
         old_drumkit = drumkit
 
@@ -1134,18 +1143,18 @@ class Ma2Widget(Widget):
 
     def loadCSV(self, dt = 0):
         filename = self.getInfo('title') + '.may'
-                
+
         if not os.path.isfile(filename):
             print(filename,'not around, start new track of that name')
             self.clearSong(no_renaming = True)
             return
-                    
+
         self.loadSynths(update = False)
         print("... synths were reloaded. now read", filename)
 
         with open(filename) as in_csv:
             in_read = csv.reader(in_csv, delimiter='|')
-            
+
             for r in in_read:
                 self.tracks = []
                 self.patterns = []
@@ -1161,7 +1170,7 @@ class Ma2Widget(Widget):
                 self.setInfo('B_stop', B_stop)
                 if B_stop < inf:
                     self.theTrkWidget.addMarker('STOP', B_stop)
-                
+
                 c = 5 # adjust this if you add some stored value beforehand
                 ### read tracks -- with modules assigned to dummy patterns
                 for _ in range(int(r[c-1])):
@@ -1180,7 +1189,7 @@ class Ma2Widget(Widget):
                 for _ in range(int(r[c])):
                     pattern_type = r[c+2] if r[c+2] in pattern_types else '_'
                     pattern = Pattern(name = r[c+1], length = float(r[c+3]), synth_type = pattern_type, max_note = self.getDefaultMaxNote(pattern_type))
-                    
+
                     if self.MODE_debug: print(c, "READ PATTERN ", r[c+1], r[c+2], r[c+3], r[c+4])
 
                     c += 4
@@ -1200,7 +1209,7 @@ class Ma2Widget(Widget):
                             note_slide = float(r[c+6]),\
                             note_aux   = float(r[c+7])))
                         c += 7
-                        
+
                     #if pattern.name not in [p.name for p in self.patterns]: # filter for duplicates -- TODO is this a good idea?
                     self.patterns.append(pattern)
 
@@ -1236,42 +1245,44 @@ class Ma2Widget(Widget):
                 self.thePtnWidget.offset_drum_h = int(r[c+10])
                 self.thePtnWidget.offset_drum_v = int(r[c+11])
                 c += 12
-    
+                self.setInfo('turn_down', float(r[c]))
+                c += 1
 
     def saveCSV(self):
         filename = self.getInfo('title') + '.may'
-        
+
         self.purgeEmptyPatterns()
 
         out_str = '|'.join([self.getInfo('title'), str(self.getInfo('BPM')), str(self.getInfo('B_offset')), str(self.getInfo('B_stop')), str(len(self.tracks))]) + '|'
-        
+
         for t in self.tracks:
             out_str += t.name + '|' + str(t.getSynthFullName()) + '|' + str(t.getNorm()) + t.mute * 'm' + '|' + str(len(t.modules)) + '|'
             for m in t.modules:
-                out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|' 
-                        
+                out_str += m.pattern.name + '|' + str(m.mod_on) + '|' + str(m.transpose) + '|'
+
         out_str += str(len(self.patterns))
-        
+
         for p in self.patterns:
             out_str += '|' + p.name + '|' + p.synth_type + '|' + str(p.length) + '|' + str(len(p.notes))
             for n in p.notes:
                 out_str += '|' + str(n.note_on) + '|' + str(n.note_len) + '|' + str(n.note_pitch) \
                         +  '|' + str(n.note_pan) + '|' + str(n.note_vel) + '|' + str(n.note_slide) + '|' + str(n.note_aux)
-                
+
         out_str += '|' + (str(int(self.track_solo)) if self.track_solo is not None else '-1') \
                  + '|' + self.getInfo('loop') \
                  + '|' + self.lastImportPatternFilename \
                  + '|' + str(self.getInfo('stereo_delay')) \
                  + '|' + '|'.join(str(x) for x in [self.theTrkWidget.scale_h, self.theTrkWidget.scale_v, self.theTrkWidget.offset_h, self.theTrkWidget.offset_v, \
                     self.thePtnWidget.scale_h, self.thePtnWidget.scale_v, self.thePtnWidget.offset_h, self.thePtnWidget.offset_v, \
-                    self.thePtnWidget.scale_drum_h, self.thePtnWidget.scale_drum_v, self.thePtnWidget.offset_drum_h, self.thePtnWidget.offset_drum_v])                    
+                    self.thePtnWidget.scale_drum_h, self.thePtnWidget.scale_drum_v, self.thePtnWidget.offset_drum_h, self.thePtnWidget.offset_drum_v]) \
+                 + '|' + str(self.getInfo('turn_down'))
 
         # write to file
         out_csv = open(filename, "w")
         out_csv.write(out_str)
         out_csv.close()
         print(filename, "written.")
-        
+
         out_last = open('.last', "w")
         out_last.write(self.getInfo('title'))
         out_last.close()
@@ -1336,7 +1347,7 @@ class Ma2Widget(Widget):
         nP  = str(len(patterns))
         nP1 = str(len(patterns) + 1)
         nN  = str(pattern_sep[-1])
-        
+
         gf = open("template.matzethemightyemperor")
         glslcode = gf.read()
         gf.close()
@@ -1344,7 +1355,7 @@ class Ma2Widget(Widget):
         self.loadSynths()
         actually_used_synths = set(t.getSynthName() for t in tracks if not t.getSynthType() == '_')
         actually_used_drums = set(n.note_pitch for p in patterns if p.synth_type == 'D' for n in p.notes)
-        
+
         if self.MODE_debug: print("ACTUALLY USED:", actually_used_synths, actually_used_drums)
 
         self.synatized_code_syn, self.synatized_code_drum, paramcode, filtercode, self.last_synatized_forms = \
@@ -1352,7 +1363,7 @@ class Ma2Widget(Widget):
 
         if self.MODE_headless:
             print("ACTUALLY USED SYNTHS:", actually_used_synths)
-            names_of_actually_used_drums = [drumkit[d] for d in actually_used_drums] 
+            names_of_actually_used_drums = [drumkit[d] for d in actually_used_drums]
             print("ACTUALLY USED DRUMS:", names_of_actually_used_drums)
             if len(actually_used_drums) == 1:
                 self.file_extra_information += names_of_actually_used_drums[0] + '_'
@@ -1430,11 +1441,11 @@ class Ma2Widget(Widget):
         self.song_length -= time_offset
 
         loopcode = ('time = mod(time, ' + GLfloat(self.song_length) + ');\n' + 4*' ') if loop_mode != 'none' else ''
-        
+
         if offset != 0: loopcode += 'time += ' + GLfloat(time_offset) + ';\n' + 4*' '
 
         print("START TEXTURE")
-        
+
         fmt = '@e'
         tex = b''
 
@@ -1491,7 +1502,7 @@ class Ma2Widget(Widget):
                 tex += pack(fmt, float(n.note_aux))
         for d in drum_rel:
             tex += pack(fmt, float(d))
-               
+
         texlength = int(len(tex))
         while ((texlength % 4) != 0):
             tex += bytes(10)
@@ -1503,7 +1514,7 @@ class Ma2Widget(Widget):
         array = []
         arrayf = []
         for i in range(int(ceil(texlength/2))):
-            array += [ unpack('@H', tex[2*i:2*i+2]) ][0] 
+            array += [ unpack('@H', tex[2*i:2*i+2]) ][0]
             arrayf += [ unpack(fmt, tex[2*i:2*i+2]) ][0]
 
         text = "// Generated by tx210 / aMaySyn (c) 2018 NR4&QM/Team210\n\n#ifndef SEQUENCE_H\n#define SEQUENCE_H\n\n"
@@ -1513,7 +1524,7 @@ class Ma2Widget(Widget):
         text += '\n'
         text += "const unsigned short sequence_texture[{:d}]".format(int(ceil(texlength/2)))+" = {"
         for val in array[:-1]:
-            text += str(val) + ',' 
+            text += str(val) + ','
         text += str(array[-1]) + '};\n'
         text += "const int sequence_texture_size = " + str(texs) + ";"
         text += '\n#endif\n'
@@ -1534,7 +1545,8 @@ class Ma2Widget(Widget):
             .replace("//FILTERCODE",filtercode)\
             .replace("//LOOPCODE", loopcode)\
             .replace("//BEATHEADER", beatheader)\
-            .replace("STEREO_DELAY", GLfloat(self.getInfo('stereo_delay')))
+            .replace("STEREO_DELAY", GLfloat(self.getInfo('stereo_delay')))\
+            .replace("TURN_DOWN", GLfloat(self.getInfo('turn_down')))
 
         glslcode = glslcode.replace('e+00','').replace('-0.)', ')').replace('+0.)', ')')
         glslcode = self.purgeExpendables(glslcode)
@@ -1547,7 +1559,7 @@ class Ma2Widget(Widget):
 
         with open("sfx.frag", "w") as out_file:
             out_file.write(glslcode_frag)
-            
+
         print("GLSL CODE WRITTEN (sfx.frag) -- NR4-compatible fragment shader")
 
         # for "standalone" version
@@ -1562,7 +1574,7 @@ class Ma2Widget(Widget):
         print("GLSL CODE WRITTEN (" + filename + ") - QM-compatible standalone fragment shader")
 
         pyperclip.copy(glslcode)
-        
+
         if compileGL or renderWAV:
             self.compileShader(glslcode, renderWAV)
 
@@ -1599,7 +1611,7 @@ class Ma2Widget(Widget):
                     self.printIfDebug(f, 'line', func_list[f], '/', f_iter-f_from, 'chars')
 
             for e in expendable: code = code.replace(e + '\n', '')
-            
+
             if code == purged_code:
                 break
             else:
@@ -1610,9 +1622,9 @@ class Ma2Widget(Widget):
 
         chars_after = len(purged_code)
         print('// total purge of', chars_before-chars_after, 'chars.')
-        
+
         return purged_code
-    
+
 ###################### HANDLE BUTTONS #######################
 
 # HAHA. no. we don't handle buttons.
@@ -1636,23 +1648,23 @@ class Ma2Widget(Widget):
         self.getPattern().addNote(Note(0.00,0.50,24))
         for i in range(8):
             self.addTrack(name = 'Track ' + str(i+2))
-        
+
     def toggleDebugMode(self):
         self.MODE_debug = not self.MODE_debug
         print('DEBUG MODE IS', 'ON' if self.MODE_debug else 'OFF')
-        
+
     def printIfDebug(self, *messages):
         if self.MODE_debug:
             print(*messages)
-        
+
     def printDebug(self, verbose = True):
         print('DEBUG -- TRACKS:')
-        if verbose:  
+        if verbose:
             for t in self.tracks:
                 print(t.name, len(t.modules), t.getSynthFullName(), t.getSynthIndex(), t.getSynthType())
                 for m in t.modules:
                     print(' '*4, m.pattern.name, '@', m.mod_on)
-                
+
         print('DEBUG -- current track', self.current_track, '/', self.getTrack().name, '/', self.getTrackSynthType())
         print('DEBUG -- same/none type patterns:', [p.name for p in self.getSameTypePatterns()])
 
@@ -1662,10 +1674,10 @@ class Ma2Widget(Widget):
                 print(p.name, len(p.notes), p.length)
                 for n in p.notes:
                     print(' '*4, 'ON', n.note_on, 'LEN', n.note_len, 'PCH', n.note_pitch, 'VEL', n.note_vel)
-            
+
         print('DEBUG -- current pattern', self.getPatternIndex(), '/', self.getPatternName())
 
-        print('DEBUG -- undo:', len(self.undo_stack), '/', self.undo_max_steps, '/', self.undo_pos, '/', self.MODE_undo)              
+        print('DEBUG -- undo:', len(self.undo_stack), '/', self.undo_max_steps, '/', self.undo_pos, '/', self.MODE_undo)
 
 ################### NOW THE MIGHTY SHIT ###################
 
@@ -1701,32 +1713,35 @@ class Ma2Widget(Widget):
     def switchToRandomSynth(self):
         self.getTrack().switchSynth(0, switch_to = randint(0, len(synths) - 4)) # Assumption: last three are drums / gfx / none, and randint() includes endpoints.
         self.update()
-    
+
     def editCurve(self):
         popup = CurvePrompt(self, title = 'EDIT THE CURVE IF U DARE', title_font = self.font_name)
         popup.bind(on_dismiss = self.handleEditCurve)
         popup.open()
-        
+
     def handleEditCurve(self, *args):
         self.handlePopupDismiss()
 
     def handlePopupDismiss(self, *args):
         self._keyboard_request()
-        self.update()        
+        self.update()
 
     def compileShader(self, shader, renderWAV):
         if not shader:
             shader = '''vec2 mainSound( float time ){ return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) ); }''' #assign for test purposes
-        
+
         full_shader = '#version 130\n uniform float iTexSize;\n uniform float iBlockOffset;\n uniform float iSampleRate;\n\n' + shader
+
+#        full_shader = '#version 130\n uniform int i_TexSize;\n uniform int i_BlockOffset;\n uniform int i_SampleRate;\nfloat iTexSize = float(i_TexSize); float iBlockOffset = float(i_BlockOffset); float iSampleRate = float(i_SampleRate);\n' + shader
 
         self.music = None
 
         starttime = datetime.datetime.now()
 
         samplerate = 44100
+        texsize = 512
 
-        glwidget = SFXGLWidget(self, duration = self.song_length, samplerate = samplerate, texsize = 930)
+        glwidget = SFXGLWidget(self, duration = self.song_length, samplerate = samplerate, texsize = texsize)
         self.log = glwidget.newShader(full_shader)
         print(self.log)
         self.music = glwidget.music
@@ -1735,14 +1750,14 @@ class Ma2Widget(Widget):
         if self.music == None :
             print('music is empty.')
             return
- 
+
         if not self.MODE_headless:
-            pygame.mixer.pre_init(frequency=int(44100), size=-16, channels=2, buffer=4096)
+            pygame.mixer.pre_init(frequency=int(samplerate), size=-16, channels=2, buffer=4096)
             pygame.init()
             pygame.mixer.init()
             pygame.mixer.stop()
             pygame.mixer.Sound(buffer=self.music).play()
-        
+
         endtime = datetime.datetime.now()
         el = endtime - starttime
 
@@ -1752,10 +1767,10 @@ class Ma2Widget(Widget):
             # determine number of samples for one songlength
             sound_channels = 2
             sound_samplewidth = 2
-            total_samples = int(self.song_length * samplerate * sound_channels * sound_samplewidth + 1)
+            total_samples = int(self.song_length * samplerate * sound_channels * sound_samplewidth) + 1
 
             sfile = wave.open(self.getWAVFileName(self.file_extra_information + self.getWAVFileCount()),'w')
-            sfile.setframerate(samplerate)
+            sfile.setframerate(samplerate + 1)
             sfile.setnchannels(sound_channels)
             sfile.setsampwidth(sound_samplewidth)
             sfile.writeframesraw(self.music[:total_samples])
@@ -1767,7 +1782,7 @@ class Ma2Widget(Widget):
         self.update()
 
 class InputPrompt(ModalView):
-    
+
     text = ''
     validated = False
     extra_parameters = {}
@@ -1781,11 +1796,11 @@ class InputPrompt(ModalView):
         super(InputPrompt, self).__init__(**kwargs)
 
         self.auto_dismiss = False
-        
+
         self.size_hint = (None, None)
         self.size = (500, 110)
         self.background = './transparent.png'
-        
+
         content = BoxLayout(orientation = 'vertical')
         title = Label(text = title, font_name = title_font, size_hint=(None,.2), pos_hint={'center_x':.5, 'top':0})
         content.add_widget(title)
@@ -1795,10 +1810,10 @@ class InputPrompt(ModalView):
         content.add_widget(tfield)
 
         self.add_widget(content)
-       
+
         tfield.bind(on_text_validate = self.release)
         tfield.bind(focus = self.dismiss)
-        
+
     def release(self, *args):
         self.text = args[0].text.replace('\t', ' ').strip()
         self.validated = True
@@ -1806,7 +1821,7 @@ class InputPrompt(ModalView):
 
 
 class CurvePrompt(ModalView):
-    
+
     text = ''
 
     def __init__(self, parent, **kwargs):
@@ -1815,18 +1830,18 @@ class CurvePrompt(ModalView):
         super(CurvePrompt, self).__init__(**kwargs)
 
         self.auto_dismiss = False
-        
+
         self.size_hint = (None, None)
         self.size = (parent.width, parent.height*.8)
         self.background = './transparent.png'
-        
+
         content = BoxLayout(orientation = 'vertical')
         title = Label(text = title, font_name = title_font, size_hint=(None,0.01), pos_hint={'center_x':.5, 'top':0})
         content.add_widget(title)
 
         cfield = CurveWidget(parent = self)
         content.add_widget(cfield)
-               
+
         tfield = TextInput(text = 'hehe. hehe.', size_hint=(.9, None), height=36, pos_hint={'center_x':.5, 'bottom':0}, multiline=False, font_name = title_font)
         tfield.focus = True
         tfield.select_all()
@@ -1836,21 +1851,20 @@ class CurvePrompt(ModalView):
 
         tfield.bind(on_text_validate = self.release)
         #tfield.bind(focus = self.dismiss)
-        
+
     def _curveprompt_keydown(self, key, scancode, codepoint, modifiers):
         print("HA!")
-        
+
     def release(self, *args):
         self.text = args[0].text
         self.dismiss()
 
-       
+
 class Ma2App(App):
     title = 'Matze trying to be the Great Emperor again'
-    
+
     def build(self):
         return Ma2Widget()
 
 if __name__ == '__main__':
     Ma2App().run()
-    
