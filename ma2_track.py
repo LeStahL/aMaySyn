@@ -10,7 +10,7 @@ class Track():
     synths = []
     name = ''
     current_synth = -1
-    
+
     par_norm = 1.
     mute = False
 
@@ -26,7 +26,7 @@ class Track():
 
     # helpers...
     def getModule(self, offset=0):        return self.modules[(self.current_module + offset) % len(self.modules)] if isinstance(self.current_module, int) and self.modules else None
-    def getModulePattern(self, offset=0): return self.getModule(offset).pattern if self.getModule(offset) else None 
+    def getModulePattern(self, offset=0): return self.getModule(offset).pattern if self.getModule(offset) else None
     def getModuleOn(self, offset=0):      return self.getModule(offset).mod_on
     def getModuleLen(self, offset=0):     return self.getModule(offset).pattern.length
     def getModuleOff(self, offset=0):     return self.getModule(offset).getModuleOff()
@@ -87,35 +87,35 @@ class Track():
             move_to = self.getModuleOn() + inc
             if move_to < 0: return
             try_leap = 0
-            
+
             if inc < 0:
                 if self.getModule() != self.getFirstModule():
-                    while move_to < self.getModuleOff(try_leap-1): 
+                    while move_to < self.getModuleOff(try_leap-1):
                         try_leap -=1
                         move_to = self.getModuleOn(try_leap) - self.getModuleLen()
                         if move_to < 0: return
                         if move_to + self.getModuleLen() <= self.getFirstModuleOn(): break
-                
+
             else:
                 if self.getModule() != self.getLastModule():
                     while move_to + self.getModuleLen() > self.getModuleOn(try_leap+1):
                         try_leap += 1
                         move_to = self.getModuleOff(try_leap)
                         if move_to >= self.getLastModuleOff(): break
-                    
+
             self.getModule().move(move_to)
             self.current_module += try_leap
             self.modules.sort(key = lambda m: m.mod_on)
 
         if move_home:
             self.getModule().move(-1)
-            self.modules.sort(key = lambda m: m.mod_on)            
+            self.modules.sort(key = lambda m: m.mod_on)
             self.current_module = 0
             self.moveModule(+1)
         if move_end:
             if self.getModule() != self.getLastModule():
                 self.getModule().move(self.getLastModuleOff())
-                self.modules.sort(key = lambda m: m.mod_on)            
+                self.modules.sort(key = lambda m: m.mod_on)
                 self.current_module = len(self.modules) - 1
             elif total_length is not None:
                 self.getModule().move(total_length - self.getModuleLen())
@@ -134,18 +134,18 @@ class Track():
                 return
         for m in self.modules:
             m.mod_on += inc
-        
+
     def switchModulePattern(self, pattern):
         if self.modules:
 #            if self.current_module < len(self.modules) - 1:
 #                offset = pattern.length - self.getModuleLen()
 #                for f in self.modules[self.current_module + 1:]:
-#                    f.mod_on += offset                   
+#                    f.mod_on += offset
             self.getModule().pattern = pattern
-        
+
     def checkModuleCollision(self, module):
         pass
-        
+
     def clearModules(self):
         self.modules=[]
 
@@ -171,7 +171,7 @@ class Track():
                     self.current_synth = self.synths.index(isynths[current_isynth])
                 else:
                     print("Can't switch synth if track is not empty, and not a synth track. Synth type: " + self.synths[self.current_synth][0])
-            
+
             else:
                 if switch_to is not None:
                     self.current_synth = switch_to
@@ -206,7 +206,7 @@ class Module():
     pattern = None
     transpose = 0
     tagged = False
-    
+
     def __init__(self, mod_on, pattern, transpose = 0):
         self.mod_on = mod_on
         self.pattern = pattern

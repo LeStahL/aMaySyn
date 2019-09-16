@@ -27,6 +27,8 @@ import datetime
 from numpy import *
 from struct import *
 
+from scipy.io.wavfile import write
+
 class SFXGLWidget():
     def __init__(self, parent, duration, samplerate, texsize):
         self.program = 0
@@ -36,14 +38,13 @@ class SFXGLWidget():
 
         self.hasShader = False
         self.parent = parent
+        self.music = None
+        self.floatmusic = None
 
         self.setParameters(duration = duration, samplerate = samplerate, texsize = texsize)
 
-        self.music = None
-
-        self.parent = parent
-
         self.initializeGL()
+
 
     def setParameters(self, duration = None, samplerate = None, texsize = None):
         if samplerate is not None:
@@ -53,28 +54,26 @@ class SFXGLWidget():
         if texsize is not None:
             self.texs = texsize
 
-        self.nsamples = int(ceil(2 * self.duration * self.samplerate))
+        self.nsamples = int(ceil(self.duration * self.samplerate))
         self.blocksize = self.texs * self.texs
         self.nblocks = int(ceil(float(self.nsamples) / float(self.blocksize)))
 
         print("GL parameters set.\nduration:", self.duration, "\nsamplerate:", self.samplerate, "\nsamples:", self.nsamples, "\ntexsize:", self.texs, "\nnblocks:", self.nblocks)
 
-    def initializeGL(self):
-
-        #glEnable(GL_DEPTH_TEST)
-
+    def initializeGL(self): # I guess this is only needed for the texture - could use that as well, if nothing else works..!
+        glEnable(GL_DEPTH_TEST)
         self.framebuffer = glGenFramebuffers(1)
         glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
-        #print("Bound buffer.")
+
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
-        #print("Bound texture with id ", self.texture)
+
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.texs, self.texs, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
-        #print("Teximage2D returned.")
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP) # _TO_BORDER
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.texture, 0)
 
@@ -103,46 +102,43 @@ class SFXGLWidget():
         glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
         glUseProgram(self.program)
 
-        self.iTexSizeLocation = glGetUniformLocation(self.program, 'iTexSize')
-        self.iBlockOffsetLocation = glGetUniformLocation(self.program, 'iBlockOffset')
-        self.iSampleRateLocation = glGetUniformLocation(self.program, 'iSampleRate')
+        iTexSizeLocation = glGetUniformLocation(self.program, 'iTexSize')
+        iBlockOffsetLocation = glGetUniformLocation(self.program, 'iBlockOffset')
+        iSampleRateLocation = glGetUniformLocation(self.program, 'iSampleRate')
 
-        OpenGL.UNSIGNED_BYTE_IMAGES_AS_STRING = False # True
-        music = bytearray(self.nblocks*self.blocksize*4)
-        print("music length", self.nblocks*self.blocksize*4)
+        OpenGL.UNSIGNED_BYTE_IMAGES_AS_STRING = False
+        music = bytearray(self.nblocks*self.blocksize*2)
+        print("music length", len(music))
 
-        originalViewport = glGetIntegerv(GL_VIEWPORT);
         glViewport(0,0,self.texs,self.texs)
 
         for i in range(self.nblocks) :
-            glUseProgram(self.program)
-            glUniform1f(self.iTexSizeLocation, float(self.texs))
-            glUniform1f(self.iBlockOffsetLocation, 0*float(i)*float(self.blocksize))
-            glUniform1f(self.iSampleRateLocation, float(self.samplerate))
+            glUniform1f(iTexSizeLocation, float32(self.texs))
+            glUniform1f(iBlockOffsetLocation, float32(i*self.blocksize))
+            glUniform1f(iSampleRateLocation, float32(self.samplerate))
+            glFinish()
 
             glBegin(GL_QUADS)
-#            glVertex2f(1,1)
-#            glVertex2f(1,-1)
-#            glVertex2f(-1,-1)
-#            glVertex2f(-1,1)
             glVertex2f(-1,1)
             glVertex2f(-1,-1)
             glVertex2f(1,-1)
             glVertex2f(1,1)
             glEnd()
+            glFlush()
 
-            glFinish() # glFlush()
-
-            music[4*i*self.blocksize:4*(i+1)*self.blocksize] = glReadPixels(0, 0, self.texs, self.texs, GL_RGBA, GL_UNSIGNED_BYTE)
+            block = glReadPixels(0, 0, self.texs, self.texs, GL_RGBA, GL_UNSIGNED_BYTE)
+            #print("ÖHM", 4*i*self.blocksize, 4*(i+1)*self.blocksize, len(block))
+            music[4*i*self.blocksize:4*(i+1)*self.blocksize] = block
+            glFlush()
 
         glFlush()
+        print(len(music))
 
         music = unpack('<'+str(self.blocksize*self.nblocks*2)+'H', music)
-        music = [sample-pow(2,15) for sample in music]
-        music = pack('<'+str(self.blocksize*self.nblocks*2)+'h', *music)
-        self.music = music
+        music = (float32(music)-32768.)/32768.
+        self.floatmusic = music
 
-        glViewport(*originalViewport)
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        music = pack('<'+str(self.blocksize*self.nblocks*2)+'f', *music)
+        self.music = music
 
         return 'Success.'

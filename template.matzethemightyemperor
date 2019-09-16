@@ -21,8 +21,7 @@ float fhelp(float x) { return 1. + .333*x; } // 1. + .33333*x + .1*x*x + .02381*
 //BEATHEADER
 float BPS, SPB, BT;
 
-const float Fsample = 44100.; // CAUTION: THIS SHOULD BE 44100. FOR NR4.
-const float Tsample = 1./Fsample;
+float Tsample;
 
 const float filterthreshold = 1e-3;
 
@@ -105,7 +104,7 @@ float reverb_phase(float t, float amt)
 
 float env_AHDSR(float x, float L, float A, float H, float D, float S, float R)
 {
-    return (x<A ? x/A : x<A+H ? 1 : x<A+H+D ? (1. - (1.-S)*(x-H-A)/D) : x<=L-R ? S : x<=L ? S*(L-x)/R : 0.);
+    return (x<A ? x/A : x<A+H ? 1. : x<A+H+D ? (1. - (1.-S)*(x-H-A)/D) : x<=L-R ? S : x<=L ? S*(L-x)/R : 0.);
 }
 
 float env_AHDSRexp(float x, float L, float A, float H, float D, float S, float R)
@@ -416,10 +415,11 @@ vec2 mainSynth(float time)
 
 void main()
 {
-   float t = (iBlockOffset + gl_FragCoord.x + gl_FragCoord.y*iTexSize) / iSampleRate;
-   vec2 s = mainSynth(t);
-   vec2 v  = floor((0.5+0.5*s)*65535.0);
-   vec2 vl = mod(v,256.0)/255.0;
-   vec2 vh = floor(v/256.0)/255.0;
-   gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
+    Tsample = 1./iSampleRate;
+    float t = (iBlockOffset + gl_FragCoord.x + gl_FragCoord.y*iTexSize) * Tsample;
+    vec2 s = mainSynth(t);
+    vec2 v  = floor((0.5+0.5*s)*65535.0);
+    vec2 vl = mod(v,256.0)/255.0;
+    vec2 vh = floor(v/256.0)/255.0;
+    gl_FragColor = vec4(vl.x,vh.x,vl.y,vh.y);
 }

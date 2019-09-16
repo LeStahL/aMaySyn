@@ -1,14 +1,17 @@
 # special cases: main, maindrum, const, mix
 
 def set_remaining_defaults(cid, cmd, form):
-            
+
     requirements = ['id', 'type', 'mode']
     defaults = {}
-    
+
     if cmd in ['main', 'maindrum']:
         requirements.append('src')
         defaults.update({'release':'0', 'relpower':'1', 'slidetime':'.125', 'predraw': '0'})
-   
+
+        if cmd == 'maindrum':
+            defaults.update({'srcR': ''})
+
     elif cmd == 'random':
         defaults.update({'min':'0', 'max':'1', 'digits':'3', 'store':False, 'tag':''})
 
@@ -34,17 +37,17 @@ def set_remaining_defaults(cid, cmd, form):
 
         except:
             pass
-        
+
     elif cmd == 'drum':
         defaults.update({'shape':'fmnoise'})
-        
+
         try:
             if form['shape'] in ['kick', 'kick2']: # TODO CALIBRATE
                 defaults.update({'freq_start':'150', 'freq_end':'60', 'freq_decay':'.2', 'attack':'.01', 'hold':'.3', 'decay':'.1', 'click_amp':'1.5', 'click_delay':'.05', 'click_timbre':'5.'})
-            
+
             if form['shape'] == 'fmnoise':
                 defaults.update({'attack':'1e-3', 'decay':'.1', 'sustain':'.1', 'timbre1':'1', 'timbre2':'1'})
-            elif form['shape'] == 'kick': 
+            elif form['shape'] == 'kick':
                 defaults.update({'overdrive':'.2'})
             elif form['shape'] == 'kick2': # TODO: CALIBRATE (might need resonance? idk)
                 defaults.update({'sq_phase':'5', 'sq_nmax':'10', 'sq_mix':'.8', 'sq_inr':'1', 'sq_ndecay':'1', 'sq_res':'1', 'sq_resq':'1', 'sq_detune':'0'})
@@ -79,7 +82,7 @@ def set_remaining_defaults(cid, cmd, form):
     elif cmd == 'env':
         defaults.update({'shape':'ahdsr', 'attack':'1e-3', 'hold':'0', 'decay':'.1', 'sustain':'1', 'release':'0', 'scale':'1', 'shift':'0', 'offset':'0'})
         #TODO: calibrate attack and decay
-        
+
         try:
             if form['shape'] == 'expdecay' or form['shape'] == 'expdecayrepeat':
                 defaults.update({'exponent':'1', 'beats':'1'})
@@ -93,7 +96,7 @@ def set_remaining_defaults(cid, cmd, form):
 
     elif cmd == 'seg':
         defaults.update({'shape':'generic', 'src':'0', 'scale':'1', 'shift':'0', 'offset': '0'})
-        
+
         if form['shape'] == 'linear':
             defaults.update({'from': '0,0', 'to': None})
 
@@ -114,39 +117,39 @@ def set_remaining_defaults(cid, cmd, form):
                 defaults.update({'iir_gain':'.95', 'iir_n':'1', 'fir_gain':'.95', 'fir_n':'1'})
             elif form['shape'] == 'reverb': # TODO: calibrate!
                 defaults.update({'iir_gain':'.8', 'iir_delay1':'1e-1', 'iir_delay2':'1e-2', 'iir_delay3':'1e-3', 'iir_delay4':'1e-4', 'ap_gain':'.9', 'ap_delay1':'5e-3', 'ap_delay2':'5e-4'})
-        
+
         except:
             pass
-        
+
     elif cmd == 'gac':
         defaults.update({'offset':'0', 'const':'0', 'lin':'0', 'quad':'0', 'sin':'0', 'sin_coeff':'0', 'exp':'0', 'exp_coeff':'0'})
-        
+
     elif cmd == 'form':
         requirements.extend(['op','src'])
-        
+
         try:
             if form['op'] == 'detune':
                 defaults.update({'factor':'1.01,.995'})
-                
+
             elif form['op'] =='pitchshift':
                 defaults.update({'steps':'12'})
-                
+
             elif form['op'] == 'quantize':
                 defaults.update({'bits':'32'})
 
             elif form['op'] == 'modsync':
                 defaults.update({'freq':'1'})
-                
+
             elif form['op'] == 'overdrive':
                 defaults.update({'gain':'1.33'})
-                
+
             elif form['op'] == 'chorus':
                 defaults.update({'number':'1', 'step':'.01', 'intensity':'.5', 'rate':'.5'})
                 # TODO: calibrate
-                
+
             elif form['op'] == 'delay':
                 defaults.update({'number':'1', 'delay':'.2', 'gain':'.01'})
-                
+
             elif form['op'] == 'waveshape':
                 defaults.update({'amount':'1', 'a':'0', 'b':'0', 'c':'0', 'd':'1', 'e':'1'})
 
@@ -155,7 +158,7 @@ def set_remaining_defaults(cid, cmd, form):
 
             elif form['op'] == 'saturate':
                 defaults.update({'gain':'3'})
-                
+
             elif form['op'] == 'lofi':
                 defaults.update({'bits':'128'})
 
@@ -172,5 +175,5 @@ def set_remaining_defaults(cid, cmd, form):
     for key in defaults:
         if key not in form:
             form[key] = defaults[key]
-            
+
     return form, defaults, requirements

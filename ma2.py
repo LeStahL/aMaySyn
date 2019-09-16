@@ -34,6 +34,7 @@ import csv, re
 import operator
 import sys
 import pyperclip
+import json
 
 from ma2_track import *
 from ma2_pattern import *
@@ -61,7 +62,7 @@ class Ma2Widget(Widget):
     thePtnWidget = ObjectProperty(None)
     somePopup = ObjectProperty(None)
 
-    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'B_stop': inf, 'loop': 'full', 'stereo_delay': 2e-4, 'turn_down': .8}
+    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'B_stop': inf, 'loop': 'full', 'stereo_delay': 2e-4, 'turn_down': .666}
 
     current_track = None
     tracks = []
@@ -371,7 +372,8 @@ class Ma2Widget(Widget):
 
     def muteSound(self):
         try:
-            pygame.mixer.stop()
+            self.audiooutput.stop()
+            #pygame.mixer.stop()
         except:
             pass
 
@@ -1287,6 +1289,27 @@ class Ma2Widget(Widget):
         out_last.write(self.getInfo('title'))
         out_last.close()
 
+        # new: also dump to json
+        json_filename = self.getInfo('title') + '.mayson'
+        data = {
+            'info': self.info,
+            'tracks': self.tracks,
+            'patterns': self.patterns,
+            'synths': synths,
+            'drumkit': drumkit,
+        }
+        fn = open(json_filename, 'w')
+        #json.dump(self.info, fn)
+        json.dump(data, fn, default = lambda obj: obj.__dict__)
+        #json.dump(self.patterns, fn, default = lambda obj: obj.__dict__)
+        fn.close()
+
+        # and copy the default.syn file
+        synfile = self.getInfo('title') + '.syn'
+        if not os.path.exists(synfile):
+            copyfile(def_synfile, synfile)
+            print(f"Copied {def_synfile} to {synfile}. For future reference.")
+
     def instantCompileGLSL(self, delta):
         self.buildGLSL(compileGL = True, renderWAV = True)
 
@@ -1376,6 +1399,7 @@ class Ma2Widget(Widget):
             with open(self.getInfo('title') + '.rnd', 'a') as of:
                 of.write(timestamp + '\t' + countID + '\t' \
                                    + '\t'.join((rnd['id'] + '=' + str(rnd['value'])) for rnd in self.stored_randoms if rnd['store']) + '\n')
+                of.close()
 
         # get release and predraw times
         syn_rel = []
@@ -1728,11 +1752,10 @@ class Ma2Widget(Widget):
 
     def compileShader(self, shader, renderWAV):
         if not shader:
-            shader = '''vec2 mainSound( float time ){ return vec2( sin(2.*radians(180.)*fract(440.0*time)) * exp(-3.0*time) ); }''' #assign for test purposes
+            print("you should give some shader to compileShader. shady...")
+            return
 
         full_shader = '#version 130\n uniform float iTexSize;\n uniform float iBlockOffset;\n uniform float iSampleRate;\n\n' + shader
-
-#        full_shader = '#version 130\n uniform int i_TexSize;\n uniform int i_BlockOffset;\n uniform int i_SampleRate;\nfloat iTexSize = float(i_TexSize); float iBlockOffset = float(i_BlockOffset); float iSampleRate = float(i_SampleRate);\n' + shader
 
         self.music = None
 
@@ -1745,6 +1768,7 @@ class Ma2Widget(Widget):
         self.log = glwidget.newShader(full_shader)
         print(self.log)
         self.music = glwidget.music
+        self.fmusic = glwidget.floatmusic
         del glwidget
 
         if self.music == None :
@@ -1764,17 +1788,18 @@ class Ma2Widget(Widget):
         print("Execution time", str(el.total_seconds()) + 's')
 
         if renderWAV:
-            # determine number of samples for one songlength
             sound_channels = 2
-            sound_samplewidth = 2
+            sound_samplewidth = 4
             total_samples = int(self.song_length * samplerate * sound_channels * sound_samplewidth) + 1
 
-            sfile = wave.open(self.getWAVFileName(self.file_extra_information + self.getWAVFileCount()),'w')
-            sfile.setframerate(samplerate + 1)
+            sfile = wave.open(self.getWAVFileName(self.file_extra_information + self.getWAVFileCount()), 'w')
+            sfile.setframerate(samplerate)
             sfile.setnchannels(sound_channels)
             sfile.setsampwidth(sound_samplewidth)
             sfile.writeframesraw(self.music[:total_samples])
             sfile.close()
+
+
 
         if self.MODE_headless:
             App.get_running_app().stop()
