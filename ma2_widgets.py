@@ -666,7 +666,7 @@ class ImportPatternDialog(ModalView):
                         elem_name = element.attrib['name']
                         if elem_name[0:len(self.filter)] == self.filter:
                             elem_pos = float(element.attrib['pos'])/LMMS_scalenotes
-                            pattern_data.append({'text': elem_name + ' @ ' + strfloat(elem_pos+1), 'name': elem_name, 'pos': elem_pos, 'element': element})
+                            pattern_data.append({'text': elem_name + '@' + strfloat(elem_pos), 'name': elem_name, 'pos': elem_pos, 'element': element})
 
         pattern_data.sort(key = lambda item: (item['name'], item['pos']))
         self.importPatternList.data = pattern_data
