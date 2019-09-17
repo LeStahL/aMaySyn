@@ -1128,6 +1128,7 @@ class Ma2Widget(Widget):
                             m.pattern = p
                     self.patterns.remove(other_p)
                     removed_patterns.append(other_p)
+                    print(f"Removed duplicate of {p.name}: {other_p.name}")
 
 
 ############### UGLY KIVY EXPORT FUNCTIONS #####################

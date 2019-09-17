@@ -21,7 +21,7 @@ class Pattern():
         return ','.join(str(i) for i in [self.name, self.notes, self.length, self.current_note, self.synth_type])
 
     def isDuplicateOf(self, other):
-        return all(nS == nO for nS, nO in zip(self.notes, other.notes))
+        return len(self.notes) == len(other.notes) and all(nS == nO for nS, nO in zip(self.notes, other.notes))
 
     def setTypeParam(self, synth_type = None, max_note = None):
         if synth_type:
