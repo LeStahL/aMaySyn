@@ -7,7 +7,7 @@ from numpy import clip
 import random
 
 class Pattern():
-    
+
     def __init__(self, name = 'NJU', length = 1, synth_type = '_', max_note = 0, color = None):
         self.name = name
         self.notes = []
@@ -19,6 +19,9 @@ class Pattern():
 
     def __repr__(self):
         return ','.join(str(i) for i in [self.name, self.notes, self.length, self.current_note, self.synth_type])
+
+    def isDuplicateOf(self, other):
+        return all(nS == nO for nS, nO in zip(self.notes, other.notes))
 
     def setTypeParam(self, synth_type = None, max_note = None):
         if synth_type:
@@ -62,7 +65,7 @@ class Pattern():
             note = Note()
             append = False
         if clone: select = False
-        
+
         note = Note( \
             note_on = note.note_on + append * note.note_len + self.current_gap, \
             note_len = note.note_len, \
@@ -73,11 +76,11 @@ class Pattern():
             note_aux = note.note_aux \
             )
         note.tag()
-        
+
         if note.note_off > self.length:
             note.note_off = self.length
             note.note_len = note.note_off - note.note_on
-        
+
         self.notes.append(note)
         self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
         self.current_note = self.getFirstTaggedNoteIndex()
@@ -91,7 +94,7 @@ class Pattern():
         copy_span = note.note_len + self.current_gap
         copy_pos = note.note_off + self.current_gap
         note.tag()
-    
+
         notes_to_copy = [n for n in self.notes if n.note_on <= copy_pos and n.note_off > note.note_on]
         print("yanked some notes, ", len(notes_to_copy), notes_to_copy)
 
@@ -99,13 +102,13 @@ class Pattern():
             for n in notes_to_copy:
                 copy_on = copy_pos + n.note_on - note.note_on
                 copy_len = n.note_len
-                
+
                 if n.note_on < note.note_on:
                     copy_on = copy_pos
                     copy_len = n.note_len - (note.note_on - n.note_on)
                 if n.note_off > note.note_off:
                     copy_len = note.note_off - n.note_on
-                    
+
                 self.notes.append(Note( \
                     note_on = copy_on, \
                     note_len = note_copy_len, \
@@ -115,8 +118,8 @@ class Pattern():
                     note_slide = n.note_slide \
                     ))
 
-            copy_pos += copy_span 
-            
+            copy_pos += copy_span
+
         self.notes.sort(key = lambda n: (n.note_on, n.note_pitch))
         self.current_note = self.getFirstTaggedNoteIndex()
         self.untagAllNotes()
@@ -125,7 +128,7 @@ class Pattern():
         if self.notes:
             old_note = self.current_note
             old_pitch = self.notes[old_note].note_pitch
-            
+
             del self.notes[self.current_note if self.current_note is not None else -1]
 
             if self.current_note > 0:
@@ -164,7 +167,7 @@ class Pattern():
                 self.current_note = (self.current_note + inc) % len(self.notes)
             else:
                 self.current_note = (len(self.notes) + to) % len(self.notes)
-        
+
     def shiftNote(self, inc):
         if self.notes:
             self.getNote().note_pitch = (self.getNote().note_pitch + inc) % self.max_note
@@ -192,9 +195,9 @@ class Pattern():
                     self.getNote().note_len *= 2
                 else:
                     self.getNote().note_len = max(0, min(self.length - self.getNote().note_on, self.getNote().note_len + inc))
-            
+
             self.getNote().note_off = self.getNote().note_on + self.getNote().note_len
-    
+
     def moveNote(self, inc):
         # same as with stretch: rethink for special Käses?
         if self.notes:
@@ -204,10 +207,10 @@ class Pattern():
 
         if self.getNoteOff() == self.length and inc > 0:
             self.getNote().moveNoteOn(0)
-            
+
         elif self.getNoteOn() == 0 and inc < 0:
             self.getNote().moveNoteOff(self.length)
-            
+
         else:
             self.getNote().note_on = max(0, min(self.length - self.getNote().note_len, self.getNote().note_on + inc))
             self.getNote().note_off = self.getNote().note_on + self.getNote().note_len
@@ -228,10 +231,10 @@ class Pattern():
 
     def stretchPattern(self, inc, scale = False):
         if self.length + inc <= 0: return
-    
+
         old_length = self.length
         self.length = self.length + inc
-              
+
         # fun gimmick: option to really stretch (scale all notes) the pattern ;)
         if scale:
             factor = self.length/old_length
@@ -282,17 +285,26 @@ class Note():
     def __repr__(self):
         return ','.join(str(i) for i in [self.note_on, self.note_off, self.note_pitch])
 
+    def __eq__(self, other):
+        return (self.note_on == other.note_on
+            and self.note_off == other.note_off
+            and self.note_pitch == other.note_pitch
+            and self.note_pan == other.note_pan
+            and self.note_vel == other.note_vel
+            and self.note_slide == other.note_slide
+            and self.note_aux == other.note_aux)
+
     def moveNoteOn(self, to):
         self.note_on = to
         self.note_off = to + self.note_len
-        
+
     def moveNoteOff(self, to):
         self.note_off = to
         self.note_on = to - self.note_len
 
     def tag(self):
         self.tagged = True
-    
+
     ### PARAMETER GETTERS ###
 
     def getParameter(self, parameter):

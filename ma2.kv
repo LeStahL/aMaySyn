@@ -14,11 +14,11 @@
 
 <RetroButton@Button>:
     text: ''
-    
+
     background_normal: ''
     background_color: (0,0,0,1)
     disabled_color: (.2,.2,.2,1)
-    
+
     canvas:
         Color:
             rgb: (.8,.8,.8) if not self.disabled else (.2,.2,.2)
@@ -26,7 +26,7 @@
             rectangle: self.x+3, self.y+3, self.width-6, self.height-6
             width: 1.2
             joint: 'miter'
-            
+
 <OpaqueLabel@Label>:
     background_color: 0, 0, 0, 1
     canvas.before:
@@ -40,7 +40,7 @@
 
     theTrkWidget: thisTrkWidget
     thePtnWidget: thisPtnWidget
-    
+
     btnTitle:     btnTitleID
     btnPtnTitle:  btnPtnTitleID
     btnPtnInfo:   btnPtnInfoID
@@ -48,13 +48,13 @@
 
     BoxLayout:
         orientation: "vertical"
-        size: root.size        
+        size: root.size
 
         BoxLayout:
             orientation: "horizontal"
             height: root.height * 0.05
             size_hint_y: None
-            
+
             RetroButton:
                 id: btnTitleID
                 on_release: root.pressTitle()
@@ -62,7 +62,7 @@
 
             # TODO: display button for BPM / OFFSET
 
-            RetroButton:        
+            RetroButton:
                 id: btnPtnTitleID
                 on_release: root.pressPtnTitle()
                 text: "PTN: bad performance"
@@ -79,7 +79,7 @@
             id: thisTrkWidget
             height: 310
             size_hint_y: None
-            
+
         PatternWidget:
             id: thisPtnWidget
 
@@ -163,6 +163,7 @@
     #background: ""
 
     importPatternFilenameInput: importPatternFilenameInputID
+    importPatternFilterInput: importPatternFilterInputID
     importPatternList: importPatternListID
     importPatternButton: importPatternButtonID
 
@@ -183,17 +184,17 @@
             text: "Quite weird: you control this dialog by mouse. SORRY -- no time till Revision!"
             size_hint: (0.6, 0.1)
             pos_hint: {'x':0.2, 'top':1}
-    
+
         Label:
             text: "Anyway. Import Pattern From File (XML)?"
             size_hint: (0.6, 0.1)
             pos_hint: {'x':0.2, 'top':.95}
-    
+
         BoxLayout:
             orientation: 'horizontal'
             size_hint: (0.8, None)
             height: 36
-            pos_hint: {'x':0.1, 'top':.85}
+            pos_hint: {'x':0.1, 'top':.87}
             Label:
                 text: "Filename:"
                 size_hint: (0.1, 1)
@@ -213,20 +214,46 @@
                 size_hint: (0.1, 1)
                 on_release: root.clearFile()
 
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: (0.8, None)
+            height: 36
+            pos_hint: {'x':0.1, 'top':.815}
+            Label:
+                text: "but only patterns beginning with..."
+                size_hint: (0.3, 1)
+            TextInput:
+                id: importPatternFilterInputID
+                text: ""
+                size_hint: (0.5, 1)
+                multiline: False
+                focus: False
+                on_text_validate:
+                    root.parseFile()
+
+
         PatternRecycleView:
             id: importPatternListID
-            size_hint: (0.8, .5)
-            pos_hint: {'center_x': 0.5, 'center_y': 0.525}
-            
+            size_hint: (0.8, .52)
+            pos_hint: {'center_x': 0.5, 'center_y': 0.50}
+
         RetroButton:
             id: importPatternButtonID
             text: "IMPORT SE SHIT!"
             disabled: True
-            font_size: 80
-            size_hint: (0.6, 0.2)
+            font_size: 72
+            size_hint: (0.55, 0.15)
             pos_hint: {'x': 0.05, 'y': 0.05}
             on_release:
-                if not self.disabled: root.parsePattern()
+                if not self.disabled: root.parseSelectedPattern()
+
+        RetroButton:
+            id: importAllPatternsButtonID
+            text: "import all?"
+            size_hint: (0.15, .1)
+            pos_hint: {'x': 0.6, 'y': 0.075}
+            on_release:
+                root.parseAllPatterns()
 
         RetroButton:
             text: "do it not. (sorry)"
@@ -296,7 +323,7 @@
             text: "Select Synth for current Track"
             size_hint: (0.6, 0.1)
             pos_hint: {'x':0.2, 'top':1}
-    
+
 #        BoxLayout:
 #            orientation: 'horizontal'
 #            size_hint: (0.8, None)
@@ -328,7 +355,7 @@
             id: selectSynthListID
             size_hint: (0.8, .76)
             pos_hint: {'center_x': 0.5, 'center_y': 0.53}
-            
+
         BoxLayout:
             orientation: 'horizontal'
             size_hint: (0.8, .08)

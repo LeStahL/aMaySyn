@@ -101,6 +101,7 @@ class Ma2Widget(Widget):
     lastCommand = ''
     lastSongCommand = ''
     lastImportPatternFilename = ''
+    lastImportPatternFilter = ''
     lastFixRandomsList = ''
 
     #helpers...
@@ -499,7 +500,7 @@ class Ma2Widget(Widget):
         popup.open()
     def handlePromptSongCommand(self, *args):
         self._keyboard_request()
-        if args[0].validated:
+        if args[0].validated and args[0].text != '':
             executed = self.executeCommand(args[0].text)
             if executed:
                 self.lastSongCommand = args[0].text
@@ -1112,6 +1113,22 @@ class Ma2Widget(Widget):
             if p not in actually_used_patterns:
                 print("PURGE UNUSED PATTERN:", p.name)
                 self.patterns.remove(p)
+        self.cleanDuplicatePatterns()
+
+    def cleanDuplicatePatterns(self):
+        removed_patterns = []
+        for p in self.patterns[:]:
+            if p in removed_patterns:
+                continue
+            other_patterns = [p_ for p_ in self.patterns if p_ != p]
+            for other_p in other_patterns:
+                if p.isDuplicateOf(other_p):
+                    for m in [m for t in self.tracks for m in t.modules]:
+                        if m.pattern == other_p:
+                            m.pattern = p
+                    self.patterns.remove(other_p)
+                    removed_patterns.append(other_p)
+
 
 ############### UGLY KIVY EXPORT FUNCTIONS #####################
 
@@ -1706,14 +1723,16 @@ class Ma2Widget(Widget):
 ################### NOW THE MIGHTY SHIT ###################
 
     def importPattern(self):
-        popup = ImportPatternDialog(filename = self.lastImportPatternFilename)
+        popup = ImportPatternDialog(filename = self.lastImportPatternFilename, filter = self.lastImportPatternFilter)
         popup.bind(on_dismiss = self.handleImportPattern)
         popup.open()
     def handleImportPattern(self, *args):
-        if args[0].return_pattern:
-            print("Imported Pattern:", args[0].return_pattern.name)
-            self.replacePatternByNameIfPossible(args[0].return_pattern)
+        for import_pattern in args[0].return_patterns:
+            print("Imported Pattern:", import_pattern.name)
+            self.replacePatternByNameIfPossible(import_pattern)
+        if len(args[0].return_patterns) > 0:
             self.lastImportPatternFilename = args[0].XML_filename
+            self.lastImportPatternFilter = args[0].filter
             print("... imported from", self.lastImportPatternFilename)
         self._keyboard_request()
         self.update()

@@ -29,6 +29,7 @@ strfloat = lambda f: str(int(f)) if f==int(f) else str(f)
 
 LMMS_scalenotes = 192
 LMMS_scalebars = 4
+LMMS_transpose = -12
 
 class TrackWidget(Widget):
     active = BooleanProperty(True)
@@ -76,19 +77,19 @@ class TrackWidget(Widget):
 
         self.canvas.clear()
         with self.canvas:
-            
+
             Color(*parent.mainBackgroundColor())
             Rectangle(pos = self.pos, size = self.size)
 
             if self.active:
                 Color(1.,0.,1,.5)
                 Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 7], width = 1.5)
-            
+
             for i,t in enumerate(tracklist[self.offset_v:self.offset_v+number_visible_tracks]):
                 index = i + self.offset_v
                 draw_x = self.x + pad_l
                 draw_y = self.top - pad_t - (i+1) * row_h - i * gap_h
-                
+
                 Color(*((.2,.2,.2) if index != current_track else (.5,.2,.2)))
                 Rectangle(pos = (draw_x, draw_y), size = (char_w*chars_name + 4,row_h))
 
@@ -105,7 +106,7 @@ class TrackWidget(Widget):
                 label = CoreLabel(text = t.getSynthName()[:chars_synth], font_size = font_size, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
-                                
+
                 ### GRID ###
                 draw_x = grid_l
                 Color(*((.2,.2,.2) if index != current_track else (.5,.2,.2)), 1 - 0.5 * t.mute)
@@ -140,12 +141,12 @@ class TrackWidget(Widget):
 
                     Color(*m.pattern.color, 0.4)
                     Rectangle(pos=(grid_l + beat_w * mod_on, draw_y), size=(beat_w * mod_len - 1,row_h))
-                    
+
                     Color(*(0.5+0.5*c for c in m.pattern.color),1)
                     label = CoreLabel(text = m.pattern.name[0:3*int(m.pattern.length)], font_size = font_size_small, font_name = self.font_name)
                     label.refresh()
                     Rectangle(size = label.texture.size, pos = (grid_l + beat_w * mod_on, draw_y-1), texture = label.texture)
-                    
+
                     if m.transpose != 0:
                         label = CoreLabel(text = "%+d" % m.transpose, font_size = font_size_small, font_name = self.font_name)
                         label.refresh()
@@ -159,7 +160,7 @@ class TrackWidget(Widget):
             draw_y = self.top - pad_t - (number_visible_tracks+.5)*(row_h+gap_h) - 4
 
             beat_max = (self.right - pad_r - draw_x) // beat_w
-            
+
             # BEAT ENUMERATION
             for i in range(beat_max+1):
                 Color(.6,.8,.8)
@@ -168,12 +169,12 @@ class TrackWidget(Widget):
                 Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y+2), texture = label.texture)
 
                 draw_x += beat_w
-            
+
             # MARKERS
             for m in self.marker_list:
                 marker_pos = m['pos'] - self.offset_h
                 if marker_pos < 0 or marker_pos > max_visible_beats: continue
-                    
+
                 draw_x = grid_l + marker_pos * beat_w
 
                 if m['style'] == 'BPM':
@@ -196,7 +197,7 @@ class TrackWidget(Widget):
 #            ### PARAMETER VIEW ### -- damn, this makes little sense because I need so much information about the parameter segments themselves... --> next aMaySyn version!
 #            Color(.5, .4, 0)
 #            draw_x = self.x + pad_l
-#            draw_y = self.top - self.height + pad_b            
+#            draw_y = self.top - self.height + pad_b
 #            Rectangle(pos = (draw_x, draw_y), size = (char_w*chars_name + 4,paramview_h))
 #            draw_x += 2
 #            Color(1,1,1,1)
@@ -208,7 +209,7 @@ class TrackWidget(Widget):
 #            label = CoreLabel(text = paramlist[current_param]['id'], font_size = font_size, font_name = self.font_name)
 #            label.refresh()
 #            Rectangle(size = label.texture.size, pos = (draw_x, draw_y), texture = label.texture)
-#                                
+#
 #            ### GRID ###
 #            draw_x = grid_l
 #            Color(.25,.2,.0)
@@ -219,7 +220,7 @@ class TrackWidget(Widget):
 
     def addMarker(self, label, position, style = ''):
         self.marker_list.append({'label': label, 'pos': position, 'style': style})
-        
+
         markers_to_remove = [m for m in self.marker_list if m['pos']<0]
         for m in markers_to_remove:
             self.marker_list.remove(m)
@@ -260,7 +261,7 @@ class PatternWidget(Widget):
     offset_drum_h = 0
     offset_drum_v = 0
     # TODO: before automatic scrolling: prompt to enter offset_h, offset_v, scale_h, scale_v; AND also cut off everything not on screen
-    
+
     def __init__(self, **kwargs):
         super(PatternWidget, self).__init__(**kwargs)
 
@@ -313,10 +314,10 @@ class PatternWidget(Widget):
 
         self.canvas.clear()
         with self.canvas:
-            
+
             Color(*parent.mainBackgroundColor())
             Rectangle(pos = self.pos, size = self.size)
-            
+
             if self.active:
                 Color(1.,0.,1,.5)
                 Line(rectangle = [self.x + 3, self.y + 4, self.width - 7, self.height - 4], width = 1.5)
@@ -324,7 +325,7 @@ class PatternWidget(Widget):
             ### KEYBOARD ###
             while draw_y + key_h <= self.top - pad_t:
                 draw_x = self.x + pad_l
-                
+
                 Color(*((1,1,1) if not isKeyBlack(key) else (.1,.1,.1)))
                 Rectangle(pos = (draw_x, draw_y), size = (key_w,key_h + 0.5 * (not isKeyBlack(key))))
 
@@ -380,10 +381,10 @@ class PatternWidget(Widget):
                 draw_x += 2 + key_w
                 Color(*((.1,.1,.1) if isKeyBlack(key) else (.1,.3,.2)))
                 Rectangle(pos = (draw_x, draw_y), size = (self.right - pad_r - draw_x, key_h))
-              
+
                 draw_y += key_h+1
                 key += 1
-                
+
                 if isDrum and key > len(self.drumkit) - 1: break
 
             draw_x = self.x + pad_l + key_w + 2
@@ -417,7 +418,7 @@ class PatternWidget(Widget):
 
             ### NOTES ###
             if pattern:
-                
+
                 showVelocities = False
                 for n in pattern.notes:
                     if n.note_vel != 100:
@@ -438,7 +439,7 @@ class PatternWidget(Widget):
                     if n == pattern.getNote():
                         Color(1,1,1,.6)
                         Rectangle(pos = (draw_x + 1, draw_y), size = (4 * bar_w * n.note_len - 2, key_h))
-                        
+
                         if pattern.current_gap:
                             Color(1,1,1,.4)
                             Rectangle(pos = (draw_x + 4 * bar_w * n.note_len - 1, draw_y), size = (4 * bar_w * pattern.current_gap, key_h / 4))
@@ -485,7 +486,7 @@ class PatternWidget(Widget):
             elif axis == 'vertical':
                 self.offset_drum_v = max(0, self.offset_drum_v + inc)
             else:
-                print("tried scrolling on some weird axis:", axis)            
+                print("tried scrolling on some weird axis:", axis)
         else:
             if axis == 'horizontal':
                 self.offset_h = max(0, self.offset_h + inc)
@@ -510,13 +511,13 @@ class PatternWidget(Widget):
             else:
                 print("tried scaling by some weird axis:", axis)
 
-                
+
     def updateDrumkit(self, drumkit):
         if len(drumkit) < len(self.drumkit):
             self.offset_drum_v += len(self.drumkit) - len(drumkit)
         self.drumkit = drumkit
 
-                            
+
 #    def updateScale(self, scale_v = None, scale_h = None, delta_h = 0, delta_v = 0):
 #        if scale_v and scale_v > 0: self.scale_v = scale_v
 #        if scale_h and scale_h > 0: self.scale_h = scale_h
@@ -532,61 +533,61 @@ class CurveWidget(Widget):
     h = 600
     b = 150
     o = 15
-    
+
     res = 100
-    
+
     c_x = 0
     c_y = 0
-    
+
     fit_plot = []
     fit_dots = 8
-    
+
     latest_pars = [.5, 0, 0.5, -.2, 10, pi/2, -.2, .2] # I like this one
-    
+
     def __init__(self, parent, **kwargs):
         super(CurveWidget, self).__init__(**kwargs)
         self.c_x = parent.center_x
         self.c_y = parent.center_y
         self.update()
-                               
+
     # TODO: don't remove points, but make them drag'n'droppable!
     def on_touch_down(self, touch):
         self.fit_plot.append([touch.x, touch.y])
-        
+
         self.update()
 
         if len(self.fit_plot) == self.fit_dots:
             print("FIT NOW!")
-            
+
             def testfunc(x, p0, p1, p2, p3, p4, p5, p6, p7):
                 return self.automation_curve(x, pars=[p0,p1,p2,p3,p4,p5,p6,p7])
-            
+
             x_data = [self.coord_plot2internal(f)[0] for f in self.fit_plot]
             y_data = [self.coord_plot2internal(f)[1] for f in self.fit_plot]
-            
+
             try:
                 pars, par_covars = optimize.curve_fit(testfunc, x_data, y_data, self.latest_pars)
             except RuntimeError as e:
                 print('Shit.', e)
             else:
                 self.latest_pars = pars
-            
+
             self.fit_plot = []
             self.update()
 
     def coord_internal2plot(self, iCoord):
         return (self.c_x + (self.w-2*self.o)*iCoord[0], self.c_y - (self.b+self.o) + (self.h-2*self.o)*iCoord[1])
-    
+
     def coord_plot2internal(self, pCoord): #float?
         return ((pCoord[0] - self.c_x)/(self.w-2*self.o), (pCoord[1] - self.c_y + (self.b+self.o))/(self.h-2*self.o))
-    
+
     def update(self):
         self.canvas.clear()
         with self.canvas:
-            
+
             Color(0,0,0)
             Rectangle(pos=(self.c_x - self.w/2, self.c_y - self.b), size=(self.w, self.h))
-            
+
             Color(1,0,1,.5)
             Line(rectangle = (self.c_x - self.w/2, self.c_y - self.b, self.w, self.h), width = 4)
 
@@ -596,7 +597,7 @@ class CurveWidget(Widget):
 
             Color(.6,.8,.8)
             Line(points = plot, width = 3)
-                
+
             for ic in range(len(self.fit_plot)):
                 Color(.1,.3,.2)
                 Ellipse(pos = (self.fit_plot[ic][0] - self.o/2, self.fit_plot[ic][1] - self.o/2), size=(self.o, self.o))
@@ -606,7 +607,7 @@ class CurveWidget(Widget):
             pars = self.latest_pars
 
         return np.clip(pars[0] + pars[1]*x + pars[2]*x*x + pars[3]*np.sin(pars[4]*x + pars[5]) + pars[6]*np.exp(-pars[7]*x), 0, 1)
- 
+
 
 class EditSynthDialog(ModalView):
     synthNameInput = ObjectProperty(None)
@@ -617,7 +618,7 @@ class EditSynthDialog(ModalView):
         super(EditSynthDialog, self).__init__(**kwargs)
         self.synthNameInput.text = self.synth_name
         self.synthNameInput.select_all()
-        
+
         self.root = App.get_running_app().root
 
     def synthChangeName(self, name):
@@ -629,21 +630,26 @@ class EditSynthDialog(ModalView):
 
 class ImportPatternDialog(ModalView):
     importPatternFilenameInput = ObjectProperty(None)
+    importPatternFilterInput = ObjectProperty(None)
     importPatternList = ObjectProperty(None)
     importPatternButton = ObjectProperty(None)
 
     XML_filename = None
-    return_pattern = None
+    filter = ''
+    return_patterns = []
 
     def __init__(self, **kwargs):
         lastFilename = kwargs.pop('filename')
+        self.filter = kwargs.pop('filter') if 'filter' in kwargs else ''
         super(ImportPatternDialog, self).__init__(**kwargs)
         if lastFilename:
             self.importPatternFilenameInput.text = lastFilename
+            self.importPatternFilterInput.text = self.filter
             self.parseFile()
 
     def parseFile(self):
         self.XML_filename = self.importPatternFilenameInput.text
+        self.filter = self.importPatternFilterInput.text
         try:
             open(self.XML_filename, 'r').close()
         except FileNotFoundError:
@@ -652,15 +658,17 @@ class ImportPatternDialog(ModalView):
             self.importPatternFilenameInput.select_all()
             self.XML_filename = None
             return
-        
+
         XML_root = ET.parse(self.XML_filename).getroot()
         pattern_data = []
         for element in XML_root.iter():
                 if element.tag == 'pattern':
                         elem_name = element.attrib['name']
-                        elem_pos = float(element.attrib['pos'])/LMMS_scalenotes
-                        pattern_data.append({'text': elem_name + ' @ ' + strfloat(elem_pos+1), 'element': element})
+                        if elem_name[0:len(self.filter)] == self.filter:
+                            elem_pos = float(element.attrib['pos'])/LMMS_scalenotes
+                            pattern_data.append({'text': elem_name + ' @ ' + strfloat(elem_pos+1), 'name': elem_name, 'pos': elem_pos, 'element': element})
 
+        pattern_data.sort(key = lambda item: (item['name'], item['pos']))
         self.importPatternList.data = pattern_data
 
     def clearFile(self):
@@ -668,37 +676,48 @@ class ImportPatternDialog(ModalView):
         self.importPatternFilenameInput.text = ""
         self.importPatternFilenameInput.focus = True
 
-    def parsePattern(self):
+    def parsePatterns(self, XML_data_list = []):
+        patterns = []
+        for XML_data in XML_data_list:
+            selected_pattern = Pattern(name = XML_data['text'], synth_type = 'I')
+            pattern_length = 1
+
+            for elem_note in XML_data['element']:
+                print(elem_note.tag, elem_note.attrib, end='')
+                if elem_note.tag == 'note':
+                    note_on = float(elem_note.attrib['pos'])/LMMS_scalenotes
+                    note_len = float(elem_note.attrib['len'])/LMMS_scalenotes
+                    selected_pattern.notes.append(
+                        Note(
+                            note_on    = note_on,
+                            note_len   = note_len,
+                            note_pitch = int(float(elem_note.attrib['key']) + LMMS_transpose),
+                            note_pan   = int(float(elem_note.attrib['pan'])),
+                            note_vel   = int(float(elem_note.attrib['vol'])),
+                            note_slide = 0)
+                        )
+                    pattern_length = max(pattern_length, ceil(note_on + note_len))
+                    print(' --> read', end='')
+                print()
+            selected_pattern.length = pattern_length
+            patterns.append(selected_pattern)
+        return patterns
+
+    def parseSelectedPattern(self):
         if not self.importPatternList.data: return
 
         XML_data = self.importPatternList.getSelectedData()
         print(XML_data)
         if not XML_data or not XML_data['text']:
             return
-
-        self.return_pattern = Pattern(name = XML_data['text'], synth_type = 'I')
-        pattern_length = 1
-
-        for elem_note in XML_data['element']:
-            print(elem_note.tag, elem_note.attrib, end='')
-            if elem_note.tag == 'note':
-                note_on = float(elem_note.attrib['pos'])/LMMS_scalenotes
-                note_len = float(elem_note.attrib['len'])/LMMS_scalenotes
-                self.return_pattern.notes.append(
-                    Note(
-                        note_on    = note_on,
-                        note_len   = note_len,
-                        note_pitch = int(float(elem_note.attrib['key'])),
-                        note_pan   = int(float(elem_note.attrib['pan'])),
-                        note_vel   = int(float(elem_note.attrib['vol'])),
-                        note_slide = 0)
-                    )
-                pattern_length = max(pattern_length, ceil(note_on + note_len))
-                print(' --> read', end='')
-            print()
-        self.return_pattern.length = pattern_length
-
+        self.return_patterns = self.parsePatterns(XML_data_list = [XML_data])
         self.dismiss()
+
+    def parseAllPatterns(self):
+        print(self.importPatternList.data)
+        self.return_patterns = self.parsePatterns(XML_data_list = self.importPatternList.data)
+        self.dismiss()
+
 
 class ExportPatternDialog(ModalView):
     pass
@@ -716,7 +735,7 @@ class SelectSynthDialog(ModalView):
         self.synths = kwargs.pop('synths')
         self.selected_synth = kwargs.pop('current_synth')
         super(SelectSynthDialog, self).__init__(**kwargs)
-        
+
         self.complete_synthlist = []
         for index, synth in enumerate(self.synths):
             synth_name = synth[2:]

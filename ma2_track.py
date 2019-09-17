@@ -11,15 +11,16 @@ class Track():
     name = ''
     current_synth = -1
 
-    par_norm = 1.
-    mute = False
-
-    def __init__(self, synths, name = '', synth = -1):
+    def __init__(self, synths, name = '', synth = None):
         self.synths = synths
         self.name = name
         self.modules = []
         self.current_module = 0
-        if synth is not None: self.current_synth = synth
+        self.par_norm = 1.
+        self.mute = False
+        self.current_synth = synth
+        if synth is None:
+            self.current_synth = -1
 
     def __repr__(self):
         return ','.join(str(i) for i in [self.name, self.synths, self.current_synth, self.modules, self.current_module])
@@ -187,7 +188,7 @@ class Track():
         if old_synth in synths:
             self.current_synth = synths.index(old_synth)
         else:
-            self.current_synth = -1
+            self.current_synth = None
 
     def setParameters(self, norm = None, mute = None):
         if norm is not None:

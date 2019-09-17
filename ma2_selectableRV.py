@@ -40,6 +40,6 @@ class SelectableRecycleView(RecycleView):
 
     def getSelectedData(self):
         if self.selected_index != None and self.data[self.selected_index]['text'] != self.empty_text:
-            return self.data[self.selected_index] 
+            return self.data[self.selected_index]
         else:
             return None
