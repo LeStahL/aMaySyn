@@ -10,7 +10,7 @@ def set_remaining_defaults(cid, cmd, form):
         defaults.update({'release':'0', 'relpower':'1', 'slidetime':'.125', 'predraw': '0'})
 
         if cmd == 'maindrum':
-            defaults.update({'srcR': ''})
+            defaults.update({'srcr': ''})
 
     elif cmd == 'random':
         defaults.update({'min':'0', 'max':'1', 'digits':'3', 'store':False, 'tag':''})
@@ -175,5 +175,9 @@ def set_remaining_defaults(cid, cmd, form):
     for key in defaults:
         if key not in form:
             form[key] = defaults[key]
+
+    # special keyword 'include' as name: only for hardcoded strings
+    if cid == 'include':
+        requirements = ['id', 'type', 'mode', 'src']
 
     return form, defaults, requirements

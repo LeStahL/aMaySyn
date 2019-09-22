@@ -38,7 +38,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
 
     print('PARSING', './' + syn_file)
 
-    with open(syn_file,"r") as template:
+    with open(syn_file, 'r') as template:
         lines = template.readlines()
 
     # parse lines -- # are comments, ! is a EOF character
@@ -46,10 +46,18 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
         if l=='\n' or l[0]=='#': continue
         elif l[0]=='!': break
 
-        line = sub(' *, *',',',sub(' +',' ',sub(' *= *','=',l))).split() # TODO: would somehow be good: let quoted "..." stay together
+        line = sub(' *, *',',',sub(' +',' ',sub(' *= *','=',l))).split()
         cmd = line[0].lower()
         cid = line[1]
-        arg = line[2:]
+        arg = []
+        i = 2
+        while i < len(line):
+            a = line[i]
+            while a.count('"') % 2 > 0:
+                i += 1
+                a += ' ' + line[i]
+            arg.append(a)
+            i += 1
 
         # some convenience parsing...
         form = {'id': cid, 'type': cmd, 'mode': ''}
@@ -60,7 +68,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
 
             if "=" in a:
                 key = a.split("=")[0].lower()
-                val = a.split("=")[1]
+                val = "=".join(a.split("=")[1:])
                 form.update({key : val})
                 arg.remove(a)
 
@@ -120,7 +128,7 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
                 print('PARSING - ERROR: ', key+'='+str(form[key]), 'IN FORM', form, '- supports', list(defaults.keys()))
                 quit()
 
-        if cid in [f['id'] for f in form_list]:
+        if cid in [f['id'] for f in form_list if f['id'] != 'include']:
             print('PARSING - ERROR! ID \"' + cid + '\" already taken.')
             quit()
 
@@ -130,12 +138,17 @@ def synatize(syn_file = 'default.syn', stored_randoms = [], reshuffle_randoms = 
             form_list.append(form)
 
         if cmd == 'param':
-            segments = form['segments'].split(',')
-            if len(segments) % 3 != 0:
-                print('PARSING - ERROR! SEGMENTS OF PARAM HAVE TO BE IN STRUCTURE <Segment>,<Start>,<End>,... AND THUS A MULTIPLE OF THREE: ', form)
-                quit()
-            form.update({'segments': segments, 'n_segments': int(len(segments) / 3)})
+            if form['id'] == 'include':
+                pass
+            else:
+                segments = form['segments'].split(',')
+                if len(segments) % 3 != 0:
+                    print('PARSING - ERROR! SEGMENTS OF PARAM HAVE TO BE IN STRUCTURE <Segment>,<Start>,<End>,... AND THUS A MULTIPLE OF THREE: ', form)
+                    quit()
+                form.update({'segments': segments, 'n_segments': int(len(segments) / 3)})
+
             param_list.append(form)
+
 
     drum_list = [d['id'] for d in main_list if d['type']=='maindrum']
 
@@ -585,7 +598,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
         for form_main in main_list:
             if form_main['type']!='maindrum': continue
             sourcesL = split_if_not_quoted(form_main['src'], ',')
-            sourcesR = sourcesL if form_main['srcR'] == '' else split_if_not_quoted(form_main['srcR'], ',')
+            sourcesR = sourcesL if form_main['srcr'] == '' else split_if_not_quoted(form_main['srcr'], ',')
             if actually_used_drums is None or drumcount in actually_used_drums:
                 synatized_srcL = ''
                 synatized_srcR =  ''
@@ -600,9 +613,9 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     synatized_srcR += instance_src + ('+' if term != sourcesR[-1] else '')
                     drumsyncodeR += instance_src + (newlineplus if term != sourcesR[-1] else ';')
 
-                synatized_forms.append({**form_main, 'src': '"' + sub(' *\n*','',synatized_srcL) + '"', 'srcR': '"' + sub(' *\n*','',synatized_srcR) + '"'})
+                synatized_forms.append({**form_main, 'src': '"' + sub(' *\n*','',synatized_srcL) + '"', 'srcr': '"' + sub(' *\n*','',synatized_srcR) + '"'})
 
-                drumsyncodeR = drumsyncodeR.replace('_TIME','time2').replace('_PROG','_t2' if form_main['srcR'] == '' else '_t')
+                drumsyncodeR = drumsyncodeR.replace('_TIME','time2').replace('_PROG','_t2' if form_main['srcr'] == '' else '_t')
                 drumsyncodeL = drumsyncodeL.replace('_TIME','time').replace('_PROG','_t')
                 drumsyncode += 'else if(drum == ' + str(drumcount) + '){\n' + 24*' ' \
                             +  'amaydrumL = ' + drumsyncodeL + '\n' + 24*' ' + 'amaydrumR = ' + drumsyncodeR \
@@ -611,7 +624,11 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
         drumsyncode = drumsyncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('_BMODPROG','B')
 
     paramcode = ''
+    param_normal, param_includes = [], []
     for par in param_list:
+        param_includes.append(par) if par['id'] == 'include' else param_normal.append(par)
+
+    for par in param_normal:
         paramcode += 'float ' + par['id'] + '(float _BEAT)\n{' + newlineindent + 'return _BEAT<0 ? 0. : '
         for seg in range(par['n_segments']):
             seg_code = instance(par['segments'][3*seg]).replace('_BPROG', '_BEAT').replace('_BMODPROG', '_BEAT')
@@ -619,6 +636,10 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
             seg_end = par['segments'][3*seg+2]
             paramcode += '(_BEAT>=' + seg_start + ' && _BEAT<' + seg_end + ') ? ' + seg_code.replace('_BEAT','(_BEAT-' + GLstr(seg_start) + ')') + ' : '
         paramcode += instance(par['default']) + ';' + '\n}\n'
+
+    for par in param_includes:
+        paramcode += par['src'].replace('"', '').replace('} ', '}\n')
+
 
     filter_list = [f for f in form_list if f['type']=='filter']
     filtercode = ''
