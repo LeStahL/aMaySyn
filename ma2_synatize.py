@@ -483,7 +483,8 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'ssdrop':
                     _return = 'theta('+'_PROG'+')*(1.-smoothstep(0.,'+instance(form['decay'])+','+tvar+'))'
                 elif form['shape'] == 'expdecay':
-                    _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*_BPROG)'
+                    tvar = '_BPROG' if form['hold'] == '0' else 'max(_PROG-'+form['hold']',0.)'
+                    _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*'+tvar+')'
                 elif form['shape'] == 'expdecayrepeat':
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*mod(_BPROG,'+instance(form['beats'])+'))'
                 elif form['shape'] == 'antivelattack':
@@ -583,9 +584,12 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     syncodeL += instance_src + (newlineplus if term != sources[-1] else ';')
                 synatized_forms.append({**form_main, 'src': '"' + sub(' *\n*','',synatized_src) + '"'})
 
+                extracode = ''
+                if form_main['stereodelay'] != 'default':
+                    extracode = f"time2 = time-{form_main['stereodelay']}; _t2 = _t-{form_main['stereodelay']};"
                 syncodeR = syncodeL.replace('_TIME','time2').replace('_PROG','_t2')
                 syncodeL = syncodeL.replace('_TIME','time').replace('_PROG','_t')
-                syncode += 'else if(syn == ' + str(syncount) + '){\n' + 24*' ' \
+                syncode += 'else if(syn == ' + str(syncount) + '){\n' + 24*' ' + extracode + '\n' + 24*' ' \
                         +  'amaysynL = ' + syncodeL + '\n' + 24*' ' + 'amaysynR = ' + syncodeR
                 if 'relpower' in form_main and form_main['relpower'] != '1':
                     syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-rel, Boff, B),'+form_main['relpower']+');'

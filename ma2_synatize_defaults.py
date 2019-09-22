@@ -7,7 +7,7 @@ def set_remaining_defaults(cid, cmd, form):
 
     if cmd in ['main', 'maindrum']:
         requirements.append('src')
-        defaults.update({'release':'0', 'relpower':'1', 'slidetime':'.125', 'predraw': '0'})
+        defaults.update({'release':'0', 'relpower':'1', 'slidetime':'.125', 'predraw': '0', 'stereodelay': 'default'})
 
         if cmd == 'maindrum':
             defaults.update({'srcr': ''})

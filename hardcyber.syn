@@ -1,0 +1,608 @@
+########### SYNTHS ###########
+
+osc  fm0         shape=fm
+main FM0         src=fm0 slidetime=.2
+
+osc fm1op2fb
+osc fm1op2   freq=.999*f phase=.35*fm1op2fb
+lfo fm1fb    shape=saw freq=2 mode=global,beat
+osc fm1op1   phase=fm1fb*fm1op2
+osc fm1sub1  shape=sin freq=.5*f
+osc  fm1sub2     freq=.501*f
+env  quickattack attack=0.01 hold=1 decay=1 sustain=0
+main FM1         src=quickattack*fm1op1+quickattack*0.4*fm1sub1+quickattack*0.4*fm1sub2 release=.1
+
+osc  somesaw1  shape=saw
+form somesawD1 detune src=somesaw1 factor=.99,0.967,0.96
+osc  somesaw2  shape=saw freq=.5*f phase=0.01
+form somesawD2 op=detune src=somesaw2 factor=0.95,1.03,1.02
+form somesaw   mix src=somesawD1+.6*somesawD2
+env  stutter   shape=expdecayrepeat exponent=16. beats=.125
+env  slowdec   shape=expdecay exponent=1.5
+main Supersaw  src=stutter*slowdec*somesaw
+
+random shp1     min=0   max=.1   digits=2   store
+random shp2     min=1   max=3    digits=2   store
+random maddcut  min=30  max=300  digits=2   store
+random maddcutq min=.01 max=9.99 digits=2   store
+random maddres  min=0   max=5    digits=2   store
+random maddresq min=.01 max=9.99 digits=2   store
+random maddpw   min=0   max=.99  digits=2   store
+random maddmix  min=-1  max=1    digits=2   store
+random madddet  min=0   max=.02  digits=2   store
+osc   id0001  shape=madd            nmax=200 ninc=1 mix=maddmix cutoff=maddcut q=maddcutq res=maddres resq=maddresq pw=maddpw detune=madddet
+form  id0002  waveshape src=id0001  amount=shp1*id1001 a=0 b=.8 c=.05 d=1 e=.9
+form  id0003  saturate  src=id0002  gain=shp2*id1001
+form  id0004  delay     src=id0003  number=1 delay=.02 gain=.01
+form  id0012  pitchshift src=id0001 steps=-12
+form  id0013  detune    src=id0004
+env   id1001  attack=1.3 release=.4
+main  StringM src=id1001*id0013+.4*id1001*id0004 release=.4 slidetime=.8
+
+#RANDOM FM MANIA
+random lev1 min=0 max=127 digits=0
+random lev2 min=0 max=127 digits=0
+random lev3 min=0 max=127 digits=0
+random lev4 min=0 max=127 digits=0
+random alg0 min=1 max=11  digits=0
+random fbk1 min=0 max=127 digits=0
+random fbk2 min=0 max=127 digits=0
+random fbk3 min=0 max=127 digits=0
+random fbk4 min=0 max=127 digits=0
+random att0 min=0 max=0.1 digits=3
+random hld0 min=0 max=0.1 digits=3
+random dec0 min=0 max=0.2 digits=3
+random sus0 min=0 max=1   digits=3
+random rel0 min=0 max=.2  digits=3
+random att2 min=0 max=.25 digits=3
+random dec2 min=0 max=.25 digits=3
+random hld2 min=0 max=.25 digits=3
+random sus2 min=0 max=.5  digits=3
+random att3 min=0 max=.25 digits=3
+random hld3 min=0 max=.25 digits=3
+random dec3 min=0 max=.25 digits=3
+random sus3 min=0 max=.5  digits=3
+random att4 min=0 max=.25 digits=3
+random hld4 min=0 max=.25 digits=3
+random dec4 min=0 max=.25 digits=3
+random sus4 min=0 max=.5  digits=3
+
+env    FManiaE2 attack=att2*vel decay=dec2 sustain=sus2 hold=hld2 mode=beat
+env    FManiaE3 attack=att3*vel decay=dec3 sustain=sus3 hold=hld3 mode=beat
+env    FManiaE4 attack=att4*vel decay=dec4 sustain=sus4 hold=hld4 mode=beat
+osc    FManiaA shape=fm lv1=lev1 lv2=FManiaE2*lev2 lv3=FManiaE3*lev3 lv4=FManiaE4*lev4 fr1=.5 fr3=1.001 fb1=fbk1 fb2=fbk2 fb3=fbk3 fb4=fbk4 algo=alg0 parscale=127
+form   FManiaA2 quantize src=FManiaA bits="11000-110.*aux"
+env    FManiaE attack=att0*vel decay=dec0 sustain=sus0 hold=hld0 release=rel0 mode=beat
+form   FManiaB op=chorus src=FManiaA2 number=3 step=4e-3 intensity=3. rate=0.1
+main   FMania  src=FManiaB*FManiaE release=.4 slidetime=.1337
+
+env    Fmanienv0  shape=expdecay exponent=3*vel
+osc    Fmanisub1  shape=madd  mix=-.5 pw=.02*aux nmax=64 cutoff=200 detune=0.013 freq=.5*f
+osc    Fmaniosc2  shape=madd  mix=-.7 pw=.01*aux nmax=64 cutoff=500 detune=0.013 freq=.999*f
+form   Fmanifrm0  sinshape src=.8*Fmanisub1+.2*Fmaniosc2 amount=0.01*aux parts=5
+main   FManibass  src=FManiaB*FManiaE+.6*Fmanienv0*Fmanifrm0 release=.2 slidetime=.1337
+
+form   FManiaC op=chorus src=FManiaA number=10 step=4e-4 intensity=.5 rate=1.1
+form   FMabafrm0  sinshape src=.8*Fmanisub1+.2*Fmaniosc2 amount=0.03*aux*FMabaparam parts=5
+param  FMabaparam segments=fmabaseg1,0,.75,fmabaseg2,.75,1.25,fmabaseg3,1.25,1.875,fmabaseg2,1.875,2.375,fmabaseg4,2.375,3.125,fmabaseg5,3.125,4
+seg    fmabaseg1 shape=linear from=0,0 to=.75,1
+seg    fmabaseg2 shape=linear from=0,1 to=.5,.4
+seg    fmabaseg3 shape=linear from=1.25,0.4 to=1.875,.8
+seg    fmabaseg4 shape=linear from=2.375,.8 to=3.125,.6
+seg    fmabaseg5 shape=linear from=3.125,.6 to=4,0
+main   FMabash  src=FManiaC*Fmanienv0*FMabaparam+.6*Fmanienv0*FMabafrm0 release=.1 slidetime=.08
+
+env    FMpluckE2 attack=1e-4 decay=dec2 sustain=sus2 hold=hld2 mode=beat
+env    FMpluckE3 attack=1e-4 decay=dec3 sustain=sus3 hold=hld3 mode=beat
+env    FMpluckE4 attack=1e-4 decay=dec4 sustain=sus4 hold=hld4 mode=beat
+random lfofrq0  min=0.01 max=0.3 digits=2
+random lfofrq1  min=0.01 max=0.5 digits=2
+random lfoamt0  min=0.01  max=0.3 digits=3
+random lfoamt1  min=0.001  max=0.1 digits=4
+lfo    FMplucklfo0 sin freq=lfofrq1 mode=beat
+lfo    FMplucklfo1 sin freq=lfofrq0 mode=beat
+osc    FMpluckA shape=fm lv1=lev1 lv2=FMpluckE2*lev2 lv3=FMpluckE3*lev3 lv4=FMpluckE4*lev4 fr1=0.999 fr3=1+lfoamt1*FMplucklfo1 fr4=2. fb1=fbk1 fb2=fbk2 fb3=fbk3 fb4=fbk4 algo=alg0 parscale=127
+env    FMpluckE attack=1e-4 decay=dec0 sustain=sus0 hold=hld0 release=rel0 mode=beat
+form   FMpluckB op=chorus src=FMpluckA number=2 step=4e-1 intensity=lfoamt0*FMplucklfo0 rate=0.1
+form   FMpluckW op=sinshape src=FMpluckA amount=0.03*aux
+main   FMpluck  src=vel*FMpluckW*FMpluckE release=.2 slidetime=.1337
+
+
+#1/127 = 7.87e-3
+const  vel1       pow(vel,12.*7.87e-3)
+const  vel2       pow(vel,63.*7.87e-3)
+const  vel3       pow(vel,26.*7.87e-3)
+const  vel4       pow(vel,120.*7.87e-3)
+env    fienv      attack=.001 release=.3
+#env    fienv      attack=.002
+osc    FeelItbase shape=fm lv1=127*vel1 lv2=112*vel2 lv3=127*vel3 lv4=96*vel4 fr1=.5 fr3=1.5 fb4=50 algo=8 parscale=127
+form   FeelIto    op=overdrive src=FeelItbase gain=1.6
+form   FeelItd    op=waveshape src=FeelIto amount=.3 a=.2 b=.8 c=.4 d=.8 e=.8
+form   FeelItch   op=chorus src=FeelItd number=3 step=2e-3 intensity=2. rate=0.15
+#main   FM         src=FeelItbase release=.2
+main   FM         src=.8*fienv*FeelItch release=.15 slidetime=.25
+
+osc  S01    shape=sin freq=f
+gac  G01    offset=0 const=1. lin=2. quad=-.5 sin=3. sin_coeff=2. exp=2. exp_coeff=-.25 mode=global
+form S01w   op=waveshape src=S01 amount=1. a=0.01 b=0.7 c=0.1 d=0.6 e=0.8
+main WShape src=S01-.1*G01*S01+.1*G01*S01w slidetime=.3
+
+#filter Fsaw2       shape=allpass src=somesaw1 gain=.8 ndelay=3
+lfo    stutter2    shape=squ freq=8 phase=.125
+form   stuttersaw1 op=mix src=stutter2*somesaw1
+filter Fsaw2       shape=comb src=stuttersaw1 iir_gain=.5*.5*.5 iir_n=3 fir_gain="pow(.9,5.)" fir_n=5
+main   combsaw     src=Fsaw2
+
+
+lfo    sweep  shape=sin freq=.25 scale=1500 shift=2000 mode=global
+filter BPsaw1 shape=bandpass src=somesaw1 center=sweep bandwidth=10 N=100
+env    BPenv  attack=0.002 decay=.15 sustain=.25 release=0.13
+main   BPsaw  src=BPenv*BPsaw1 slidetime=.115 release=0.70
+
+random  BPscale     min=500     max=4000    digits=0
+random  BPshift     min=500     max=8000    digits=0
+random  BPfreq      min=.05     max=.5      digits=2
+random  BPbw        min=8       max=100     digits=0
+random  BPn         min=50      max=300     digits=0
+lfo    sweep0  shape=sin freq=BPfreq scale=BPscale shift=BPshift+BPscale mode=global
+filter BPsaw01 shape=bandpass src=somesaw1 center=sweep0 bandwidth=BPbw N=BPn
+env    BPenv0  attack=0.002 decay=.1 sustain=.25 release=0.13
+env    BP_LL shape=limitlength factor=.34 release=.05
+form   BP_delay delay src=BP_LL*BPenv0*BPsaw01 number=4 delay=.063 gain=.411 mode=beat
+main   BPshort  src=BP_delay slidetime=.115 release=0.4
+main   BPlong  src=BP_delay slidetime=.115 release=1.
+
+env    stringenv    attack=0.2 decay=0.3 sustain=0.8 release=0.2
+lfo    stringvib    shape=sin freq=5.
+form   fvib         mix src=f+0.3*stringvib*stringenv
+osc    saw2         shape=saw freq=fvib
+form   saw2D        op=detune src=saw2 factor=1.01, 1.011, .98
+env    stringfilter attack=0.5 decay=0.5 sustain=0.4 release=0. mode=beat
+filter Fstr         shape=resolp src=saw2D cutoff=300*stringfilter
+main   stryngth1    src=stringenv*Fstr release=0.2
+
+osc    A1osc3    shape=tri freq=.5*f
+osc    A1osc2    shape=saw freq=2*f phase=.4*A1osc3
+osc    A1osc1    shape=squ freq=.25*f phase=0.25 pw=0.2*A1osc2
+form   A1osc1d   detune src=A1osc1 factor=1.04
+env    shortenv  attack=0.0 hold=0.2 decay=0.2 sustain=0
+env    shortenv2 shape=expdecay exponent=3
+form   A1oscmix  mix src=A1osc1d+0.8*A1osc2
+form   A1oscmixW waveshape src=A1oscmix amount=0.00001 a=0.15 b=.13 c=0.3 d=0.8 e=0.8
+env    shortdec  attack=0.0001 hold=0.0001 decay=0.4 sustain=0
+filter A1oscmixF shape=resolp src=A1oscmixW cutoff=800*shortdec res=.1
+#main   PercBass  src=shortenv*A1oscmixF*5.
+env    Perc_LL   shape=limitlength factor=1. release=.07
+form   Perc_dly  delay src=Perc_LL*A1oscmixW  number=4 delay=.2 gain=.3 mode=beat
+main   PercBass  src=shortenv*shortenv2*Perc_dly release=.8
+
+########### DRUMS ###########
+
+maindrum HCybHHOp   src=0
+maindrum HCybCrsh   src=0
+maindrum HCybSnr1   src=0
+maindrum HCybNSnr   src=0
+maindrum HCybKick36 src=0
+maindrum HCybHHCl   src=0
+maindrum HCybKick26 src=0
+
+drum shaker shape=fmnoise attack=0.03 decay=0.1 sustain=0.1 timbre1=0.9 timbre2=0.9
+maindrum SHK src=.2*shaker
+
+maindrum    NDV.OHH0     src="lpnoise(_t,10000.)*smoothstep(0.,.01,_t)*(1.-(1.-.13)*smoothstep(0.,.12,_t-.01-0.))-.3*(1.00*lpnoise((_t-0.00),10000.)*smoothstep(0.,.01,(_t-0.00))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-0.00)-.01-0.))+6.10e-01*lpnoise((_t-1.20e-03),10000.)*smoothstep(0.,.01,(_t-1.20e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-1.20e-03)-.01-0.))+3.72e-01*lpnoise((_t-2.40e-03),10000.)*smoothstep(0.,.01,(_t-2.40e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-2.40e-03)-.01-0.)))" release=.05
+
+drum fmnoise1 shape=fmnoise attack=0.0 decay=0.01 sustain=0.1
+env decnoise1 shape=expdecay exponent=10
+maindrum fmnois1 src=fmnoise1*decnoise1 release=0
+
+drum fmnoise2 shape=fmnoise attack=0.0 decay=0.03 sustain=0.1 timbre1=.5 timbre2=.5
+env decnoise2 shape=expdecay exponent=13
+maindrum fmnois2 src=fmnoise2*decnoise2 release=0
+
+osc hutrev shape=lpnoise freq=6000
+drum hut shape=fmnoise attack=0 decay=0.1 sustain=.1 timbre1=30 timbre2=20
+form whut sinshape src=hut+hutrev parts=5 amount=1
+env hutdecay shape=expdecay exponent=2
+maindrum WHAT src=0.25*whut*hutdecay release=.25
+
+
+param  someshit  segments=someseg,1,8,someshit_lfo,8,12 default=4
+lfo someshit_lfo freq=.33 mode=module
+seg someseg shape=linear from=0,0 to=8,2
+env testdecay expdecay decay=.33
+osc testsomeshit shape=sin freq=f overdrive=.5*someshit
+form testsomeshape sinshape src=testsomeshit amount=someshit parts=7
+osc testsomeshitA shape=sin freq=.5*f overdrive=.5*someshit
+osc testsomeshit1 shape=badd freq=.5*f mix=.8 amp=3 peak=300 sigma=50 ncut=8 detune=.001
+osc testsomeshit2 shape=badd freq=.5*f mix=.8 amp=3 peak=400 sigma=10 ncut=4 detune=.001
+osc testsomeshit3 shape=badd freq=f mix=.8 amp=3 peak=1000 sigma=100 ncut=3 detune=.005
+#main SOMESHIT src=.1*testsomeshitA*testdecay+.2*testsomeshape*testdecay !+testsomeshit1+testsomeshit2+testsomeshit3 release=.05
+
+osc testsomesin shape=sin freq=.5*f overdrive=2
+form testsomemod modsync src=testsomesin freq=someshit*f
+#main SOMEMOD src=testsomemod release=.05
+
+env carp_env01 attack=.125 sustain=1
+env carp_env02 attack=.1+.001*aux release=.15
+env carp_env03 attack=.05+.006*aux
+osc carp_osc01 shape=tri freq=f phase=0.005*aux*carp_env01*carp_osc02+0.01*aux*carp_env03*carp_osc03
+osc carp_osc02 shape=saw freq=.5*f
+osc carp_osc03 shape=saw freq=1.51*f overdrive=.8
+osc carp_sub01 shape=sin freq=.499*f overdrive=.4
+form carp_frm02 sinshape src=carp_osc01+.6*carp_sub01 amount=0.2+0.03*aux*vel
+form carp_frm03 quantize bits=7888 src=carp_frm02
+form carp_frm01 chorus src=.5*carp_frm02 number=2 step=.1 intensity=.1 rate=.025*SPB
+#main carp src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.3 slidetime=.08
+main carp src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.14 slidetime=.35
+main carpfast src=carp_env02*carp_frm01+.5*carp_frm03*carp_env02 release=.19 slidetime=.05 predraw=0.06
+
+env pling_env00 shape=expdecay exponent=11
+env pling_env01 attack=1e-2 hold=0 decay=.1+.5*vel sustain=.01 release=.4
+env pling_env02 attack=.5 hold=1
+env pling_env03 attack=.325 hold=1
+env pling_env04 attack=0 hold=0 decay=.2+.2*vel sustain=.01 release=.4
+env pling_env05 attack=0 hold=0 decay=.05 sustain=0
+osc pling_osc01 shape=tri freq=f overdrive=pling_env00 phase=.2*pling_env02*pling_osc02+.2*vel*pling_env03*pling_osc03
+osc pling_osc02 shape=squ overdrive=3 freq=1.99*f pw=.3+2*vel+.2*pling_osc03
+osc pling_osc03 shape=saw freq=3.97*f
+osc pling_osc05 shape=lpnoise freq=6000+200*note
+form pling_frm01 sinshape src=pling_osc01 amount=0.01*aux*pling_env00 parts=5
+main pling src=pling_env00*pling_env01*pling_frm01+.4*pling_env00*pling_env03*pling_osc02*pling_env04+.4*pling_env05*pling_osc05 release=.4 relpower=2
+
+main    pling.0    src="theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.01,0.,.1+.5*vel,.01,.4)*clip((1.+theta(_BPROG)*exp(-11.*_BPROG))*_tri(f*_PROG+.2*env_AHDSR(_BPROG,L,.5,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))+.2*vel*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*(2.*fract(3.97*f*_PROG+0.)-1.)))+.4*theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))*env_AHDSR(_BPROG,L,0.,0.,.2+.2*vel,.01,.4)+.4*env_AHDSR(_BPROG,L,0.,0.,.05,0.,0.)*lpnoise(_PROG+0.,6000.+200.*note_pitch(_note))" release=.4 relpower=2 slidetime=.125
+main    pling.1    src="theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.01,0.,.1+.5*vel,.01,.4)*clip((1.+theta(_BPROG)*exp(-11.*_BPROG))*_tri(f*_PROG+.2*env_AHDSR(_BPROG,L,.5,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))+.2*vel*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*(2.*fract(3.97*f*_PROG+0.)-1.)))+.4*theta(_BPROG)*exp(-11.*_BPROG)*env_AHDSR(_BPROG,L,.325,1.,.1,1.,0.)*clip((1.+3.)*_sq_(1.99*f*_PROG,.3+2.*vel+.2*(2.*fract(3.97*f*_PROG+0.)-1.)))*env_AHDSR(_BPROG,L,0.,0.,.2+.2*vel,.01,.4)+.4*env_AHDSR(_BPROG,L,0.,0.,.05,0.,0.)*lpnoise(_PROG+0.,6000.+200.*note_pitch(_note))" release=.4 relpower=2 slidetime=.125
+
+env brasspad_env1 shape=linear shift=100 scale=600
+env brasspad_env0 shape=linear shift=-1 scale=.6 mode=relative
+env brasspad_env2 attack=.2 sustain=1 release=.9
+lfo brasspad_lfo0 freq=.33 mode=beat
+osc brasspad_osc0 shape=madd nmax=32 mix=brasspad_env0 cutoff=brasspad_env1+300*brasspad_lfo0 q=100 res=5 resq=100
+form brasspad_frm0 detune src=brasspad_osc0 factor=1.01,2.005,4.02,.49
+form brasspad_frm2 mix src=brasspad_osc0*.3+.5*brasspad_frm0
+form brasspad_frm1 delay src=brasspad_frm2 number=3 delay=.064 gain=.38
+main brasspad src=brasspad_env2*brasspad_frm1 release=.9
+
+random choir_f1    min=500  max=550   digits=3
+random choir_f2    min=1600  max=1900  digits=3
+random choir_f3    min=2200  max=2700  digits=3
+random choir_f4    min=4.0  max=11  digits=3
+random choir_f5    min=4.0  max=11  digits=3
+random choir_amt1  min=0.2  max=.6  digits=2
+random choir_amt2  min=0.2  max=.6  digits=2
+random choir_amt3  min=0.2  max=.6  digits=2
+random choir_amt4  min=0.2  max=.6  digits=2
+random choir_amt5  min=0.2  max=.6  digits=2
+random choir_sigma min=1 max=5  digits=1
+random choir_ncut  min=2   max=6    digits=0
+random choir_q     min=.5 max=2.    digits=2
+random choir_shape min=-1  max=0     digits=2
+env choirpad_env2 attack=.4 decay=.35 sustain=.6 release=.33
+osc choirpad_osc0 shape=badd mix=choir_shape amp=.2 peak=choir_f1 sigma=80*choir_sigma ncut=choir_ncut detune=0.03 q=choir_q
+osc choirpad_osc1 shape=badd mix=choir_shape amp=.6 peak=choir_f2 sigma=90*choir_sigma ncut=choir_ncut detune=0.03  q=choir_q
+osc choirpad_osc2 shape=badd mix=choir_shape amp=.7 peak=choir_f3 sigma=120*choir_sigma ncut=choir_ncut detune=0.03 q=choir_q
+osc choirpad_osc3 shape=badd mix=choir_shape amp=choir_amt4 peak=choir_f4 sigma=130*choir_sigma ncut=choir_ncut detune=0.03 q=choir_q
+osc choirpad_osc4 shape=badd mix=choir_shape amp=choir_amt5 peak=choir_f5 sigma=140*choir_sigma ncut=choir_ncut detune=0.03 q=choir_q
+form choirpad_mix0 mix src=choirpad_osc0+choirpad_osc1+choirpad_osc2 !+choirpad_osc3+choirpad_osc4
+form choirpad_frm0 chorus src=choirpad_mix0 number=2 step=8e-3 intensity=.5 rate=0.086
+form choirpad_frm1 delay src=choirpad_frm0 number=2 delay=.034 gain=.28
+main choirpad src=choirpad_env2*choirpad_frm0*5. release=.33
+
+env metalpad_env attack=.4 decay=.35 sustain=.6 release=.2
+form metalpad_src define src="s_atan((BADD(_PROG,f,0.,-1.,.25,6034.,1024.,1.,8.,.001,0.)+BADD(_PROG,f,0.,-.9,.25,5638.,4400.,.5,4.,.007,0.))+(BADD(_PROG,f,0.,-1.,.25,6034.,1024.,1.,8.,.001,0.)+BADD(_PROG,f,0.,-.9,.25,5638.,4400.,.5,4.,.007,0.))+(BADD(_PROG,f,0.,-1.,.25,6034.,1024.,1.,8.,.001,0.)+BADD(_PROG,f,0.,-.9,.25,5638.,4400.,.5,4.,.007,0.))+(BADD(_PROG,f,0.,-1.,.25,6034.,1024.,1.,8.,.001,0.)+BADD(_PROG,f,0.,-.9,.25,5638.,4400.,.5,4.,.007,0.)))*.3"
+main    metalpad  src=metalpad_env*metalpad_src release=.25 relpower=1 slidetime=.125
+
+main metal src=metalpad_src release=.05
+main    choirpad.0    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*(BADD(_PROG,f,0.,-.04,.5,800.,2116.,2.12,8.,.001,0.)+BADD(_PROG,f,0.,-.04,.125,1150.,2116.,2.12,8.,.007,0.)+BADD(_PROG,f,0.,-.04,.065,2900.,2116.,2.12,8.,.001,0.)+BADD(_PROG,f,0.,-.04,.021,3900.,2116.,2.12,8.,.001,0.)+BADD(_PROG,f,0.,-.04,.009,4950.,2116.,2.12,8.,.007,0.))*.4" release=.25 relpower=1 slidetime=.125
+main    choirpad.1    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*(BADD(_PROG,f,0.,-.51,.5,800.,80.*22.,.29,14.,.001,0.)+BADD(_PROG,f,0.,-.51,.125,1150.,90.*22.,.29,14.,.007,0.)+BADD(_PROG,f,0.,-.51,.065,2900.,120.*22.,.29,14.,.001,0.)+BADD(_PROG,f,0.,-.51,.021,3900.,130.*22.,.29,14.,.001,0.)+BADD(_PROG,f,0.,-.51,.009,4950.,140.*22.,.29,14.,.007,0.))" release=.25 relpower=1 slidetime=.125
+main    choirpad.2    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*(BADD(_PROG,f,0.,-.79,.5,2.*800.,80.*100.,.45,32.,.001,0.)+BADD(_PROG,f,0.,-.79,.125,2.*1150.,90.*100.,.45,32.,.007,0.)+BADD(_PROG,f,0.,-.79,.065,2.*2900.,120.*100.,.45,32.,.001,0.)+BADD(_PROG,f,0.,-.79,.021,2.*3900.,130.*100.,.45,32.,.001,0.)+BADD(_PROG,f,0.,-.79,.009,2.*4950.,140.*100.,.45,32.,.007,0.))" release=.25 relpower=1 slidetime=.125
+main    choirpad.3    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*(BADD(_PROG,f,0.,-.61,.5,2.*800.,80.*88.,1.06,5.,.001,0.)+BADD(_PROG,f,0.,-.61,.125,2.*1150.,90.*88.,1.06,5.,.007,0.)+BADD(_PROG,f,0.,-.61,.065,2.*2900.,120.*88.,1.06,5.,.001,0.))" release=.25 relpower=1 slidetime=.125
+main    choirpad.4    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*(BADD(_PROG,f,0.,-.53,.5,1.818*f,80.*39.,1.27,4.,.001,0.)+BADD(_PROG,f,0.,-.53,.125,2.614*f,90.*39.,1.27,4.,.007,0.)+BADD(_PROG,f,0.,-.53,.065,6.591*f,120.*39.,1.27,4.,.001,0.))" release=.25 relpower=1 slidetime=.125
+main    choirpad.5    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*s_atan((BADD(_PROG,f,0.,-.28,.5,1.818*f,80.*2.,1.67,2.,.02,0.)+BADD(_PROG,f,0.,-.28,.125,2.614*f,90.*2.,1.67,2.,.03,0.)+BADD(_PROG,f,0.,-.28,.065,6.591*f,120.*2.,1.67,2.,.04,0.)+BADD(_PROG,f,0.,-.28,.033,8.864*f,130.*2.,1.67,2.,.05,0.)+BADD(_PROG,f,0.,-.28,.012,11.25*f,140.*2.,1.67,2.,.07,0.))+(BADD(_PROG,f,0.,-.28,.5,1.818*f,80.*2.,1.67,2.,.02,0.)+BADD(_PROG,f,0.,-.28,.125,2.614*f,90.*2.,1.67,2.,.03,0.)+BADD(_PROG,f,0.,-.28,.065,6.591*f,120.*2.,1.67,2.,.04,0.)+BADD(_PROG,f,0.,-.28,.033,8.864*f,130.*2.,1.67,2.,.05,0.)+BADD(_PROG,f,0.,-.28,.012,11.25*f,140.*2.,1.67,2.,.07,0.))+(BADD(_PROG,f,0.,-.28,.5,1.818*f,80.*2.,1.67,2.,.02,0.)+BADD(_PROG,f,0.,-.28,.125,2.614*f,90.*2.,1.67,2.,.03,0.)+BADD(_PROG,f,0.,-.28,.065,6.591*f,120.*2.,1.67,2.,.04,0.)+BADD(_PROG,f,0.,-.28,.033,8.864*f,130.*2.,1.67,2.,.05,0.)+BADD(_PROG,f,0.,-.28,.012,11.25*f,140.*2.,1.67,2.,.07,0.)))" release=.25 relpower=1 slidetime=.125
+main    choirpad.6    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*s_atan((BADD(_PROG,f,0.,-.07,.5,1.818*f,80.*6.,3.13,3.,.02,0.)+BADD(_PROG,f,0.,-.07,.125,2.614*f,90.*6.,3.13,3.,.03,0.)+BADD(_PROG,f,0.,-.07,.065,6.591*f,120.*6.,3.13,3.,.04,0.)+BADD(_PROG,f,0.,-.07,.033,8.864*f,130.*6.,3.13,3.,.05,0.)+BADD(_PROG,f,0.,-.07,.012,11.25*f,140.*6.,3.13,3.,.07,0.))+(BADD(_PROG,f,0.,-.07,.5,1.818*f,80.*6.,3.13,3.,.02,0.)+BADD(_PROG,f,0.,-.07,.125,2.614*f,90.*6.,3.13,3.,.03,0.)+BADD(_PROG,f,0.,-.07,.065,6.591*f,120.*6.,3.13,3.,.04,0.)+BADD(_PROG,f,0.,-.07,.033,8.864*f,130.*6.,3.13,3.,.05,0.)+BADD(_PROG,f,0.,-.07,.012,11.25*f,140.*6.,3.13,3.,.07,0.))+(BADD(_PROG,f,0.,-.07,.5,1.818*f,80.*6.,3.13,3.,.02,0.)+BADD(_PROG,f,0.,-.07,.125,2.614*f,90.*6.,3.13,3.,.03,0.)+BADD(_PROG,f,0.,-.07,.065,6.591*f,120.*6.,3.13,3.,.04,0.)+BADD(_PROG,f,0.,-.07,.033,8.864*f,130.*6.,3.13,3.,.05,0.)+BADD(_PROG,f,0.,-.07,.012,11.25*f,140.*6.,3.13,3.,.07,0.)))" release=.25 relpower=1 slidetime=.125
+main    choirpad.7    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*s_atan((BADD(_PROG,f,0.,-.69,.5,1.818*f,80.*26.,1.27,1.,.02,0.)+BADD(_PROG,f,0.,-.69,.25,2.614*f,90.*26.,1.27,1.,.026,0.)+BADD(_PROG,f,0.,-.69,.17,6.591*f,120.*26.,1.27,1.,.03,0.)+BADD(_PROG,f,0.,-.69,.1,8.864*f,130.*26.,1.27,1.,.016,0.)+BADD(_PROG,f,0.,-.69,.06,11.25*f,140.*26.,1.27,1.,.007,0.))+(BADD(_PROG,f,0.,-.69,.5,1.818*f,80.*26.,1.27,1.,.02,0.)+BADD(_PROG,f,0.,-.69,.25,2.614*f,90.*26.,1.27,1.,.026,0.)+BADD(_PROG,f,0.,-.69,.17,6.591*f,120.*26.,1.27,1.,.03,0.)+BADD(_PROG,f,0.,-.69,.1,8.864*f,130.*26.,1.27,1.,.016,0.)+BADD(_PROG,f,0.,-.69,.06,11.25*f,140.*26.,1.27,1.,.007,0.))+(BADD(_PROG,f,0.,-.69,.5,1.818*f,80.*26.,1.27,1.,.02,0.)+BADD(_PROG,f,0.,-.69,.25,2.614*f,90.*26.,1.27,1.,.026,0.)+BADD(_PROG,f,0.,-.69,.17,6.591*f,120.*26.,1.27,1.,.03,0.)+BADD(_PROG,f,0.,-.69,.1,8.864*f,130.*26.,1.27,1.,.016,0.)+BADD(_PROG,f,0.,-.69,.06,11.25*f,140.*26.,1.27,1.,.007,0.)))" release=.25 relpower=1 slidetime=.125
+main    choirpad.8    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.2)*s_atan((BADD(_PROG,f,0.,.03,.5,1.818*f,80.*4.7,1.43,2.,.02,0.)+BADD(_PROG,f,0.,.03,.25,2.614*f,90.*4.7,1.43,2.,.026,0.)+BADD(_PROG,f,0.,.03,.13,6.591*f,120.*4.7,1.43,2.,.03,0.)+BADD(_PROG,f,0.,.03,.19,8.864*f,130.*4.7,1.43,2.,.016,0.)+BADD(_PROG,f,0.,.03,.36,11.25*f,140.*4.7,1.43,2.,.007,0.))+(BADD(_PROG,f,0.,.03,.5,1.818*f,80.*4.7,1.43,2.,.02,0.)+BADD(_PROG,f,0.,.03,.25,2.614*f,90.*4.7,1.43,2.,.026,0.)+BADD(_PROG,f,0.,.03,.13,6.591*f,120.*4.7,1.43,2.,.03,0.)+BADD(_PROG,f,0.,.03,.19,8.864*f,130.*4.7,1.43,2.,.016,0.)+BADD(_PROG,f,0.,.03,.36,11.25*f,140.*4.7,1.43,2.,.007,0.))+(BADD(_PROG,f,0.,.03,.5,1.818*f,80.*4.7,1.43,2.,.02,0.)+BADD(_PROG,f,0.,.03,.25,2.614*f,90.*4.7,1.43,2.,.026,0.)+BADD(_PROG,f,0.,.03,.13,6.591*f,120.*4.7,1.43,2.,.03,0.)+BADD(_PROG,f,0.,.03,.19,8.864*f,130.*4.7,1.43,2.,.016,0.)+BADD(_PROG,f,0.,.03,.36,11.25*f,140.*4.7,1.43,2.,.007,0.)))*5." release=.25 relpower=1 slidetime=.125
+main    choirpad.9    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,.03,.4,2.016*f,80.*4.2,.78,3.,.02,0.)+BADD(_PROG,f,0.,.03,.51,3.47*f,90.*4.2,.78,3.,.026,0.)+BADD(_PROG,f,0.,.03,.36,7.936*f,120.*4.2,.78,3.,.03,0.)+BADD(_PROG,f,0.,.03,.26,8.55*f,130.*4.2,.78,3.,.016,0.)+BADD(_PROG,f,0.,.03,.51,12.433*f,140.*4.2,.78,3.,.007,0.))+(BADD(_PROG,f,0.,.03,.4,2.016*f,80.*4.2,.78,3.,.02,0.)+BADD(_PROG,f,0.,.03,.51,3.47*f,90.*4.2,.78,3.,.026,0.)+BADD(_PROG,f,0.,.03,.36,7.936*f,120.*4.2,.78,3.,.03,0.)+BADD(_PROG,f,0.,.03,.26,8.55*f,130.*4.2,.78,3.,.016,0.)+BADD(_PROG,f,0.,.03,.51,12.433*f,140.*4.2,.78,3.,.007,0.))+(BADD(_PROG,f,0.,.03,.4,2.016*f,80.*4.2,.78,3.,.02,0.)+BADD(_PROG,f,0.,.03,.51,3.47*f,90.*4.2,.78,3.,.026,0.)+BADD(_PROG,f,0.,.03,.36,7.936*f,120.*4.2,.78,3.,.03,0.)+BADD(_PROG,f,0.,.03,.26,8.55*f,130.*4.2,.78,3.,.016,0.)+BADD(_PROG,f,0.,.03,.51,12.433*f,140.*4.2,.78,3.,.007,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.10    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,1.01,.37,1.657*f,80.*4.3,1.51,2.,.02,0.)+BADD(_PROG,f,0.,1.01,.4,3.784*f,90.*4.3,1.51,2.,.026,0.)+BADD(_PROG,f,0.,1.01,.21,4.814*f,120.*4.3,1.51,2.,.03,0.)+BADD(_PROG,f,0.,1.01,.39,9.313*f,130.*4.3,1.51,2.,.016,0.)+BADD(_PROG,f,0.,1.01,.21,10.733*f,140.*4.3,1.51,2.,.007,0.))+(BADD(_PROG,f,0.,1.01,.37,1.657*f,80.*4.3,1.51,2.,.02,0.)+BADD(_PROG,f,0.,1.01,.4,3.784*f,90.*4.3,1.51,2.,.026,0.)+BADD(_PROG,f,0.,1.01,.21,4.814*f,120.*4.3,1.51,2.,.03,0.)+BADD(_PROG,f,0.,1.01,.39,9.313*f,130.*4.3,1.51,2.,.016,0.)+BADD(_PROG,f,0.,1.01,.21,10.733*f,140.*4.3,1.51,2.,.007,0.))+(BADD(_PROG,f,0.,1.01,.37,1.657*f,80.*4.3,1.51,2.,.02,0.)+BADD(_PROG,f,0.,1.01,.4,3.784*f,90.*4.3,1.51,2.,.026,0.)+BADD(_PROG,f,0.,1.01,.21,4.814*f,120.*4.3,1.51,2.,.03,0.)+BADD(_PROG,f,0.,1.01,.39,9.313*f,130.*4.3,1.51,2.,.016,0.)+BADD(_PROG,f,0.,1.01,.21,10.733*f,140.*4.3,1.51,2.,.007,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.11    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,1.73,.38,2.088*f,80.*2.2,.66,2.,.02,0.)+BADD(_PROG,f,0.,1.73,.28,3.142*f,90.*2.2,.66,2.,.026,0.)+BADD(_PROG,f,0.,1.73,.35,4.336*f,120.*2.2,.66,2.,.03,0.)+BADD(_PROG,f,0.,1.73,.5,9.11*f,130.*2.2,.66,2.,.016,0.)+BADD(_PROG,f,0.,1.73,.48,13.13*f,140.*2.2,.66,2.,.007,0.))+(BADD(_PROG,f,0.,1.73,.38,2.088*f,80.*2.2,.66,2.,.02,0.)+BADD(_PROG,f,0.,1.73,.28,3.142*f,90.*2.2,.66,2.,.026,0.)+BADD(_PROG,f,0.,1.73,.35,4.336*f,120.*2.2,.66,2.,.03,0.)+BADD(_PROG,f,0.,1.73,.5,9.11*f,130.*2.2,.66,2.,.016,0.)+BADD(_PROG,f,0.,1.73,.48,13.13*f,140.*2.2,.66,2.,.007,0.))+(BADD(_PROG,f,0.,1.73,.38,2.088*f,80.*2.2,.66,2.,.02,0.)+BADD(_PROG,f,0.,1.73,.28,3.142*f,90.*2.2,.66,2.,.026,0.)+BADD(_PROG,f,0.,1.73,.35,4.336*f,120.*2.2,.66,2.,.03,0.)+BADD(_PROG,f,0.,1.73,.5,9.11*f,130.*2.2,.66,2.,.016,0.)+BADD(_PROG,f,0.,1.73,.48,13.13*f,140.*2.2,.66,2.,.007,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.12    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,.25,.59,1.817,80.*2.7,.92,2.,.02,0.)+BADD(_PROG,f,0.,.25,.23,3.661,90.*2.7,.92,2.,.026,0.)+BADD(_PROG,f,0.,.25,.44,4.831,120.*2.7,.92,2.,.03,0.)+BADD(_PROG,f,0.,.25,.45,8.482,130.*2.7,.92,2.,.016,0.)+BADD(_PROG,f,0.,.25,.26,10.969,140.*2.7,.92,2.,.007,0.))+(BADD(_PROG,f,0.,.25,.59,1.817,80.*2.7,.92,2.,.02,0.)+BADD(_PROG,f,0.,.25,.23,3.661,90.*2.7,.92,2.,.026,0.)+BADD(_PROG,f,0.,.25,.44,4.831,120.*2.7,.92,2.,.03,0.)+BADD(_PROG,f,0.,.25,.45,8.482,130.*2.7,.92,2.,.016,0.)+BADD(_PROG,f,0.,.25,.26,10.969,140.*2.7,.92,2.,.007,0.))+(BADD(_PROG,f,0.,.25,.59,1.817,80.*2.7,.92,2.,.02,0.)+BADD(_PROG,f,0.,.25,.23,3.661,90.*2.7,.92,2.,.026,0.)+BADD(_PROG,f,0.,.25,.44,4.831,120.*2.7,.92,2.,.03,0.)+BADD(_PROG,f,0.,.25,.45,8.482,130.*2.7,.92,2.,.016,0.)+BADD(_PROG,f,0.,.25,.26,10.969,140.*2.7,.92,2.,.007,0.)))*2." release=.33 relpower=1 slidetime=.125
+main    choirpad.13    src="env_AHDSR(_BPROG,L,.25,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,1.35,.23,1.747,80.*3.1,1.17,2.,.02,0.)+BADD(_PROG,f,0.,1.35,.56,3.833,90.*3.1,1.17,2.,.026,0.)+BADD(_PROG,f,0.,1.35,.36,5.904,120.*3.1,1.17,2.,.03,0.)+BADD(_PROG,f,0.,1.35,.59,9.01,130.*3.1,1.17,2.,.016,0.)+BADD(_PROG,f,0.,1.35,.41,13.923,140.*3.1,1.17,2.,.007,0.))+(BADD(_PROG,f,0.,1.35,.23,1.747,80.*3.1,1.17,2.,.02,0.)+BADD(_PROG,f,0.,1.35,.56,3.833,90.*3.1,1.17,2.,.026,0.)+BADD(_PROG,f,0.,1.35,.36,5.904,120.*3.1,1.17,2.,.03,0.)+BADD(_PROG,f,0.,1.35,.59,9.01,130.*3.1,1.17,2.,.016,0.)+BADD(_PROG,f,0.,1.35,.41,13.923,140.*3.1,1.17,2.,.007,0.))+(BADD(_PROG,f,0.,1.35,.23,1.747,80.*3.1,1.17,2.,.02,0.)+BADD(_PROG,f,0.,1.35,.56,3.833,90.*3.1,1.17,2.,.026,0.)+BADD(_PROG,f,0.,1.35,.36,5.904,120.*3.1,1.17,2.,.03,0.)+BADD(_PROG,f,0.,1.35,.59,9.01,130.*3.1,1.17,2.,.016,0.)+BADD(_PROG,f,0.,1.35,.41,13.923,140.*3.1,1.17,2.,.007,0.)))*2." release=.33 relpower=1 slidetime=.125
+main    choirpad.14    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,1.25,.32,2.063*f,80.*2.2,1.56,4.,.02,0.)+BADD(_PROG,f,0.,1.25,.36,3.216*f,90.*2.2,1.56,4.,.026,0.)+BADD(_PROG,f,0.,1.25,.6,7.221*f,120.*2.2,1.56,4.,.03,0.)+BADD(_PROG,f,0.,1.25,.38,8.233*f,130.*2.2,1.56,4.,.016,0.)+BADD(_PROG,f,0.,1.25,.49,13.756*f,140.*2.2,1.56,4.,.007,0.))+(BADD(_PROG,f,0.,1.25,.32,2.063*f,80.*2.2,1.56,4.,.02,0.)+BADD(_PROG,f,0.,1.25,.36,3.216*f,90.*2.2,1.56,4.,.026,0.)+BADD(_PROG,f,0.,1.25,.6,7.221*f,120.*2.2,1.56,4.,.03,0.)+BADD(_PROG,f,0.,1.25,.38,8.233*f,130.*2.2,1.56,4.,.016,0.)+BADD(_PROG,f,0.,1.25,.49,13.756*f,140.*2.2,1.56,4.,.007,0.))+(BADD(_PROG,f,0.,1.25,.32,2.063*f,80.*2.2,1.56,4.,.02,0.)+BADD(_PROG,f,0.,1.25,.36,3.216*f,90.*2.2,1.56,4.,.026,0.)+BADD(_PROG,f,0.,1.25,.6,7.221*f,120.*2.2,1.56,4.,.03,0.)+BADD(_PROG,f,0.,1.25,.38,8.233*f,130.*2.2,1.56,4.,.016,0.)+BADD(_PROG,f,0.,1.25,.49,13.756*f,140.*2.2,1.56,4.,.007,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.15    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,-.49,.39,1.909*f,80.*2.9,1.2,1.,.02,0.)+BADD(_PROG,f,0.,-.49,.51,5.83*f,90.*2.9,1.2,1.,.026,0.)+BADD(_PROG,f,0.,-.49,.33,6.642*f,120.*2.9,1.2,1.,.03,0.)+BADD(_PROG,f,0.,-.49,.54,9.035*f,130.*2.9,1.2,1.,.016,0.)+BADD(_PROG,f,0.,-.49,.24,12.842*f,140.*2.9,1.2,1.,.007,0.))+(BADD(_PROG,f,0.,-.49,.39,1.909*f,80.*2.9,1.2,1.,.02,0.)+BADD(_PROG,f,0.,-.49,.51,5.83*f,90.*2.9,1.2,1.,.026,0.)+BADD(_PROG,f,0.,-.49,.33,6.642*f,120.*2.9,1.2,1.,.03,0.)+BADD(_PROG,f,0.,-.49,.54,9.035*f,130.*2.9,1.2,1.,.016,0.)+BADD(_PROG,f,0.,-.49,.24,12.842*f,140.*2.9,1.2,1.,.007,0.))+(BADD(_PROG,f,0.,-.49,.39,1.909*f,80.*2.9,1.2,1.,.02,0.)+BADD(_PROG,f,0.,-.49,.51,5.83*f,90.*2.9,1.2,1.,.026,0.)+BADD(_PROG,f,0.,-.49,.33,6.642*f,120.*2.9,1.2,1.,.03,0.)+BADD(_PROG,f,0.,-.49,.54,9.035*f,130.*2.9,1.2,1.,.016,0.)+BADD(_PROG,f,0.,-.49,.24,12.842*f,140.*2.9,1.2,1.,.007,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.16    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*s_atan((BADD(_PROG,f,0.,1.41,.55,4.403*f,80.*2.4,1.82,1.,.02,0.)+BADD(_PROG,f,0.,1.41,.48,15.748*f,90.*2.4,1.82,1.,.026,0.)+BADD(_PROG,f,0.,1.41,.5,4.943*f,120.*2.4,1.82,1.,.03,0.)+BADD(_PROG,f,0.,1.41,.3,5.984*f,130.*2.4,1.82,1.,.016,0.)+BADD(_PROG,f,0.,1.41,.22,9.673*f,140.*2.4,1.82,1.,.007,0.))+(BADD(_PROG,f,0.,1.41,.55,4.403*f,80.*2.4,1.82,1.,.02,0.)+BADD(_PROG,f,0.,1.41,.48,15.748*f,90.*2.4,1.82,1.,.026,0.)+BADD(_PROG,f,0.,1.41,.5,4.943*f,120.*2.4,1.82,1.,.03,0.)+BADD(_PROG,f,0.,1.41,.3,5.984*f,130.*2.4,1.82,1.,.016,0.)+BADD(_PROG,f,0.,1.41,.22,9.673*f,140.*2.4,1.82,1.,.007,0.))+(BADD(_PROG,f,0.,1.41,.55,4.403*f,80.*2.4,1.82,1.,.02,0.)+BADD(_PROG,f,0.,1.41,.48,15.748*f,90.*2.4,1.82,1.,.026,0.)+BADD(_PROG,f,0.,1.41,.5,4.943*f,120.*2.4,1.82,1.,.03,0.)+BADD(_PROG,f,0.,1.41,.3,5.984*f,130.*2.4,1.82,1.,.016,0.)+BADD(_PROG,f,0.,1.41,.22,9.673*f,140.*2.4,1.82,1.,.007,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.17    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*(1.0e+00*((BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.))+(BADD(((_PROG-SPB*0.000e+00)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.))+(BADD(((_PROG-SPB*0.000e+00)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.)))+2.8e-01*((BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.))+(BADD(((_PROG-SPB*3.400e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.))+(BADD(((_PROG-SPB*3.400e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.)))+7.8e-02*((BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.))+(BADD(((_PROG-SPB*6.800e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-4.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.))+(BADD(((_PROG-SPB*6.800e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.44,2.809*f,80.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.42,12.58*f,90.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.28,9.148*f,120.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.41,4.126*f,130.*4.6,.92,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-8.0e-03*(1.+1.*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.37,.59,13.62*f,140.*4.6,.92,3.,.03,0.))))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.18    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*(1.0e+00*((BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.43,4.154*f,80.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.41,5.337*f,90.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.57,11.343*f,120.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.52,4.736*f,130.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.33,12.132*f,140.*3.4,7.67,3.,.03,0.))+(BADD(((_PROG-SPB*0.000e+00)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.43,4.154*f,80.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.41,5.337*f,90.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.57,11.343*f,120.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.52,4.736*f,130.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*0.000e+00)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*0.000e+00)))),f,0.,1.76,.33,12.132*f,140.*3.4,7.67,3.,.03,0.)))+2.8e-01*((BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.43,4.154*f,80.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.41,5.337*f,90.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.57,11.343*f,120.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.52,4.736*f,130.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.33,12.132*f,140.*3.4,7.67,3.,.03,0.))+(BADD(((_PROG-SPB*3.400e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.43,4.154*f,80.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.41,5.337*f,90.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.57,11.343*f,120.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.52,4.736*f,130.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*3.400e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*3.400e-02)))),f,0.,1.76,.33,12.132*f,140.*3.4,7.67,3.,.03,0.)))+7.8e-02*((BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.43,4.154*f,80.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.41,5.337*f,90.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.57,11.343*f,120.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.52,4.736*f,130.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-0.0e+00*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.33,12.132*f,140.*3.4,7.67,3.,.03,0.))+(BADD(((_PROG-SPB*6.800e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.43,4.154*f,80.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.41,5.337*f,90.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.57,11.343*f,120.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.52,4.736*f,130.*3.4,7.67,3.,.03,0.)+BADD(((_PROG-SPB*6.800e-02)-2.0e-03*(1.+.5*_sin(.125*(_PROG-SPB*6.800e-02)))),f,0.,1.76,.33,12.132*f,140.*3.4,7.67,3.,.03,0.))))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.19    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*((BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.42,5.19*f,80.*3.3,4.06,5.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.52,6.249*f,90.*3.3,4.06,5.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.43,10.589*f,120.*3.3,4.06,5.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.25,9.133*f,130.*3.3,4.06,5.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.51,13.575*f,140.*3.3,4.06,5.,.03,0.))+(BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.42,5.19*f,80.*3.3,4.06,5.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.52,6.249*f,90.*3.3,4.06,5.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.43,10.589*f,120.*3.3,4.06,5.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.25,9.133*f,130.*3.3,4.06,5.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,1.22,.51,13.575*f,140.*3.3,4.06,5.,.03,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.20    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*((BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.58,.42,8.824*f,130.*2.4,7.49,2.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.58,.34,8.904*f,90.*2.4,7.49,2.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.58,.34,4.548*f,120.*2.4,7.49,2.,.03,0.))+(BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.58,.42,8.824*f,130.*2.4,7.49,2.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.58,.34,8.904*f,90.*2.4,7.49,2.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.58,.34,4.548*f,120.*2.4,7.49,2.,.03,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    choirpad.21    src="env_AHDSR(_BPROG,L,.5,0.,.35,.6,.33)*((BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.57,2.996*f,80.*4.5,2.99,2.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.32,4.336*f,90.*4.5,2.99,2.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.41,8.703*f,120.*4.5,2.99,2.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.52,7.958*f,130.*4.5,2.99,2.,.03,0.)+BADD((_PROG-0.0e+00*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.31,9.692*f,140.*4.5,2.99,2.,.03,0.))+(BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.57,2.996*f,80.*4.5,2.99,2.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.32,4.336*f,90.*4.5,2.99,2.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.41,8.703*f,120.*4.5,2.99,2.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.52,7.958*f,130.*4.5,2.99,2.,.03,0.)+BADD((_PROG-8.0e-03*(1.+.5*_sin(.086*_PROG))),f,0.,-.78,.31,9.692*f,140.*4.5,2.99,2.,.03,0.)))*5." release=.33 relpower=1 slidetime=.125
+main    FMania.0    src="(QFM((_PROG-0.0e+00*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*116.,.00787*env_AHDSR(_BPROG,L,.12,.025,.048,.287,0.)*16.,.00787*env_AHDSR(_BPROG,L,.227,.099,.036,.237,0.)*48.,.00787*env_AHDSR(_BPROG,L,.023,.047,.184,.418,0.)*67.,.5,1.,1.001,1.,.00787*68.,.00787*24.,.00787*37.,.00787*16.,1.)+QFM((_PROG-4.0e-03*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*116.,.00787*env_AHDSR(_BPROG,L,.12,.025,.048,.287,0.)*16.,.00787*env_AHDSR(_BPROG,L,.227,.099,.036,.237,0.)*48.,.00787*env_AHDSR(_BPROG,L,.023,.047,.184,.418,0.)*67.,.5,1.,1.001,1.,.00787*68.,.00787*24.,.00787*37.,.00787*16.,1.)+QFM((_PROG-8.0e-03*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*116.,.00787*env_AHDSR(_BPROG,L,.12,.025,.048,.287,0.)*16.,.00787*env_AHDSR(_BPROG,L,.227,.099,.036,.237,0.)*48.,.00787*env_AHDSR(_BPROG,L,.023,.047,.184,.418,0.)*67.,.5,1.,1.001,1.,.00787*68.,.00787*24.,.00787*37.,.00787*16.,1.))*env_AHDSR(_BPROG,L,.018,.081,.125,.82,.085)" release=.4 slidetime=.1337 relpower=1
+main    FManibass.0    src="(QFM((_PROG-0.0e+00*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*124.,.00787*env_AHDSR(_BPROG,L,.211,.15,.169,.16,0.)*105.,.00787*env_AHDSR(_BPROG,L,.007,.03,.188,.149,0.)*98.,.00787*env_AHDSR(_BPROG,L,.171,.163,.105,.039,0.)*10.,.5,1.,1.001,1.,.00787*26.,.00787*29.,.00787*54.,.00787*110.,9.)+QFM((_PROG-4.0e-03*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*124.,.00787*env_AHDSR(_BPROG,L,.211,.15,.169,.16,0.)*105.,.00787*env_AHDSR(_BPROG,L,.007,.03,.188,.149,0.)*98.,.00787*env_AHDSR(_BPROG,L,.171,.163,.105,.039,0.)*10.,.5,1.,1.001,1.,.00787*26.,.00787*29.,.00787*54.,.00787*110.,9.)+QFM((_PROG-8.0e-03*(1.+3.*_sin(.1*_PROG))),f,0.,.00787*124.,.00787*env_AHDSR(_BPROG,L,.211,.15,.169,.16,0.)*105.,.00787*env_AHDSR(_BPROG,L,.007,.03,.188,.149,0.)*98.,.00787*env_AHDSR(_BPROG,L,.171,.163,.105,.039,0.)*10.,.5,1.,1.001,1.,.00787*26.,.00787*29.,.00787*54.,.00787*110.,9.))*env_AHDSR(_BPROG,L,.043,.026,.049,.051,.073)+theta(_BPROG)*exp(-3.*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.2 slidetime=.1337 relpower=1
+main    FMabash.0    src="QFM(_PROG,f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)*theta(_BPROG)*exp(-3.*_BPROG)+.6*theta(_BPROG)*exp(-3.*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.02 slidetime=.1337 relpower=1
+main    FMabash.1    src="(QFM((_PROG-0.0e+00*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-4.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-8.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-1.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-1.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-2.0e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-2.4e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-2.8e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-3.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-3.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.))*theta(_BPROG)*exp(-3.*_BPROG)+.6*theta(_BPROG)*exp(-3.*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.02 slidetime=.1337 relpower=1
+main    FMabash.2    src="(QFM((_PROG-0.0e+00*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-4.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-8.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-1.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-1.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-2.0e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-2.4e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-2.8e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-3.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.)+QFM((_PROG-3.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*71.,.00787*env_AHDSR(_BPROG,L,.179,.159,.092,.364,0.)*37.,.00787*env_AHDSR(_BPROG,L,.126,.225,.119,.458,0.)*108.,.00787*env_AHDSR(_BPROG,L,.172,.149,.006,.367,0.)*78.,.5,1.,1.001,1.,.00787*1.,.00787*1.,.00787*105.,.00787*90.,2.))*theta(_BPROG)*exp(-3.*_BPROG)+.6*theta(_BPROG)*exp(-3.*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.02 slidetime=.1337 relpower=1
+main    FMabash.3    src="(QFM((_PROG-0.0e+00*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-4.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-8.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-1.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-1.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-2.0e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-2.4e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-2.8e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-3.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.)+QFM((_PROG-3.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*30.,.00787*env_AHDSR(_BPROG,L,.229,.125,.178,.224,0.)*62.,.00787*env_AHDSR(_BPROG,L,.168,.145,.213,.468,0.)*91.,.00787*env_AHDSR(_BPROG,L,.136,.163,.041,.189,0.)*90.,.5,1.,1.001,1.,.00787*99.,.00787*21.,.00787*74.,.00787*40.,11.))*theta(_BPROG)*exp(-3.*_BPROG)+.6*theta(_BPROG)*exp(-3.*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.02 slidetime=.1337 relpower=1
+main    FMabash.4    src="(QFM((_PROG-0.0e+00*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-4.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-8.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-1.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-1.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-2.0e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-2.4e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-2.8e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-3.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.)+QFM((_PROG-3.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*75.,.00787*env_AHDSR(_BPROG,L,.112*vel,.169,.057,.35,0.)*3.,.00787*env_AHDSR(_BPROG,L,.205*vel,.165,.223,.203,0.)*91.,.00787*env_AHDSR(_BPROG,L,.231*vel,.141,.202,.249,0.)*56.,.5,1.,1.001,1.,.00787*0.,.00787*33.,.00787*50.,.00787*14.,4.))*theta(_BPROG)*exp(-3.*vel*_BPROG)+.6*theta(_BPROG)*exp(-3.*vel*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.1 slidetime=.08 relpower=1
+main    FMabash.5    src="(QFM((_PROG-0.0e+00*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-4.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-8.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-1.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-1.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-2.0e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-2.4e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-2.8e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-3.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.)+QFM((_PROG-3.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.048*vel,.004,.129,.175,0.)*5.,.00787*env_AHDSR(_BPROG,L,.168*vel,.2,.17,.358,0.)*123.,.00787*env_AHDSR(_BPROG,L,.121*vel,.212,.147,.065,0.)*19.,.5,1.,1.001,1.,.00787*26.,.00787*68.,.00787*78.,.00787*90.,3.))*theta(_BPROG)*exp(-3.*vel*_BPROG)+.6*theta(_BPROG)*exp(-3.*vel*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.1 slidetime=.08 relpower=1
+main    FMabash.6    src="(QFM((_PROG-0.0e+00*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-4.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-8.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-1.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-1.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-2.0e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-2.4e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-2.8e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-3.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.)+QFM((_PROG-3.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*126.,.00787*env_AHDSR(_BPROG,L,.228*vel,.231,.183,.383,0.)*66.,.00787*env_AHDSR(_BPROG,L,.06*vel,.196,.202,.27,0.)*68.,.00787*env_AHDSR(_BPROG,L,.06*vel,.016,.1,.342,0.)*111.,.5,1.,1.001,1.,.00787*74.,.00787*86.,.00787*77.,.00787*4.,2.))*theta(_BPROG)*exp(-3.*vel*_BPROG)+.6*theta(_BPROG)*exp(-3.*vel*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.1 slidetime=.08 relpower=1
+main    FMabash.7    src="(QFM((_PROG-0.0e+00*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-4.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-8.0e-04*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-1.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-1.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-2.0e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-2.4e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-2.8e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-3.2e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.)+QFM((_PROG-3.6e-03*(1.+.5*_sin(1.1*_PROG))),f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.122*vel,.138,.205,.118,0.)*117.,.00787*env_AHDSR(_BPROG,L,.228*vel,.249,.243,.338,0.)*41.,.00787*env_AHDSR(_BPROG,L,.145*vel,.121,.183,.268,0.)*29.,.5,1.,1.001,1.,.00787*84.,.00787*31.,.00787*87.,.00787*122.,4.))*theta(_BPROG)*exp(-3.*vel*_BPROG)+.6*theta(_BPROG)*exp(-3.*vel*_BPROG)*sinshape(.8*MADD(_PROG,.5*f,0.,64,1,-.5,200.,10.,0.,3.,.013,.02*aux,0)+.2*MADD(_PROG,.999*f,0.,64,1,-.7,500.,10.,0.,3.,.013,.01*aux,0),.01*aux,3.)" release=.1 slidetime=.08 relpower=1
+main    FMania.1    src="(QFM(floor((9000-80.*aux)*(_PROG-0.0e+00*(1.+3.*_sin(.1*_PROG)))+.5)/(9000-80.*aux),f,0.,.00787*123.,.00787*env_AHDSR(_BPROG,L,.178*vel,.013,.161,.036,0.)*113.,.00787*env_AHDSR(_BPROG,L,.219*vel,.12,.085,.04,0.)*9.,.00787*env_AHDSR(_BPROG,L,.031*vel,.013,.025,.136,0.)*81.,.5,1.,1.001,1.,.00787*21.,.00787*87.,.00787*44.,.00787*11.,8.)+QFM(floor((9000-80.*aux)*(_PROG-4.0e-03*(1.+3.*_sin(.1*_PROG)))+.5)/(9000-80.*aux),f,0.,.00787*123.,.00787*env_AHDSR(_BPROG,L,.178*vel,.013,.161,.036,0.)*113.,.00787*env_AHDSR(_BPROG,L,.219*vel,.12,.085,.04,0.)*9.,.00787*env_AHDSR(_BPROG,L,.031*vel,.013,.025,.136,0.)*81.,.5,1.,1.001,1.,.00787*21.,.00787*87.,.00787*44.,.00787*11.,8.)+QFM(floor((9000-80.*aux)*(_PROG-8.0e-03*(1.+3.*_sin(.1*_PROG)))+.5)/(9000-80.*aux),f,0.,.00787*123.,.00787*env_AHDSR(_BPROG,L,.178*vel,.013,.161,.036,0.)*113.,.00787*env_AHDSR(_BPROG,L,.219*vel,.12,.085,.04,0.)*9.,.00787*env_AHDSR(_BPROG,L,.031*vel,.013,.025,.136,0.)*81.,.5,1.,1.001,1.,.00787*21.,.00787*87.,.00787*44.,.00787*11.,8.))*env_AHDSR(_BPROG,L,.045*vel,.077,.003,.999,.095)" release=.4 slidetime=.1337 relpower=1
+main    FMania.2    src="(QFM(floor((11000-110.*aux)*(_PROG-0.0e+00*(1.+3.*_sin(.1*_PROG)))+.5)/(11000-110.*aux),f,0.,.00787*123.,.00787*env_AHDSR(_BPROG,L,.178*vel,.013,.161,.036,0.)*113.,.00787*env_AHDSR(_BPROG,L,.219*vel,.12,.085,.04,0.)*9.,.00787*env_AHDSR(_BPROG,L,.031*vel,.013,.025,.136,0.)*81.,.5,1.,1.001,1.,.00787*21.,.00787*87.,.00787*44.,.00787*11.,8.)+QFM(floor((11000-110.*aux)*(_PROG-4.0e-03*(1.+3.*_sin(.1*_PROG)))+.5)/(11000-110.*aux),f,0.,.00787*123.,.00787*env_AHDSR(_BPROG,L,.178*vel,.013,.161,.036,0.)*113.,.00787*env_AHDSR(_BPROG,L,.219*vel,.12,.085,.04,0.)*9.,.00787*env_AHDSR(_BPROG,L,.031*vel,.013,.025,.136,0.)*81.,.5,1.,1.001,1.,.00787*21.,.00787*87.,.00787*44.,.00787*11.,8.)+QFM(floor((11000-110.*aux)*(_PROG-8.0e-03*(1.+3.*_sin(.1*_PROG)))+.5)/(11000-110.*aux),f,0.,.00787*123.,.00787*env_AHDSR(_BPROG,L,.178*vel,.013,.161,.036,0.)*113.,.00787*env_AHDSR(_BPROG,L,.219*vel,.12,.085,.04,0.)*9.,.00787*env_AHDSR(_BPROG,L,.031*vel,.013,.025,.136,0.)*81.,.5,1.,1.001,1.,.00787*21.,.00787*87.,.00787*44.,.00787*11.,8.))*env_AHDSR(_BPROG,L,.045*vel,.077,.003,.999,.095)" release=.4 slidetime=.1337 relpower=1
+main    FMania.3    src="(QFM(floor((11000-110.*aux)*(_PROG-0.0e+00*(1.+3.*_sin(.1*_PROG)))+.5)/(11000-110.*aux),f,0.,.00787*116.,.00787*env_AHDSR(_BPROG,L,.066*vel,.037,.212,.232,0.)*9.,.00787*env_AHDSR(_BPROG,L,.222*vel,.099,.224,.231,0.)*57.,.00787*env_AHDSR(_BPROG,L,.206*vel,.184,.232,.243,0.)*11.,.5,1.,1.001,1.,.00787*5.,.00787*13.,.00787*98.,.00787*88.,4.)+QFM(floor((11000-110.*aux)*(_PROG-4.0e-03*(1.+3.*_sin(.1*_PROG)))+.5)/(11000-110.*aux),f,0.,.00787*116.,.00787*env_AHDSR(_BPROG,L,.066*vel,.037,.212,.232,0.)*9.,.00787*env_AHDSR(_BPROG,L,.222*vel,.099,.224,.231,0.)*57.,.00787*env_AHDSR(_BPROG,L,.206*vel,.184,.232,.243,0.)*11.,.5,1.,1.001,1.,.00787*5.,.00787*13.,.00787*98.,.00787*88.,4.)+QFM(floor((11000-110.*aux)*(_PROG-8.0e-03*(1.+3.*_sin(.1*_PROG)))+.5)/(11000-110.*aux),f,0.,.00787*116.,.00787*env_AHDSR(_BPROG,L,.066*vel,.037,.212,.232,0.)*9.,.00787*env_AHDSR(_BPROG,L,.222*vel,.099,.224,.231,0.)*57.,.00787*env_AHDSR(_BPROG,L,.206*vel,.184,.232,.243,0.)*11.,.5,1.,1.001,1.,.00787*5.,.00787*13.,.00787*98.,.00787*88.,4.))*env_AHDSR(_BPROG,L,.099*vel,.047,.194,.289,.182)" release=.4 slidetime=.1337 relpower=1
+main    PercBass.0    src="env_AHDSR(_BPROG,L,0.,.2,.2,0.,0.)*env_AHDSR(_BPROG,L,.001,0.,.1,1.,0.)*(1.0e+00*env_limit_length((_BPROG-0.000e+00),1.*(L-rel),.07)*waveshape((s_atan(_sq_(.25*f*(_PROG-SPB*0.000e+00),.2*(2.*fract(2.*f*(_PROG-SPB*0.000e+00)+.4*_tri(.5*f*(_PROG-SPB*0.000e+00)+0.))-1.))+_sq_(1.04*.25*f*(_PROG-SPB*0.000e+00),.2*(2.*fract(2.*f*(_PROG-SPB*0.000e+00)+.4*_tri(.5*f*(_PROG-SPB*0.000e+00)+0.))-1.)))+.8*(2.*fract(2.*f*(_PROG-SPB*0.000e+00)+.4*_tri(.5*f*(_PROG-SPB*0.000e+00)+0.))-1.)),1e-05,.15,.13,.3,.8,.8)+3.0e-01*env_limit_length((_BPROG-2.000e-01),1.*(L-rel),.07)*waveshape((s_atan(_sq_(.25*f*(_PROG-SPB*2.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*2.000e-01)+.4*_tri(.5*f*(_PROG-SPB*2.000e-01)+0.))-1.))+_sq_(1.04*.25*f*(_PROG-SPB*2.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*2.000e-01)+.4*_tri(.5*f*(_PROG-SPB*2.000e-01)+0.))-1.)))+.8*(2.*fract(2.*f*(_PROG-SPB*2.000e-01)+.4*_tri(.5*f*(_PROG-SPB*2.000e-01)+0.))-1.)),1e-05,.15,.13,.3,.8,.8)+9.0e-02*env_limit_length((_BPROG-4.000e-01),1.*(L-rel),.07)*waveshape((s_atan(_sq_(.25*f*(_PROG-SPB*4.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*4.000e-01)+.4*_tri(.5*f*(_PROG-SPB*4.000e-01)+0.))-1.))+_sq_(1.04*.25*f*(_PROG-SPB*4.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*4.000e-01)+.4*_tri(.5*f*(_PROG-SPB*4.000e-01)+0.))-1.)))+.8*(2.*fract(2.*f*(_PROG-SPB*4.000e-01)+.4*_tri(.5*f*(_PROG-SPB*4.000e-01)+0.))-1.)),1e-05,.15,.13,.3,.8,.8)+2.7e-02*env_limit_length((_BPROG-6.000e-01),1.*(L-rel),.07)*waveshape((s_atan(_sq_(.25*f*(_PROG-SPB*6.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*6.000e-01)+.4*_tri(.5*f*(_PROG-SPB*6.000e-01)+0.))-1.))+_sq_(1.04*.25*f*(_PROG-SPB*6.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*6.000e-01)+.4*_tri(.5*f*(_PROG-SPB*6.000e-01)+0.))-1.)))+.8*(2.*fract(2.*f*(_PROG-SPB*6.000e-01)+.4*_tri(.5*f*(_PROG-SPB*6.000e-01)+0.))-1.)),1e-05,.15,.13,.3,.8,.8)+8.1e-03*env_limit_length((_BPROG-8.000e-01),1.*(L-rel),.07)*waveshape((s_atan(_sq_(.25*f*(_PROG-SPB*8.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*8.000e-01)+.4*_tri(.5*f*(_PROG-SPB*8.000e-01)+0.))-1.))+_sq_(1.04*.25*f*(_PROG-SPB*8.000e-01),.2*(2.*fract(2.*f*(_PROG-SPB*8.000e-01)+.4*_tri(.5*f*(_PROG-SPB*8.000e-01)+0.))-1.)))+.8*(2.*fract(2.*f*(_PROG-SPB*8.000e-01)+.4*_tri(.5*f*(_PROG-SPB*8.000e-01)+0.))-1.)),1e-05,.15,.13,.3,.8,.8))" release=.8 relpower=1 slidetime=.125
+
+main    FQMbace.4    src="0.*vel*waveshape(QFM(_PROG,4.*f,0.,.00787*5.,.00787*81.,.00787*61.,.00787*46.,.5,1.,1.001,1.,.00787*106.,.00787*53.,.00787*78.,.00787*91.,1.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.022,0.,.01,1.,.004)+vel*QFM(_PROG,f,0.,.00787*5.,.00787*81.,.00787*61.,.00787*46.,.5,1.,1.001,1.,.00787*106.,.00787*53.,.00787*78.,.00787*91.,1.)*env_AHDSR(_PROG,tL,.022,0.,.01,1.,.004)" release=.2 slidetime=.6 relpower=1
+main    FQMimp.0     src="vel*waveshape(QFM(_PROG,4.*f,0.,.00787*43.,.00787*94.,.00787*121.,.00787*41.,.5,1.,1.001,1.,.00787*81.,.00787*62.,.00787*65.,.00787*61.,1.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.2,0.,.01,1.,.05)+(.5+.5*vel)*clip((1.+2.)*_sin(f*_PROG))" release=.15 relpower=1 slidetime=.125
+main    FQMhigh.0    src=".5*vel*waveshape(QFM(_PROG,f,0.,.00787*92.*(.6+(.3*_sin(.32*B))),.00787*87.*(.6+(.3*_sin(.761*B))),.00787*112.*(.6+(.3*_sin(.115*B))),.00787*57.*(.6+(.3*_sin(.362*B))),1.,.998,1.001,1.,.00787*9.,.00787*78.,.00787*115.,.00787*27.,9.),(.5+(.5*_sin(.431*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.2,.04,.8)" release=.8 relpower=1 slidetime=.125
+main    FQMhigh.1    src=".5*vel*waveshape(QFM(_PROG,f,0.,.00787*118.*(.6+(.3*_sin(.412*B))),.00787*98.*(.6+(.3*_sin(.412*B))),.00787*65.*(.6+(.3*_sin(.412*B))),.00787*86.*(.6+(.3*_sin(.412*B))),1.,.998,1.001,1.,.00787*57.,.00787*54.,.00787*108.,.00787*113.,10.),(.5+(.5*_sin(.412*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+main    FQMhigh.2    src=".5*vel*waveshape(QFM(_PROG,f,0.,.00787*60.*(.6+(.3*_sin(.687*B))),.00787*92.*(.6+(.3*_sin(.687*B))),.00787*41.*(.6+(.3*_sin(.687*B))),.00787*74.*(.6+(.3*_sin(.687*B))),1.,.998,1.001,1.,.00787*56.,.00787*62.,.00787*44.,.00787*88.,3.),(.5+(.5*_sin(.687*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+main    FQMhigh.3    src=".5*vel*waveshape(QFM(_PROG,f,0.,.00787*45.*(1.+(.49*_sin(.87*B))),.00787*125.*(1.+(.091*_sin(.87*B))),.00787*127.*(1.+(.462*_sin(.87*B))),.00787*33.*(1.+(.304*_sin(.87*B))),1.,.998,1.001,1.,.00787*86.,.00787*37.,.00787*26.,.00787*121.,5.),(.5+(.5*_sin(.87*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+
+main    FQMhigh.4    src=".5*vel*waveshape(QFM(_PROG,f,0.,.00787*115.*(1.+(.225*_sin(.861*B))),.00787*36.*(1.+(.26*_sin(.861*B))),.00787*51.*(1.+(.309*_sin(.861*B))),.00787*34.*(1.+(.199*_sin(.861*B))),1.,.998,1.001,1.,.00787*93.,.00787*36.,.00787*98.,.00787*98.,5.),(.5+(.5*_sin(.861*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.001,.15,.15,.04,.6)" release=.6 relpower=1 slidetime=.125
+
+random chpattack    min=0       max=5e-2    digits=3    store
+random chpdecay     min=0.05    max=0.2     digits=3    store
+random chpsustain   min=.05     max=1     digits=3     store
+random chprelease   min=1e-3    max=4e-2    digits=3    store
+random chplfoscale  min=200     max=950     digits=0    store
+random chplfoshift  min=1000    max=2000    digits=0    store
+random chpndecay    min=1       max=32      digits=0    store
+random chpres       min=0       max=0      digits=3    store
+random chpresq      min=1e-2    max=30      digits=2    store
+random chpdetune    min=0       max=0.025   digits=3    store
+random chpshape     min=-1      max=2       digits=2    store
+osc chippy_syn shape=madd freq=f nmax=128 ninc=1 mix=chpshape cutoff=chippy_lfo q=chpndecay res=chpres resq=chpresq pw=0.4*chippy_synlfo detune=chpdetune
+form chippy_synQ quantize src=chippy_syn bits=16000
+form chippy_synOD waveshape src=chippy_synQ amount=vel a=.1 b=.5 c=.2 d=.5 e=.6
+lfo chippy_synlfo shape=sin freq=4 phase=0 scale=.4 shift=.55 overdrive=1 mode=global
+lfo chippy_lfo shape=sin freq=2 phase=.4 scale=chplfoscale shift=chplfoshift mode=global
+env chippy_env shape=adsr attack=chpattack decay=chpdecay sustain=chpsustain release=chprelease
+main chippy src=vel*chippy_env*chippy_synQ release=4e-2
+
+osc chappy_syn shape=badd freq=f mix=chpshape amp=5 peak=chplfoshift sigma=chplfoscale ncut=20 pw=0.2 detune=chpdetune
+#form chappy_synQ quantize src=chappy_syn bits=16000
+form chappy_synOD waveshape src=chappy_syn amount=vel a=.1 b=.5 c=.2 d=.5 e=.6
+lfo chappy_synlfo shape=sin freq=4 phase=0 scale=.4 shift=.55 overdrive=1 mode=global
+lfo chappy_lfo shape=sin freq=2 phase=.4 scale=chplfoscale shift=chplfoshift mode=global
+env chappy_env shape=adsr attack=1e-4 decay=chpdecay sustain=chpsustain release=.4
+main chappy src=vel*chappy_env*chappy_syn release=.4
+
+main    chippy.0    src="env_AHDSR(_PROG,tL,1e-3,0.,.063,.402,.003)*MADD(_PROG,f,0.,128,1,-.6,(1175.+(583.*_sin_(2.*B,.4))),24.,44.37,24.05,.015,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=.12 relpower=2 slidetime=.125
+main    chippy.1    src="vel*env_AHDSR(_PROG,tL,0.,0.,.173,.289,.019)*MADD(floor(8000.*_PROG+.5)/8000.,f,0.,128,1,-.25,(1342.+(216.*_sin_(2.*B,.4))),23.,0.,14.43,.018,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+main    chippy.2    src="vel*env_AHDSR(_PROG,tL,0.,0.,.072,.865,.001)*MADD(floor(8000.*_PROG+.5)/8000.,f,0.,128,1,-.49,(1265.+(535.*_sin_(2.*B,.4))),15.,0.,10.28,.016,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+main    chippy.3    src="vel*env_AHDSR(_PROG,tL,.012,0.,.197,.91,.014)*MADD(floor(16000.*_PROG+.5)/16000.,f,0.,128,1,-.57,(1309.+(645.*_sin_(2.*B,.4))),5.,0.,14.95,.019,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+main    chippy.4    src="vel*env_AHDSR(_PROG,tL,.01,0.,.115,.215,.033)*MADD(floor(16000.*_PROG+.5)/16000.,f,0.,128,1,-.83,(1277.+(534.*_sin_(2.*B,.4))),19.,0.,.27,.007,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+main    chippy.5    src="vel*env_AHDSR(_PROG,tL,.028,0.,.144,.912,.006)*MADD(floor(16000.*_PROG+.5)/16000.,f,0.,128,1,1.43,(1567.+(906.*_sin_(2.*B,.4))),17.,0.,29.76,.006,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+main    chippy.6    src="vel*env_AHDSR(_PROG,tL,.035,0.,.142,.61,.035)*MADD(floor(16000.*_PROG+.5)/16000.,f,0.,128,1,-.83,(1901.+(776.*_sin_(2.*B,.4))),18.,0.,17.9,.016,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+main    FQMbace.5   src="vel*QFM(_PROG,f,0.,.00787*71.,.00787*52.,.00787*91.,.00787*99.,.5,1.,1.001,1.,.00787*49.,.00787*104.,.00787*65.,.00787*90.,7.)*env_AHDSR(_PROG,tL,.023,0.,.01,1.,.006)" release=.2 slidetime=.6 relpower=1
+main    FQMbace.6   src="vel*QFM(_PROG,f,0.,.00787*110.,.00787*90.,.00787*54.,.00787*71.,.5,1.,1.001,1.,.00787*60.,.00787*40.,.00787*68.,.00787*9.,10.)*env_AHDSR(_PROG,tL,.02,0.,.01,1.,.003)" release=.2 slidetime=.6 relpower=1
+main    FQMimp.1    src="vel*waveshape(QFM(_PROG,f,0.,.00787*54.,.00787*82.,.00787*86.,.00787*64.,.5,1.,1.001,1.,.00787*95.,.00787*83.,.00787*18.,.00787*83.,10.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.2,0.,.01,1.,.05)+vel*clip((1.+2.)*_sin(f*_PROG))" release=.05 relpower=1 slidetime=.125
+main    FQMimp.2    src="vel*waveshape(QFM(_PROG,f,0.,.00787*0.,.00787*119.,.00787*92.,.00787*101.,.5,1.,1.001,1.,.00787*100.,.00787*61.,.00787*25.,.00787*9.,1.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.2,0.,.01,1.,.05)+vel*clip((1.+2.)*_sin(f*_PROG))" release=.05 relpower=1 slidetime=.125
+main    FQMbace.7   src="vel*QFM(_PROG,f,0.,.00787*24.,.00787*92.,.00787*85.,.00787*21.,.5,1.,1.001,1.,.00787*126.,.00787*48.,.00787*26.,.00787*26.,9.)*env_AHDSR(_PROG,tL,.013,0.,.01,1.,.008)" release=.2 slidetime=.6 relpower=1
+main    FQMbace.8   src="vel*QFM(_PROG,f,0.,.00787*20.,.00787*17.,.00787*54.,.00787*33.,.5,1.,1.001,1.,.00787*126.,.00787*19.,.00787*23.,.00787*36.,6.)*env_AHDSR(_PROG,tL,.007,0.,.01,1.,.006)" release=.2 slidetime=.6 relpower=1
+main    FQMimp.3    src="vel*waveshape(QFM(_PROG,f,0.,.00787*75.,.00787*59.,.00787*26.,.00787*53.,.5,1.,1.001,1.,.00787*1.,.00787*93.,.00787*18.,.00787*17.,7.),(.5+(.5*_sin(.4*B))),.05,.46,.3,.7,.8)*env_AHDSR(_PROG,tL,.2,0.,.01,1.,.05)+vel*clip((1.+2.)*_sin(f*_PROG))" release=.05 relpower=1 slidetime=.125
+main    chippy.7    src="vel*env_AHDSR(_PROG,tL,.05,0.,.185,.406,.037)*MADD(floor(16000.*_PROG+.5)/16000.,f,0.,128,1,-.13,(1236.+(527.*_sin_(2.*B,.4))),7.,0.,25.06,.023,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+main    chippy.8    src="vel*env_AHDSR(_PROG,tL,0.,0.,.073,.611,.023)*MADD(floor(16000.*_PROG+.5)/16000.,f,0.,128,1,-.76,(1665.+(496.*_sin_(2.*B,.4))),5.,0.,13.79,.001,.4*(.55+(.4*clip((1.+1.)*_sin(4.*B)))),0)" release=4e-2 relpower=1 slidetime=.125
+
+random strchlfofreq     min=0.001   max=0.999   digits=3    store
+random strchlfoscale    min=300     max=3000    digits=0    store
+random strchlfoshift    min=300     max=8000    digits=0    store
+random strchlfood       min=0       max=1       digits=3    store
+random strchndecay      min=0       max=20      digits=3    store
+random strchres         min=0       max=2       digits=3    store
+random strchresq        min=0       max=10      digits=2    store
+random strchpm          min=-.99    max=.99     digits=2    store
+random strchdetune      min=0       max=.03     digits=3    store
+random strchattack      min=0.01    max=0.5     digits=3    store
+random strchrelease     min=0.01    max=0.5     digits=3    store
+random strchshape       min=-1      max=0       digits=3    store
+osc stricher_syn shape=madd freq=f nmax=256 ninc=1 mix=strchshape cutoff=stricher_synlfo q=strchndecay res=strchres resq=strchresq pw=strchpm detune=strchdetune
+osc stricher_syn2 shape=madd freq=.501*f nmax=64 ninc=1 mix=strchshape cutoff=stricher_synlfo q=strchndecay res=strchres resq=strchresq pw=.2*strchpm detune=strchdetune
+form stricher_synOD waveshape src=stricher_syn amount=strchpm a=.1 b=.5 c=.2 d=.5 e=.6
+lfo stricher_synlfo shape=sin freq=strchlfofreq phase=0 scale=strchlfoscale shift=strchlfoshift overdrive=strchlfood mode=global
+env stricher_env shape=ahdsr attack=strchattack sustain=1 release=strchrelease
+main strichr src=.7*vel*stricher_env*stricher_synOD+0.6*vel*stricher_env*stricher_syn2 release=0.26
+
+main    strichr.0    src="vel*env_AHDSR(_PROG,tL,.253,0.,.1,1.,.094)*waveshape(MADD(_PROG,f,0.,256,1,.7,(1308.+(1523.*clip((1.+.57)*_sin(.785*B)))),2.675,.692,2.18,.02,-.41,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
+main    strichr.1    src="vel*env_AHDSR(_PROG,tL,.366,0.,.1,1.,.404)*waveshape(MADD(_PROG,f,0.,256,1,.7,(1429.+(1715.*clip((1.+.273)*_sin(.427*B)))),2.965,.675,5.47,.002,-.86,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
+main    strichr.2    src="vel*env_AHDSR(_PROG,tL,.398,0.,.1,1.,.388)*waveshape(MADD(_PROG,f,0.,80,1,-.95,(1922.+(1572.*clip((1.+.0297)*_sin((.861-.088*aux)*B)))),12.267,.594,8.74,.008,-.75,0),0.,.1,.5,.2,.5,.6)" release=0.35 relpower=3 slidetime=.125
+main    strichr.3    src="vel*env_AHDSR(_PROG,tL,.286,0.,.1,1.,.274)*waveshape(MADD(_PROG,f,0.,256,1,-1.,(6316.+(341.*clip((1.+.056)*_sin(.877*B)))),12.671,1.006,4.96,.024,.08,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
+main    strichr.4    src="vel*env_AHDSR(_PROG,tL,.365,0.,.1,1.,.336)*waveshape(MADD(_PROG,f,0.,256,1,-.741,(3602.+(2717.*clip((1.+.161)*_sin(.517*B)))),.735,1.194,3.04,.03,-.15,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
+main    strichr.5    src="vel*env_AHDSR(_PROG,tL,.457,0.,.1,1.,.24)*waveshape(MADD(_PROG,f,0.,256,1,-.755,(4169.+(2267.*clip((1.+.008)*_sin(.234*B)))),1.361,.251,8.87,.019,.1,0),0.,.1,.5,.2,.5,.6)" release=0.2 relpower=1 slidetime=.125
+main    strichr.6    src="vel*env_AHDSR(_PROG,tL,.364,0.,.1,1.,.124)*waveshape(MADD(_PROG,f,0.,256,1,-.121,(3604.+(1383.*clip((1.+.859)*_sin(.592*B)))),13.304,.111,1.03,.01,.23,0),0.,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.364,0.,.1,1.,.124)*MADD(_PROG,.501*f,0.,64,1,-.121,(3604.+(1383.*clip((1.+.859)*_sin(.592*B)))),13.304,.111,1.03,.01,.2*.23,0)" release=0.26 relpower=1 slidetime=.125
+main    strichr.7    src="vel*env_AHDSR(_PROG,tL,.292,0.,.1,1.,.436)*waveshape(MADD(_PROG,f,0.,256,1,-.192,(2662.+(1396.*clip((1.+.402)*_sin(.134*B)))),8.942,.259,4.59,.002,.17,0),.17,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.292,0.,.1,1.,.436)*MADD(_PROG,.501*f,0.,64,1,-.192,(2662.+(1396.*clip((1.+.402)*_sin(.134*B)))),8.942,.259,4.59,.002,.2*.17,0)" release=0.8 relpower=8 slidetime=.125
+main    strichr.8    src="vel*env_AHDSR(_PROG,tL,.473,0.,.1,1.,.113)*waveshape(MADD(_PROG,f,0.,256,1,-.574,(6648.+(1263.*clip((1.+.196)*_sin(.93*B)))),16.782,1.006,1.29,.012,.26,0),.26,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.473,0.,.1,1.,.113)*MADD(_PROG,.501*f,0.,64,1,-.574,(6648.+(1263.*clip((1.+.196)*_sin(.93*B)))),16.782,1.006,1.29,.012,.2*.26,0)" release=0.26 relpower=1 slidetime=.125
+main    strichr.9    src="vel*env_AHDSR(_PROG,tL,.018,0.,.1,1.,.073)*waveshape(MADD(_PROG,f,0.,256,1,-.791,(2494.+(2175.*clip((1.+.136)*_sin(.148*B)))),7.18,.897,.58,.004,-.78,0),-.78,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.018,0.,.1,1.,.073)*MADD(_PROG,.501*f,0.,64,1,-.791,(2494.+(2175.*clip((1.+.136)*_sin(.148*B)))),7.18,.897,.58,.004,.2*-.78,0)" release=0.26 relpower=1 slidetime=.125
+main    strichr.12   src="vel*env_AHDSR(_PROG,tL,.388,0.,.1,1.,.275)*waveshape(MADD(_PROG,f,0.,256,1,-.143,(6861.+(2407.*clip((1.+.958)*_sin(.493*B)))),9.726,1.282,7.24,.002,-.64,0),-.64,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.388,0.,.1,1.,.275)*MADD(_PROG,.501*f,0.,64,1,-.143,(6861.+(2407.*clip((1.+.958)*_sin(.493*B)))),9.726,1.282,7.24,.002,.2*-.64,0)" release=0.26 relpower=1 slidetime=.125
+main    strichr.13   src="vel*env_AHDSR(_PROG,tL,.396,0.,.1,1.,.381)*waveshape(MADD(_PROG,f,0.,256,1,-.695,(6326.+(862.*clip((1.+.39)*_sin(.652*B)))),19.795,1.863,.05,.013,.54,0),.54,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.396,0.,.1,1.,.381)*MADD(_PROG,.501*f,0.,64,1,-.695,(6326.+(862.*clip((1.+.39)*_sin(.652*B)))),19.795,1.863,.05,.013,.2*.54,0)" release=0.26 relpower=1 slidetime=.125
+main    strichr.14   src="vel*env_AHDSR(_PROG,tL,.271,0.,.1,1.,.466)*waveshape(MADD(_PROG,f,0.,256,1,-.282,(2310.+(1914.*clip((1.+.934)*_sin(.201*B)))),2.617,1.495,5.64,.002,.25,0),.25,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.271,0.,.1,1.,.466)*MADD(_PROG,.501*f,0.,64,1,-.282,(2310.+(1914.*clip((1.+.934)*_sin(.201*B)))),2.617,1.495,5.64,.002,.2*.25,0)" release=0.26 relpower=1 slidetime=.125
+main    strichr.15   src="vel*env_AHDSR(_PROG,tL,.158+0.05*aux,0.,.1,1.,.17)*waveshape(MADD(_PROG,f,0.,256,1,-.388,(5141.+(2277.*clip((1.+.681)*_sin(.126*B)))),9.292,1.023,4.85,.016,-.86,0),-.86,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.158+0.04*aux,0.,.1,1.,.17)*MADD(_PROG,.501*f,0.,64,1,-.388,(5141.+(2277.*clip((1.+.681)*_sin(.126*B)))),9.292,1.023,4.85,.016,.2*-.86,0)" release=0.46 relpower=4 slidetime=.125
+main    strichr.16   src=".7*vel*env_AHDSR(_PROG,tL,.406,0.,.1,1.,.031)*waveshape(MADD(_PROG,f,0.,256,1,-.523,(2598.+(810.*clip((1.+.744)*_sin(.235*B)))),9.903,1.872,6.88,.004,.68,0),.68,.1,.5,.2,.5,.6)+.6*vel*env_AHDSR(_PROG,tL,.406,0.,.1,1.,.231)*MADD(_PROG,.501*f,0.,64,1,-.523,(2598.+(810.*clip((1.+.744)*_sin(.235*B)))),9.903,1.872,6.88,.004,.2*.68,0)" release=0.4 relpower=1 slidetime=.125
+main    FQMbace.9    src="vel*QFM(_PROG,f,0.,.00787*84.,.00787*72.,.00787*107.,.00787*101.,.5,1.,1.001,1.,.00787*19.,.00787*56.,.00787*66.,.00787*106.,3.)*env_AHDSR(_PROG,tL,.024,0.,.01,1.,.003)" release=.2 slidetime=.6 relpower=1
+main    FQMbace.10   src="vel*QFM(_PROG,f,0.,.00787*122.,.00787*2.,.00787*4.,.00787*108.,.5,1.,1.001,1.,.00787*3.,.00787*38.,.00787*89.,.00787*29.,11.)*env_AHDSR(_PROG,tL,.018,0.,.01,1.,.006)" release=.2 slidetime=.6 relpower=1
+
+env strichr_velattack shape=antivelattack velmin=.2 velmax=.6 attack=.48
+form strichr10_src define src="env_AHDSR(_PROG,tL,.24,0.,.1,1.,.262)*waveshape(MADD(_PROG,f,0.,256,1,-.286,(3232.+(1975.*clip((1.+.775)*_sin(.485*B)))),11.902,.763,3.63,.017,-.13,0),-.13,.1,.5,.2,.5,.6)+.5*env_AHDSR(_PROG,tL,.24,0.,.1,1.,.262)*MADD(_PROG,.501*f,0.,64,1,-.286,(3232.+(1975.*clip((1.+.775)*_sin(.485*B)))),11.902,.763,3.63,.017,.2*-.13,0)"
+param strichr10_volume segments=strichr10_seg,8,24,strichr10_segend,64,72,strichr10_segend2,72,76 default=1
+seg strichr10_seg shape=linear from=0,0 to=16,1
+seg strichr10_segend shape=linear from=0,0.05 to=8,.29
+seg strichr10_segend2 shape=linear shift=.2
+main    strichr.10   src=strichr10_volume*strichr_velattack*strichr10_src release=0.26 relpower=1 slidetime=.125
+
+param strichr11_volume segments=seg11_rise,8,12 default=1
+seg seg11_rise shape=linear from=0,0.4 to=4,1
+form strichr11_src define src="vel*env_AHDSR(_PROG,tL,.249,0.,.1,1.,.37)*waveshape(MADD(_PROG,f,0.,256,1,-.383,(7365.+(1083.*clip((1.+.916)*_sin(.525*B)))),18.724,1.488,1.24,.022,-.27,0),-.27,.1,.5,.2,.5,.6)+.5*vel*env_AHDSR(_PROG,tL,.249,0.,.1,1.,.37)*MADD(_PROG,.501*f,0.,64,1,-.383,(7365.+(1083.*clip((1.+.916)*_sin(.525*B)))),18.724,1.488,1.24,.022,.2*-.27,0)"
+main    strichr.11   src=strichr11_volume*strichr11_src release=0.4 relpower=1 slidetime=.125
+
+main    FMpluck.0    src="QFM(_PROG,f,0.,.00787*18.,.00787*env_AHDSR(_BPROG,L,.0001,.22,.185,.419,0.)*97.,.00787*env_AHDSR(_BPROG,L,.0001,.009,.14,.266,0.)*92.,.00787*env_AHDSR(_BPROG,L,.0001,.233,.101,.237,0.)*120.,.999,1.,1.+.0031*(.5+(.5*_sin(.06*_BPROG))),2.,.00787*102.,.00787*28.,.00787*37.,.00787*55.,7.)*env_AHDSR(_BPROG,L,.0001,.019,.067,.34,.17)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.1    src="QFM(_PROG,f,0.,.00787*125.,.00787*env_AHDSR(_BPROG,L,.0001,.097,.244,.195,0.)*88.,.00787*env_AHDSR(_BPROG,L,.0001,.134,.246,.471,0.)*120.,.00787*env_AHDSR(_BPROG,L,.0001,.051,.162,.161,0.)*91.,.999,1.,1.+.0939*(.5+(.5*_sin(.3*_BPROG))),2.,.00787*101.,.00787*86.,.00787*1.,.00787*98.,8.)*env_AHDSR(_BPROG,L,.0001,.032,.185,.109,.048)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.2    src="QFM(_PROG,f,0.,.00787*97.,.00787*env_AHDSR(_BPROG,L,.0001,.192,.088,.486,0.)*106.,.00787*env_AHDSR(_BPROG,L,.0001,.111,.191,.084,0.)*1.,.00787*env_AHDSR(_BPROG,L,.0001,.178,.221,.449,0.)*9.,.999,1.,1.+.0875*(.5+(.5*_sin(.08*_BPROG))),2.,.00787*77.,.00787*42.,.00787*35.,.00787*83.,6.)*env_AHDSR(_BPROG,L,.0001,.005,.169,.945,.158)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.3    src="QFM(_PROG,f,0.,.00787*85.,.00787*env_AHDSR(_BPROG,L,.0001,.07,.093,.148,0.)*33.,.00787*env_AHDSR(_BPROG,L,.0001,.085,.2,.357,0.)*68.,.00787*env_AHDSR(_BPROG,L,.0001,.244,.181,.003,0.)*120.,.999,1.,1.+.0849*(.5+(.5*_sin(.25*_BPROG))),2.,.00787*10.,.00787*53.,.00787*115.,.00787*38.,9.)*env_AHDSR(_BPROG,L,.0001,.034,.163,.13,.129)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.4    src="QFM(_PROG,f,0.,.00787*87.,.00787*env_AHDSR(_BPROG,L,.0001,.159,.166,.449,0.)*78.,.00787*env_AHDSR(_BPROG,L,.0001,.024,.066,.115,0.)*7.,.00787*env_AHDSR(_BPROG,L,.0001,.056,.232,.35,0.)*29.,.999,1.,1.+.0147*(.5+(.5*_sin(.21*_BPROG))),2.,.00787*9.,.00787*52.,.00787*7.,.00787*18.,10.)*env_AHDSR(_BPROG,L,.0001,.074,.154,.06,.07)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.5    src="vel*sinshape(QFM(_PROG,f,0.,.00787*103.,.00787*env_AHDSR(_BPROG,L,.0001,.024,.11,.185,0.)*0.,.00787*env_AHDSR(_BPROG,L,.0001,.19,.161,.096,0.)*2.,.00787*env_AHDSR(_BPROG,L,.0001,.16,.197,.035,0.)*85.,.999,1.,1.+.0084*(.5+(.5*_sin(.01*_BPROG))),2.,.00787*30.,.00787*37.,.00787*117.,.00787*32.,11.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.015,.071,.66,.003)" release=.42 slidetime=.1337 relpower=3 predraw=0
+main    FMpluck.6    src="vel*sinshape(QFM(_PROG,f,0.,.00787*67.,.00787*env_AHDSR(_BPROG,L,.0001,.131,.165,.193,0.)*75.,.00787*env_AHDSR(_BPROG,L,.0001,.12,.162,.071,0.)*48.,.00787*env_AHDSR(_BPROG,L,.0001,.237,.203,.236,0.)*100.,.999,1.,1.+.0711*(.5+(.5*_sin(.01*_BPROG))),2.,.00787*0.,.00787*75.,.00787*25.,.00787*15.,2.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.039,.08,.301,.013)" release=.2 slidetime=.1337 relpower=1 predraw=0
+form    FMpluck7src define src="vel*sinshape(QFM(_PROG,f,0.,.00787*125.,.00787*env_AHDSR(_BPROG,L,.0001,.047,.01,.404,0.)*20.,.00787*env_AHDSR(_BPROG,L,.0001,.151,.071,.069,0.)*110.,.00787*env_AHDSR(_BPROG,L,.0001,.232,.08,.003,0.)*65.,.999,1.,1.+.0799*(.5+(.5*_sin(.18*_BPROG))),2.,.00787*109.,.00787*21.,.00787*94.,.00787*0.,11.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.03,.167,.796,.114)"
+main    FMpluck.7    src=FMpluck7src release=.2 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.8    src="vel*sinshape(QFM(_PROG,f,0.,.00787*101.,.00787*env_AHDSR(_BPROG,L,.0001,.213,.215,.02,0.)*39.,.00787*env_AHDSR(_BPROG,L,.0001,.216,.123,.054,0.)*122.,.00787*env_AHDSR(_BPROG,L,.0001,.214,.243,.174,0.)*21.,.999,1.,1.+.0285*(.5+(.5*_sin(.24*_BPROG))),2.,.00787*28.,.00787*43.,.00787*95.,.00787*115.,10.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.03,.15,.177,.102)" release=.2 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.9    src="vel*sinshape(QFM(_PROG,f,0.,.00787*95.,.00787*env_AHDSR(_BPROG,L,.0001,.001,.106,.373,0.)*4.,.00787*env_AHDSR(_BPROG,L,.0001,.219,.242,.133,0.)*66.,.00787*env_AHDSR(_BPROG,L,.0001,.156,.142,.07,0.)*48.,.999,1.,1.+.0264*(.5+(.5*_sin(.25*_BPROG))),2.,.00787*45.,.00787*2.,.00787*84.,.00787*7.,8.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.078,.031,.665,.069)" release=.6 slidetime=.1337 relpower=1 predraw=0
+
+lfo     pluck7lfo  freq=.8 mode=beat
+osc     pluck7sub1 shape=squ freq=.501*f pw=.4+.3*pluck7lfo
+osc     pluck7sub2 shape=sin freq=.25*f  overdrive=.2*aux
+main    pluck7    src=FMpluck7src+pluck7sub1+.6*pluck7sub2 release=.24 slidetime=.1337 relpower=1 predraw=0
+
+
+osc  fett_noise shape=lpnoise freq=500
+env  fett_noisedec shape=expdecay exponent=10
+lfo  fett_shapelfo freq=.21 mode=beat scale=.6 shift=.4
+osc  fett_osc0 shape=madd freq=.5*f nmax=8 mix=fett_shapelfo cutoff=2000 q=100 res=5 resq=100 pw=.7 phase=fett_noise*fett_noisedec
+form fett_frm4 detune src=fett_osc0 factor=1.01,2.005,.499
+form fett_frm3 mix src=fett_frm4+.2*fett_noisedec*fett_noise
+form fett_frm2 saturate src=fett_frm3 gain=23
+form fett_frm1 delay src=fett_frm2 number=3 delay=.064 gain=.38
+env  fett_env1 attack=.05 decay=.05 sustain=.8 release=.5
+main fett src=fett_env1*fett_frm2 release=.5 relpower=8
+
+random afreq0           min=140     max=350     digits=0    store
+random afreq1           min=50      max=120     digits=0    store
+random afreqdecay       min=.01     max=.1      digits=2    store
+random aattack          min=2e-3    max=1e-2    digits=3    store
+random adecay           min=0.01    max=0.3     digits=2    store
+random adrive           min=.5      max=3       digits=2    store
+random arev1_amt        min=0       max=1       digits=2    store
+random arev1_tone       min=500     max=9999    digits=0    store
+random arev1_exp        min=1       max=30      digits=2    store
+random arev1_drive      min=0       max=1       digits=2    store
+random arev2_amt        min=0       max=1       digits=2    store
+random arev2_tone       min=500     max=9999    digits=0    store
+random arev2_exp        min=1       max=30      digits=2    store
+random arev3_amt        min=0       max=1       digits=2    store
+random arev3_tone       min=500     max=9999    digits=0    store
+random arev3_exp        min=1       max=30      digits=2    store
+random anoise_amt       min=0       max=0.1     digits=2    store
+random anoise_hold      min=.01     max=.99     digits=2    store
+random anoise_decay     min=.01     max=.99     digits=2    store
+random anoise_tone      min=999     max=19999   digits=0    store
+drum protkickass shape=protokickass freq0=afreq0 freq1=afreq1 freqdecay=afreqdecay attack=aattack decay=adecay drive=adrive rev1_amt=arev1_amt rev2_amt=arev2_amt rev3_amt=arev3_amt rev1_tone=arev1_tone rev2_tone=arev2_tone rev3_tone=arev3_tone rev1_exp=arev1_exp rev2_exp=arev2_exp rev3_exp=arev3_exp rev1_drive=arev1_drive noise_amt=anoise_amt noise_hold=anoise_hold noise_decay=anoise_decay noise_tone=anoise_tone
+maindrum ASSK src=protkickass release=.00
+
+random shkamp           min=2      max=20       digits=2    store
+random shktimbre        min=.1      max=9       digits=2    store
+random shkdecay         min=.005    max=.02     digits=3    store
+random shkrelease       min=0       max=.03     digits=3    store
+drum protshake shape=protoshake amp=shkamp timbre=shktimbre decay=shkdecay release=shkrelease
+maindrum SHAG src=protshake release=0
+
+form NOISSNRsrc define src="(clamp(.72*_tri(drop_phase(_PROG,.07,227.,107.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.69*clamp(.94*_tri(drop_phase(_PROG,.07,227.,107.)+.69*lpnoise(_PROG,8709.)),-1.,1.)*exp(-13.89*_PROG)+.06*lpnoise(_PROG,18745.)*(1.-smoothstep(0.,.67,_PROG-.17))+.28*lpnoise(_PROG,7506.)*exp(-_PROG*12.44)+.82*lpnoise(_PROG,2600.)*exp(-_PROG*17.54))*smoothstep(0.,.004,_PROG)"
+form NOISSNRshp sinshape src=NOISSNRsrc amount=.6 parts=9
+env NOISSNRenv shape=expdecay exponent=10 shift=.3 scale=.7
+maindrum    NOISSNRdist src=NOISSNRenv*NOISSNRshp release=.4 relpower=1 slidetime=.125
+
+maindrum    ASSK0    src="(clamp(4.63*_tri(drop_phase(_PROG,.04,245.,72.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.23))+.96*clamp(.98*_tri(drop_phase(_PROG,.04,245.,72.)+.96*lpnoise(_PROG,8333.)),-1.,1.)*exp(-28.24*_PROG)+.11*lpnoise(_PROG,19622.)*(1.-smoothstep(0.,.06,_PROG-.27))+.79*lpnoise(_PROG,5824.)*exp(-_PROG*1.81)+.22*lpnoise(_PROG,8242.)*exp(-_PROG*3.33))*smoothstep(0.,.01,_PROG)" release=.4 relpower=1 slidetime=.125
+maindrum    SHAG0    src=".54*lpnoise(_PROG,1.+5.51*_PROG)*(smoothstep(0.,2.,_PROG)-smoothstep(0.,.016,_PROG-1.))" release=0 relpower=1 slidetime=.125
+maindrum    ASSK1    src="(clamp(1.53*_tri(drop_phase(_PROG,.08,213.,103.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.99))+.91*clamp(.16*_tri(drop_phase(_PROG,.08,213.,103.)+.91*lpnoise(_PROG,7763.)),-1.,1.)*exp(-21.58*_PROG)+.65*lpnoise(_PROG,7650.)*(1.-smoothstep(0.,.98,_PROG-.26))+.37*lpnoise(_PROG,8300.)*exp(-_PROG*21.35)+.8*lpnoise(_PROG,8062.)*exp(-_PROG*1.14))*smoothstep(0.,.008,_PROG)" release=.4 relpower=1 slidetime=.125
+maindrum    SHAG1    src=".79*lpnoise(_PROG,1.+3.31*_PROG)*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,.018,_PROG-.196))" release=0.2 relpower=1 slidetime=.125
+maindrum    ASS-SNR3 src="(clamp(1.09*_tri(drop_phase(_PROG,.08,249.,77.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.04))+.97*clamp(.99*_tri(drop_phase(_PROG,.08,249.,77.)+.97*lpnoise(_PROG,9855.)),-1.,1.)*exp(-21.22*_PROG)+.03*lpnoise(_PROG,10655.)*(1.-smoothstep(0.,.58,_PROG-.81))+.71*lpnoise(_PROG,7520.)*exp(-_PROG*16.22)+.57*lpnoise(_PROG,4386.)*exp(-_PROG*29.48))*smoothstep(0.,.005,_PROG)" release=.4 relpower=1 slidetime=.125
+
+
+form ASSK5src define src="(clamp(2.24*_tri(drop_phase(_PROG,.08,217.,64.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.29))+.7*clamp(.84*_tri(drop_phase(_PROG,.08,217.,64.)+.7*lpnoise(_PROG,1936.)),-1.,1.)*exp(-23.11*_PROG)+.08*lpnoise(_PROG,5166.)*(1.-smoothstep(0.,.16,_PROG-.55))+.77*lpnoise(_PROG,6784.)*exp(-_PROG*29.89)+.53*lpnoise(_PROG,4404.)*exp(-_PROG*24.64))*smoothstep(0.,.002,_PROG)"
+maindrum    ASSK5    src=.42*ASSK5src release=.00 relpower=1 slidetime=.125
+maindrum    PSNR2    src=".57*(0.*lpnoise(_PROG,981.)+0.*lpnoise(_PROG,950.)+0.*lpnoise(_PROG,2937.))*(smoothstep(0.,0.,_PROG)-smoothstep(0.,.13,_PROG-.76))+_sin(drop_phase(_PROG,.04,607.,288.))*exp(-_PROG*4.5)*.46+_sin(drop_phase(_PROG*1076.,.04,607.,288.))*exp(-_PROG*9.6)*.49" release=.15 relpower=1 slidetime=.125
+
+maindrum    ASSK2    src="(clamp(1.32*_tri(drop_phase(_PROG,.06,308.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.82*clamp(.49*_tri(drop_phase(_PROG,.06,308.,80.)+.82*lpnoise(_PROG,4595.)),-1.,1.)*exp(-1.97*_PROG)+.09*lpnoise(_PROG,4032.)*(1.-smoothstep(0.,.97,_PROG-.79))+.1*lpnoise(_PROG,1111.)*exp(-_PROG*12.69)+.6*lpnoise(_PROG,7795.)*exp(-_PROG*1.08))*smoothstep(0.,.003,_PROG)" release=.00 relpower=1 slidetime=.125
+maindrum    ASSK6    src="(clamp(1.32*_tri(drop_phase(_PROG,.06,308.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.82*clamp(.49*_tri(drop_phase(_PROG,.06,308.,80.)+.82*lpnoise(_PROG,4595.)),-1.,1.)*exp(-1.97*_PROG)+.09*lpnoise(_PROG,4032.)*(1.-smoothstep(0.,.97,_PROG-.79))+.1*lpnoise(_PROG,1111.)*exp(-_PROG*12.69)+.6*lpnoise(_PROG,7795.)*exp(-_PROG*1.08))*smoothstep(0.,.003,_PROG)" release=.00 relpower=1 slidetime=.125
+maindrum    BELL0    src=".27*(0.*lpnoise(_PROG,1993.)+0.*lpnoise(_PROG,2349.)+0.*lpnoise(_PROG,2522.))*(smoothstep(0.,.02,_PROG)-smoothstep(0.,.57,_PROG-.08))+_sin(drop_phase(_PROG,.05,687.,306.))*exp(-_PROG*9.7)*.95+_sin(drop_phase(_PROG*674.,.05,687.,306.))*exp(-_PROG*4.4)*.46" release=.15 relpower=1 slidetime=.125
+maindrum    RIDE0    src=".61*(0.*lpnoise(_PROG,385.)+0.*lpnoise(_PROG,2973.)+0.*lpnoise(_PROG,1554.))*(smoothstep(0.,.01,_PROG)-smoothstep(0.,.54,_PROG-.02))+_sin(drop_phase(_PROG,.03,638.,304.))*exp(-_PROG*9.7)*.1+_sin(drop_phase(_PROG*1541.,.03,638.,304.))*exp(-_PROG*2.8)*.91" release=.15 relpower=1 slidetime=.125
+maindrum    CYMBLTOM    src=".25*(0.*lpnoise(_PROG,260.)+0.*lpnoise(_PROG,868.)+0.*lpnoise(_PROG,454.))*(smoothstep(0.,.01,_PROG)-smoothstep(0.,.91,_PROG-.91))+_sin(drop_phase(_PROG,.02,559.,252.))*exp(-_PROG*5.5)*.4+_sin(drop_phase(_PROG*1444.,.02,559.,252.))*exp(-_PROG*6.9)*.3" release=.15 relpower=1 slidetime=.125
+
+
+form bell0src define src=".43*(0.*lpnoise(_PROG,2675.)+0.*lpnoise(_PROG,755.)+0.*lpnoise(_PROG,1282.))*(smoothstep(0.,.01,_PROG)-smoothstep(0.,.55,_PROG-.05))+_sin(drop_phase(_PROG,.01,582.,340.))*exp(-_PROG*.5)*.43+_sin(drop_phase(_PROG*1788.,.01,582.,340.))*exp(-_PROG*9.8)*.78"
+form bell0dst sinshape src=bell0src amount=vel parts=30
+maindrum    BELL01    src=bell0dst release=.15 relpower=1 slidetime=.125 predraw=0
+
+maindrum    ASSK3    src="(clamp(1.15*_tri(drop_phase(_PROG,.06,310.,95.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.26))+.83*clamp(.14*_tri(drop_phase(_PROG,.06,310.,95.)+.83*lpnoise(_PROG,5850.)),-1.,1.)*exp(-4.73*_PROG)+.1*lpnoise(_PROG,19556.)*(1.-smoothstep(0.,.07,_PROG-.41))+.03*lpnoise(_PROG,9325.)*exp(-_PROG*18.19)+.26*lpnoise(_PROG,1487.)*exp(-_PROG*8.6))*smoothstep(0.,.004,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+
+
+maindrum    SNRK1    src="(clamp(2.65*_tri(drop_phase(_PROG,.06,205.,52.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.91*clamp(.95*_tri(drop_phase(_PROG,.06,205.,52.)+.91*lpnoise(_PROG,8869.)),-1.,1.)*exp(-14.86*_PROG)+.04*lpnoise(_PROG,16440.)*(1.-smoothstep(0.,.77,_PROG-.52))+.16*lpnoise(_PROG,1524.)*exp(-_PROG*6.23)+.07*lpnoise(_PROG,5944.)*exp(-_PROG*13.51))*smoothstep(0.,.004,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+
+drum kcky_body shape=protokick freq0=242 freq1=55 freqdecay=.036 hold=.088 decay=.0666 drive=1.42 detune=.01 rev_amount=0.45 rev_hold=0.1 rev_decay=0.15 rev_drive=.5
+drum kcky_trans shape=protokick freq0=3333 freq1=340 freqdecay=.008 hold=0 decay=.01 drive=2. detune=2.4 rev_amount=0
+maindrum KCKY src=kcky_body+.66*kcky_trans release=.04
+
+maindrum CLCK src=kcky_trans release=.04
+
+maindrum    ASSK4    src="(clamp(2.77*_tri(drop_phase(_PROG,.04,346.,71.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.93*clamp(.5*_tri(drop_phase(_PROG,.04,346.,71.)+.93*lpnoise(_PROG,8131.)),-1.,1.)*exp(-27.17*_PROG)+.05*lpnoise(_PROG,8351.)*(1.-smoothstep(0.,.7,_PROG-.56))+.22*lpnoise(_PROG,6693.)*exp(-_PROG*8.03)+.66*lpnoise(_PROG,6124.)*exp(-_PROG*14.68))*smoothstep(0.,.003,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK7    src="(clamp(1.18*_tri(drop_phase(_PROG,.07,170.,94.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.12))+.08*clamp(.41*_tri(drop_phase(_PROG,.07,170.,94.)+.08*lpnoise(_PROG,8015.)),-1.,1.)*exp(-8.8*_PROG)+.03*lpnoise(_PROG,1351.)*(1.-smoothstep(0.,.35,_PROG-.3))+.62*lpnoise(_PROG,2610.)*exp(-_PROG*18.02)+.27*lpnoise(_PROG,4995.)*exp(-_PROG*27.9))*smoothstep(0.,.009,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+
+drum snr shape=snare freq0=6666 freq1=1000 freq2=660 freqdecay0=0.003 freqdecay1=0.01 decay=0.05 sustain=0.3 release=0.1 noise_amount=1 noise_attack=0.005 noise_decay=0.8 noise_sustain=0.6 overdrive=0
+form sinr sinshape src=snr amount=1 parts=777
+#maindrum SNR src=sinr release=.1
+
+#osc crsh_noise shape=noise freq=0 phase=2.*crsh_osc2+-5.
+osc crsh_noise shape=lpnoise freq=10396
+form crsh_noise_mod sinshape src=crsh_noise amount=.3 parts=7
+osc crsh_noise2 shape=noise freq=2.5
+osc crsh_osc1 shape=tri freq=1301 phase=crsh_env2*.8*crsh_noise+2.*crsh_osc2*crsh_env1
+osc crsh_osc2 shape=saw freq=4920
+osc crsh_osc3 shape=tri freq=325 phase=.4*crsh_noise2
+env crsh_env1 attack=.3 hold=.1 decay=.6 sustain=.2
+env crsh_env2 attack=.21 hold=.18 decay=.54 sustain=.2 release=.3
+env crsh_env0 shape=expdecay exponent=8
+#maindrum crash src=crsh_env0*crsh_osc1
+maindrum crash src=crsh_noise_mod*crsh_env0
+
+form    ASSK2src define    src="vel*(clamp(1.32*_tri(drop_phase(_PROG,.06,308.,80.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.15))+.82*clamp(.49*_tri(drop_phase(_PROG,.06,308.,80.)+.82*lpnoise(_PROG,4595.)),-1.,1.)*exp(-1.97*_PROG)+.09*lpnoise(_PROG,4032.)*(1.-smoothstep(0.,.97,_PROG-.79))+.1*lpnoise(_PROG,1111.)*exp(-_PROG*12.69)+.6*lpnoise(_PROG,7795.)*exp(-_PROG*1.08))*smoothstep(0.,.003,_PROG)"
+maindrum ASSK72 src=ASSK2src+.5*ASSK7src
+
+env lin_sweep shape=linear scale=6 shift=1 mode=relative
+osc noise_sweep shape=lpnoise freq=80000
+osc noise_low shape=lpnoise freq=1000
+form noise_shape sinshape src=noise_low amount=lin_sweep parts=23
+#maindrum SWEEP src=noise_shape
+
+form    ASSK7src    define src="(clamp(1.35*_tri(drop_phase(_PROG,.07,244.,112.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.27*clamp(.03*_tri(drop_phase(_PROG,.07,244.,112.)+.27*lpnoise(_PROG,5148.)),-1.,1.)*exp(-24.07*_PROG)+0.*lpnoise(_PROG,1959.)*(1.-smoothstep(0.,.98,_PROG-.64))+.43*lpnoise(_PROG,8238.)*exp(-_PROG*25.54)+.11*lpnoise(_PROG,3803.)*exp(-_PROG*10.51))*smoothstep(0.,.006,_PROG)"
+form    ASSK8src    define src="(clamp(1.72*_tri(drop_phase(_PROG,.1,176.,66.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.13))+.06*clamp(.83*_tri(drop_phase(_PROG,.1,176.,66.)+.06*lpnoise(_PROG,6942.)),-1.,1.)*exp(-24.14*_PROG)+.07*lpnoise(_PROG,5757.)*(1.-smoothstep(0.,.84,_PROG-.18))+.6*lpnoise(_PROG,8812.)*exp(-_PROG*6.46)+.57*lpnoise(_PROG,4023.)*exp(-_PROG*9.28))*smoothstep(0.,.004,_PROG)"
+maindrum ASSK78  src=ASSK7src+ASSK8src release=.02
+maindrum    crash0    src="theta(_BPROG)*exp(-3.*_BPROG)*_tri(9301.*_PROG+env_AHDSR(_BPROG,L,.21,.18,.54,.2,.3)*.1*pseudorandom(1.*_PROG+0.)+10.*(2.*fract(3920.*_PROG+.4*pseudorandom(1.*_PROG+0.))-1.)*env_AHDSR(_BPROG,L,.3,.1,.6,0.,0.))" release=0 relpower=1 slidetime=.125
+
+maindrum    ASSK8    src="(clamp(2.45*_tri(drop_phase(_PROG,.09,237.,81.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.27))+.84*clamp(.82*_tri(drop_phase(_PROG,.09,237.,81.)+.84*lpnoise(_PROG,8968.)),-1.,1.)*exp(-5.35*_PROG)+.1*lpnoise(_PROG,3502.)*(1.-smoothstep(0.,.42,_PROG-.38))+.46*lpnoise(_PROG,5409.)*exp(-_PROG*12.61)+.47*lpnoise(_PROG,677.)*exp(-_PROG*25.25))*smoothstep(0.,.006,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK9    src="(clamp(2.58*_tri(drop_phase(_PROG,.05,156.,91.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.04))+.35*clamp(.44*_tri(drop_phase(_PROG,.05,156.,91.)+.35*lpnoise(_PROG,6183.)),-1.,1.)*exp(-7.56*_PROG)+.08*lpnoise(_PROG,7245.)*(1.-smoothstep(0.,.58,_PROG-.2))+.72*lpnoise(_PROG,2591.)*exp(-_PROG*5.48)+.73*lpnoise(_PROG,3597.)*exp(-_PROG*29.4))*smoothstep(0.,.01,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK10    src="(clamp(1.42*_tri(drop_phase(_PROG,.02,261.,53.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.28))+.86*clamp(.04*_tri(drop_phase(_PROG,.02,261.,53.)+.86*lpnoise(_PROG,3210.)),-1.,1.)*exp(-20.77*_PROG)+.03*lpnoise(_PROG,2325.)*(1.-smoothstep(0.,.42,_PROG-.01))+.28*lpnoise(_PROG,4276.)*exp(-_PROG*14.57)+.72*lpnoise(_PROG,3219.)*exp(-_PROG*9.93))*smoothstep(0.,.007,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+maindrum    ASSK100    src="((clamp(1.42*_tri(drop_phase(_PROG,.02,261.,53.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.28))+.86*clamp(.04*_tri(drop_phase(_PROG,.02,261.,53.)+.86*lpnoise(_PROG,3210.)),-1.,1.)*exp(-20.77*_PROG)+.03*lpnoise(_PROG,2325.)*(1.-smoothstep(0.,.42,_PROG-.01))+.28*lpnoise(_PROG,4276.)*exp(-_PROG*14.57)+.72*lpnoise(_PROG,3219.)*exp(-_PROG*9.93))*smoothstep(0.,.007,_PROG))" release=.00 relpower=1 slidetime=.125 predraw=0
+
+maindrum    NDV.NSNR      src="((clamp(1.43*_tri(drop_phase(_t,.182,153.909,76.006)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_t-.152))+1.428*clamp(.707*_tri(drop_phase(_t,.182,153.909,76.006)+1.428*lpnoise(_t,760.989)),-1.,1.)*exp(-8.556*_t)+.066*lpnoise(_t,13562.653)*(1.-smoothstep(0.,.24,_t-.088))+.724*lpnoise(_t,4127.819)*exp(-_t*3.662)+.295*lpnoise(_t,7269.681)*exp(-_t*2.313))*smoothstep(0.,.05,_t))"
+maindrum    NDV.CMB1     src="(.837*(.541*lpnoise(_t,2041.774)+.798*lpnoise(_t,8260.482)+.931*lpnoise(_t,8317.984))*(smoothstep(0.,.007,_t)-smoothstep(0.,.37,_t-.05))+_sin(drop_phase(_t,.033,464.443,270.029))*exp(-_t*32.249)*.841+_sin(drop_phase(_t*659.983,.033,464.443,270.029))*exp(-_t*33.)*.618)"
+maindrum    NDV.LSNR     src="(.741*(.24*lpnoise(_t,9139.286)+.961*lpnoise(_t,6306.874)+.865*lpnoise(_t,7962.971))*(smoothstep(0.,.004,_t)-smoothstep(0.,.798,_t-.05))+_sin(drop_phase(_t,.06,2239.905,159.335))*exp(-_t*15.463)*.672+_sin(drop_phase(_t*642.32,.06,2239.905,159.335))*exp(-_t*3.375)*.195)"
+
+maindrum    CLASP    src="(clamp(2.27*_tri(drop_phase(_PROG,.03,241.,72.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.01))+.91*clamp(.9*_tri(drop_phase(_PROG,.03,241.,72.)+.91*lpnoise(_PROG,8164.)),-1.,1.)*exp(-20.76*_PROG)+.05*lpnoise(_PROG,10466.)*(1.-smoothstep(0.,.18,_PROG-.56))+.56*lpnoise(_PROG,7123.)*exp(-_PROG*5.45)+.11*lpnoise(_PROG,1134.)*exp(-_PROG*13.82))*smoothstep(0.,.004,_PROG)" release=.2 relpower=3 slidetime=.125 predraw=0
+maindrum    ASSK12    src="(clamp(.55*_tri(drop_phase(_PROG,.01,192.,54.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.8*clamp(.84*_tri(drop_phase(_PROG,.01,192.,54.)+.8*lpnoise(_PROG,5057.)),-1.,1.)*exp(-6.09*_PROG)+.05*lpnoise(_PROG,12188.)*(1.-smoothstep(0.,.27,_PROG-.56))+.89*lpnoise(_PROG,3778.)*exp(-_PROG*13.78)+.08*lpnoise(_PROG,5266.)*exp(-_PROG*15.79))*smoothstep(0.,.008,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
+
+osc   bl0001  shape=madd freq=.5*f nmax=32 ninc=1 mix=0.15 cutoff=200 q=100 res=0 resq=0 pw=.48 detune=0.05
+osc   bl0010 shape=sin freq=f
+form  bl0002  saturate  src=bl0001+0.8*bl0010  gain="1.+aux"
+form  bl0003 op=chorus src=bl0002 number=3 step=1.3e-3 intensity=5. rate=0.08
+form  bl0004  sinshape src=bl0003  amount=0.8 parts=3
+env   bl1001  attack=0.034 release=.08
+main  BLies src=bl1001*bl0004 release=.08 slidetime=.8
+
+osc drs000  shape=saw  freq=.249*f phase=.01
+osc drs001  shape=madd freq=.5015*f phase=.23  nmax=32 mix=-1.   cutoff=6000 q=1 res=0 resq=0 pw=1. detune=.025
+osc drs002  shape=madd freq=.25*f  nmax=32 mix=-.6  cutoff=1000 q=100 res=0 resq=1 pw=0.3 detune=.020
+form drs004 saturate src=.8*drs000+drs001+0.8*drs002 gain=1.
+form drs003 mix src=.8*drs000+drs001+0.8*drs002
+form drs005 chorus src=drs004 number=3 step=1e-3 intensity=1. rate=0.9
+main DiRtSaw src=.9*drs005+0.8*drs003+.5*drs004 release=.08 stereodelay=0.011
+
+lfo joy200 shape=sin freq=.256 scale=.4 shift=.6 mode=global
+osc joy300 shape=lpnoise freq=8330
+env joy301 shape=ahdsr attack=.08 hold=0 decay=.2 sustain=.4 release=1
+osc joy310 shape=lpnoise freq=510
+env joy311 shape=ahdsr attack=.02 hold=.1 decay=.3 sustain=.2 release=1
+osc joy001 shape=madd freq=f nmax=64 mix=joy200 cutoff=10000 q=100 res=0 resq=0 pw=.5+.1*joy200 detune=1e-3 phase=.3*joy300*joy301+.3*joy310*joy311
+form joy002 overdrive src=joy001 gain=2.*joy200
+env joy100 shape=expdecay exponent=3.2
+main joy src=.6*joy100*joy002 release=1 stereodelay=5e-3
+
+env joy101 shape=expdecay exponent=4.1
+env    joyLL shape=limitlength factor=.5 release=1
+form   joy500 delay src=joyLL*joy101*joy001 number=2 delay=.943 gain=.1 mode=time
+form   joy501 saturate src=joy500 gain=2.2
+main joydelay src=joy501 release=4 stereodelay=5e-2
