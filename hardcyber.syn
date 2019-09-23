@@ -583,13 +583,16 @@ form  bl0004  sinshape src=bl0003  amount=0.8 parts=3
 env   bl1001  attack=0.034 release=.08
 main  BLies src=bl1001*bl0004 release=.08 slidetime=.8
 
-osc drs000  shape=saw  freq=.249*f phase=.01
-osc drs001  shape=madd freq=.5015*f phase=.23  nmax=32 mix=-1.   cutoff=6000 q=1 res=0 resq=0 pw=1. detune=.025
+osc drs000  shape=saw  freq=.2497*f phase=.02
+osc drsns0  shape=lpnoise freq=999
+osc drs001  shape=madd freq=.5009*f phase=.23  nmax=16 mix=-1. cutoff=10.*f q=1 res=10 resq=1 pw=1. detune=.015 phase=0
+#osc drsn01  shape=madd freq=.5015*f phase=.23  nmax=16 mix=-1. cutoff=10.*f q=1 res=10 resq=1 pw=1. detune=.025 phase=drsns0
+#form drsn02 mix src=drs001,-1*drsn01
 osc drs002  shape=madd freq=.25*f  nmax=32 mix=-.6  cutoff=1000 q=100 res=0 resq=1 pw=0.3 detune=.020
-form drs004 saturate src=.8*drs000+drs001+0.8*drs002 gain=1.
+form drs004 saturate src=drs000+drs001+0.8*drs002 gain=1.
 form drs003 mix src=.8*drs000+drs001+0.8*drs002
-form drs005 chorus src=drs004 number=3 step=1e-3 intensity=1. rate=0.9
-main DiRtSaw src=.9*drs005+0.8*drs003+.5*drs004 release=.08 stereodelay=0.011
+form drs005 chorus src=drs004 number=3 step=3e-3 intensity=1. rate=0.9
+main DiRtSaw src=.9*vel*drs005+0.9*vel*drs003+.5*vel*drs004 release=.08 stereodelay=0.011
 
 lfo joy200 shape=sin freq=.256 scale=.4 shift=.6 mode=global
 osc joy300 shape=lpnoise freq=8330
@@ -603,6 +606,29 @@ main joy src=.6*joy100*joy002 release=1 stereodelay=5e-3
 
 env joy101 shape=expdecay exponent=4.1
 env    joyLL shape=limitlength factor=.5 release=1
-form   joy500 delay src=joyLL*joy101*joy001 number=2 delay=.943 gain=.1 mode=time
+form   joy500 delay src=joyLL*joy101*joy001 number=2 delay=.943 gain=.06 mode=time
 form   joy501 saturate src=joy500 gain=2.2
 main joydelay src=joy501 release=4 stereodelay=5e-2
+
+lfo toh2201 shape=sin freq=.37 phase=1.57 mode=beat
+lfo toh2202 shape=sin freq=.4 mode=beat
+osc toh2001 shape=madd freq=.998*f nmax=50 mix=.9 cutoff=666*toh2101 q=8 res=0 resq=100 detune=.007 pw=.8+.5*toh2201*toh2202
+osc toh2003 shape=madd freq=f nmax=50 mix=-1 cutoff=1234.*toh2102 q=5 res=0 resq=10 detune=.017 pw=.7+-.2*toh2202
+osc toh2005 shape=sin freq=.4998 phase=toh2201
+env toh2101 attack=.09*vel hold=.14 decay=.2 sustain=.5 release=.8
+env toh2102 attack=.15*vel hold=.14 decay=.15 sustain=.7 release=.8
+form toh2002 chorus src=toh2004 number=2 step=0.01 intensity=.1 rate=.5
+form toh2004 sinshape src=toh2001+toh2003 amount=.1*toh2101 parts=3
+main ToSynth2 src=toh2002*toh2101+.45*toh2005*toh2102 release=.07 stereodelay=0.005
+
+lfo ghost2201 shape=sin freq=.37 phase=1.57 mode=beat
+lfo ghost2202 shape=sin freq=.4 mode=beat
+osc ghost2001 shape=madd freq=.9998*f nmax=32 mix=-1 cutoff=400*ghost2101 q=100 res=0 resq=0 detune=.027 pw=ghost2201*ghost2202
+osc ghost2003 shape=madd freq=f nmax=64 mix=1.7 cutoff=700.*ghost2101 q=100 res=0 resq=20 detune=.017 pw=ghost2202
+env ghost2101 attack=.28 hold=.08 decay=.2 sustain=.8 release=.8
+form ghost2002 chorus src=ghost2001+ghost2003 number=2 step=0.02 intensity=.1 rate=.5
+form ghost2004 sinshape src=ghost2002 amount=.3*ghost2101 parts=1
+main Ghost2 src=ghost2004*ghost2101 release=.54 !.8 stereodelay=0.05 predraw=.1
+
+
+

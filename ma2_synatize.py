@@ -214,6 +214,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['op'] == 'quantize':
                     return instance(form['src']).replace('_TIME','floor('+instance(form['bits']) + '*_TIME+.5)/' + instance(form['bits'])) \
                                                    .replace('_PROG','floor('+instance(form['bits']) + '*_PROG+.5)/' + instance(form['bits']))
+                                                   # TODO: replace these with calls to lofi(_TIME) / lofi(_PROG). don't wanna test these right now, though.
                 elif form['op'] == 'modsync':
                     return instance(form['src']).replace('_TIME','mod(_TIME, 1./(' + instance(form['freq']) + '))') \
                                                    .replace('_PROG','mod(_PROG, 1./(' + instance(form['freq']) + '))')
@@ -233,6 +234,8 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                                     instance(form['src']).replace('_BPROG','(_BPROG-'+'{:.3e}'.format(i*float(form['delay']))+')') \
                                                          .replace('_PROG','(_PROG-SPB*'+'{:.3e}'.format(i*float(form['delay']))+')') \
                                                             for i in range(1+int(form['number']))]) + ')'
+                elif form['op'] == 'timeshift':
+                    pass # TODO: implement this (just a static shift in time)
                 elif form['op'] == 'waveshape':
                     return 'waveshape(' + instance(form['src']) + ',' + ','.join(instance(form[p]) for p in ['amount','a','b','c','d','e']) + ')'
                 elif form['op'] == 'sinshape':
@@ -483,7 +486,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'ssdrop':
                     _return = 'theta('+'_PROG'+')*(1.-smoothstep(0.,'+instance(form['decay'])+','+tvar+'))'
                 elif form['shape'] == 'expdecay':
-                    tvar = '_BPROG' if form['hold'] == '0' else 'max(_PROG-'+form['hold']',0.)'
+                    tvar = '_BPROG' if form['hold'] == '0' else 'max(_PROG-'+form['hold']+',0.)'
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*'+tvar+')'
                 elif form['shape'] == 'expdecayrepeat':
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*mod(_BPROG,'+instance(form['beats'])+'))'

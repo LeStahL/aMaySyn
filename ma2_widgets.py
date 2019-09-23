@@ -164,7 +164,7 @@ class TrackWidget(Widget):
             # BEAT ENUMERATION
             for i in range(beat_max+1):
                 Color(.6,.8,.8)
-                label = CoreLabel(text = str(i + self.offset_h), font_size = 12, font_name = self.font_name)
+                label = CoreLabel(text = str(i + self.offset_h), font_size = font_size_small+1, font_name = self.font_name)
                 label.refresh()
                 Rectangle(size = label.texture.size, pos = (draw_x-label.width/2, draw_y+2), texture = label.texture)
 

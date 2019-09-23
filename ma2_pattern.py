@@ -111,7 +111,7 @@ class Pattern():
 
                 self.notes.append(Note( \
                     note_on = copy_on, \
-                    note_len = note_copy_len, \
+                    note_len = copy_len, \
                     note_pitch = n.note_pitch, \
                     note_pan = n.note_pan, \
                     note_vel = n.note_vel, \
