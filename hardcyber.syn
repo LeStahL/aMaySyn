@@ -435,7 +435,7 @@ main    strichr.11   src=strichr11_volume*strichr11_src release=0.4 relpower=1 s
 main    FMpluck.0    src="QFM(_PROG,f,0.,.00787*18.,.00787*env_AHDSR(_BPROG,L,.0001,.22,.185,.419,0.)*97.,.00787*env_AHDSR(_BPROG,L,.0001,.009,.14,.266,0.)*92.,.00787*env_AHDSR(_BPROG,L,.0001,.233,.101,.237,0.)*120.,.999,1.,1.+.0031*(.5+(.5*_sin(.06*_BPROG))),2.,.00787*102.,.00787*28.,.00787*37.,.00787*55.,7.)*env_AHDSR(_BPROG,L,.0001,.019,.067,.34,.17)" release=.5 slidetime=.1337 relpower=1 predraw=0
 main    FMpluck.1    src="QFM(_PROG,f,0.,.00787*125.,.00787*env_AHDSR(_BPROG,L,.0001,.097,.244,.195,0.)*88.,.00787*env_AHDSR(_BPROG,L,.0001,.134,.246,.471,0.)*120.,.00787*env_AHDSR(_BPROG,L,.0001,.051,.162,.161,0.)*91.,.999,1.,1.+.0939*(.5+(.5*_sin(.3*_BPROG))),2.,.00787*101.,.00787*86.,.00787*1.,.00787*98.,8.)*env_AHDSR(_BPROG,L,.0001,.032,.185,.109,.048)" release=.5 slidetime=.1337 relpower=1 predraw=0
 main    FMpluck.2    src="QFM(_PROG,f,0.,.00787*97.,.00787*env_AHDSR(_BPROG,L,.0001,.192,.088,.486,0.)*106.,.00787*env_AHDSR(_BPROG,L,.0001,.111,.191,.084,0.)*1.,.00787*env_AHDSR(_BPROG,L,.0001,.178,.221,.449,0.)*9.,.999,1.,1.+.0875*(.5+(.5*_sin(.08*_BPROG))),2.,.00787*77.,.00787*42.,.00787*35.,.00787*83.,6.)*env_AHDSR(_BPROG,L,.0001,.005,.169,.945,.158)" release=.5 slidetime=.1337 relpower=1 predraw=0
-main    FMpluck.3    src="QFM(_PROG,f,0.,.00787*85.,.00787*env_AHDSR(_BPROG,L,.0001,.07,.093,.148,0.)*33.,.00787*env_AHDSR(_BPROG,L,.0001,.085,.2,.357,0.)*68.,.00787*env_AHDSR(_BPROG,L,.0001,.244,.181,.003,0.)*120.,.999,1.,1.+.0849*(.5+(.5*_sin(.25*_BPROG))),2.,.00787*10.,.00787*53.,.00787*115.,.00787*38.,9.)*env_AHDSR(_BPROG,L,.0001,.034,.163,.13,.129)" release=.5 slidetime=.1337 relpower=1 predraw=0
+main    FMpluck.3    src="vel*QFM(_PROG,f,0.,.00787*85.,.00787*env_AHDSR(_BPROG,L,.0001,.07,.093,.148,0.)*33.,.00787*env_AHDSR(_BPROG,L,.0001,.285,.2,.357,0.)*68.,.00787*env_AHDSR(_BPROG,L,.0001,.244,.181,.003,0.)*120.,.999,1.,1.+.0849*(.5+(.5*_sin(.25*_BPROG))),2.,.00787*10.,.00787*53.,.00787*115.,.00787*38.,9.)*env_AHDSR(_BPROG,L,.0001,.044,.163,.13,.129)" release=.7 slidetime=.1337 relpower=.5 predraw=0 stereodelay=0.01
 main    FMpluck.4    src="QFM(_PROG,f,0.,.00787*87.,.00787*env_AHDSR(_BPROG,L,.0001,.159,.166,.449,0.)*78.,.00787*env_AHDSR(_BPROG,L,.0001,.024,.066,.115,0.)*7.,.00787*env_AHDSR(_BPROG,L,.0001,.056,.232,.35,0.)*29.,.999,1.,1.+.0147*(.5+(.5*_sin(.21*_BPROG))),2.,.00787*9.,.00787*52.,.00787*7.,.00787*18.,10.)*env_AHDSR(_BPROG,L,.0001,.074,.154,.06,.07)" release=.5 slidetime=.1337 relpower=1 predraw=0
 main    FMpluck.5    src="vel*sinshape(QFM(_PROG,f,0.,.00787*103.,.00787*env_AHDSR(_BPROG,L,.0001,.024,.11,.185,0.)*0.,.00787*env_AHDSR(_BPROG,L,.0001,.19,.161,.096,0.)*2.,.00787*env_AHDSR(_BPROG,L,.0001,.16,.197,.035,0.)*85.,.999,1.,1.+.0084*(.5+(.5*_sin(.01*_BPROG))),2.,.00787*30.,.00787*37.,.00787*117.,.00787*32.,11.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.015,.071,.66,.003)" release=.42 slidetime=.1337 relpower=3 predraw=0
 main    FMpluck.6    src="vel*sinshape(QFM(_PROG,f,0.,.00787*67.,.00787*env_AHDSR(_BPROG,L,.0001,.131,.165,.193,0.)*75.,.00787*env_AHDSR(_BPROG,L,.0001,.12,.162,.071,0.)*48.,.00787*env_AHDSR(_BPROG,L,.0001,.237,.203,.236,0.)*100.,.999,1.,1.+.0711*(.5+(.5*_sin(.01*_BPROG))),2.,.00787*0.,.00787*75.,.00787*25.,.00787*15.,2.),.03*aux,3.)*env_AHDSR(_BPROG,L,.0001,.039,.08,.301,.013)" release=.2 slidetime=.1337 relpower=1 predraw=0
@@ -619,7 +619,7 @@ env toh2101 attack=.09*vel hold=.14 decay=.2 sustain=.5 release=.8
 env toh2102 attack=.15*vel hold=.14 decay=.15 sustain=.7 release=.8
 form toh2002 chorus src=toh2004 number=2 step=0.01 intensity=.1 rate=.5
 form toh2004 sinshape src=toh2001+toh2003 amount=.1*toh2101 parts=3
-main ToSynth2 src=toh2002*toh2101+.45*toh2005*toh2102 release=.07 stereodelay=0.005
+main ToSynth2 src=vel*toh2002*toh2101+.5*vel*toh2005*toh2102 release=.07 stereodelay=0.005
 
 lfo ghost2201 shape=sin freq=.37 phase=1.57 mode=beat
 lfo ghost2202 shape=sin freq=.4 mode=beat
@@ -630,5 +630,11 @@ form ghost2002 chorus src=ghost2001+ghost2003 number=2 step=0.02 intensity=.1 ra
 form ghost2004 sinshape src=ghost2002 amount=.3*ghost2101 parts=1
 main Ghost2 src=ghost2004*ghost2101 release=.54 !.8 stereodelay=0.05 predraw=.1
 
-
-
+lfo tri0200 shape=sin freq=.5
+lfo tri0210 shape=sin freq=.2 mode=global
+lfo tri0211 shape=sin freq=.21 mode=global
+osc tri0000 shape=tri freq=.251*f phase=.35*tri0200 overdrive=5+4*tri0210*tri0211
+osc tri0001 shape=tri freq=.5*f phase=.4+.15*tri0200+.22*trienv002*tri0000
+env trienv001 shape=stepexpdecay exponent=7 hold=.13 decay=.01
+env trienv002 attack=.025 hold=0 decay=.1 sustain=.3
+main TriCyb src=.25*trienv001*tri0000+.76*trienv001*tri0001 release=.5 stereodelay=2e-3

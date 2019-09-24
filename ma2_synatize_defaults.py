@@ -84,11 +84,11 @@ def set_remaining_defaults(cid, cmd, form):
         #TODO: calibrate attack and decay
 
         try:
-            if form['shape'] == 'expdecay' or form['shape'] == 'expdecayrepeat':
+            if form['shape'] == 'expdecay' or form['shape'] == 'expdecayrepeat' or form['shape'] == 'stepexpdecay':
                 defaults.update({'exponent':'1', 'beats':'1'})
-            if form['shape'] == 'antivelattack':
+            elif form['shape'] == 'antivelattack':
                 defaults.update({'vel':'vel', 'velmin':'0', 'velmax':'1'})
-            if form['shape'] == 'limitlength':
+            elif form['shape'] == 'limitlength':
                 defaults.update({'length':'L-rel', 'factor':'1'})
 
         except:

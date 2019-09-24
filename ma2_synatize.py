@@ -486,10 +486,12 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'ssdrop':
                     _return = 'theta('+'_PROG'+')*(1.-smoothstep(0.,'+instance(form['decay'])+','+tvar+'))'
                 elif form['shape'] == 'expdecay':
-                    tvar = '_BPROG' if form['hold'] == '0' else 'max(_PROG-'+form['hold']+',0.)'
-                    _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*'+tvar+')'
+                    thold = tvar if form['hold'] == '0' else 'max(_PROG-'+form['hold']+',0.)'
+                    _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*'+thold+')'
                 elif form['shape'] == 'expdecayrepeat':
                     _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*mod(_BPROG,'+instance(form['beats'])+'))'
+                elif form['shape'] == 'stepexpdecay':
+                    _return = f"theta(_BPROG)*clamp(1.+({instance(form['hold'])}-{tvar})/({instance(form['decay'])}),exp(-{instance(form['exponent'])}*{tvar}),1.)"
                 elif form['shape'] == 'antivelattack':
                     try:
                         attack = str(round(float(form['attack'])/(float(form['velmax'])-float(form['velmin'])+1e-3), 5)) + '*('+ GLstr(form['velmax']) + '-' + instance(form['vel']) + '+1e-3)'
