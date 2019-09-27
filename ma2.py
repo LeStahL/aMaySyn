@@ -62,7 +62,7 @@ class Ma2Widget(Widget):
     thePtnWidget = ObjectProperty(None)
     somePopup = ObjectProperty(None)
 
-    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'B_stop': inf, 'loop': 'full', 'stereo_delay': 2e-4, 'turn_down': .666}
+    info = {'title': 'piover2', 'BPM': '0:80', 'B_offset': 0., 'B_stop': inf, 'loop': 'full', 'stereo_delay': 2e-4, 'level_syn': .5, 'level_drum': .666}
 
     current_track = None
     tracks = []
@@ -867,15 +867,27 @@ class Ma2Widget(Widget):
                     self.setInfo('stereo_delay', value)
                     return True
 
-            elif cmd[0] == 'turndown':
-                if len(cmd) == 1:
-                    self.lastSongCommand = 'TURNDOWN ' + str(self.getInfo('turn_down'))
-                    return False
+            elif cmd[0] == 'level':
+                if len(cmd) == 2:
+                    name = cmd[1].lower()
+                    if name == 'syn':
+                        self.lastSongCommand = 'LEVEL SYN ' + str(self.getInfo('level_syn'))
+                        return False
+                    elif name == 'drum':
+                        self.lastSongCommand = 'LEVEL DRUM ' + str(self.getInfo('level_drum'))
+                        return False
+                elif len(cmd) == 3:
+                    name = cmd[1].lower()
+                    value = float(cmd[2])
+                    if name == 'syn':
+                        self.setInfo('level_syn', value)
+                        return True
+                    elif name == 'drum':
+                        self.setInfo('level_drum', value)
+                        return True
                 else:
-                    value = float(cmd[1])
-                    print("global volume turn_down factor was", self.getInfo('turn_down'), "- is now", value)
-                    self.setInfo('turn_down', value)
-                    return True
+                    print("what are you trying to do? use as: LEVEL SYN|DRUM <value>")
+                    return False
 
             else:
                 print('COMMAND NOT SUPPORTED:\n', cmd)
@@ -1265,8 +1277,9 @@ class Ma2Widget(Widget):
                 self.thePtnWidget.offset_drum_h = int(r[c+10])
                 self.thePtnWidget.offset_drum_v = int(r[c+11])
                 c += 12
-                self.setInfo('turn_down', float(r[c]))
-                c += 1
+                self.setInfo('level_syn', float(r[c]))
+                self.setInfo('level_drum', float(r[c+1]))
+                c += 2
 
     def saveCSV(self):
         filename = self.getInfo('title') + '.may'
@@ -1295,7 +1308,7 @@ class Ma2Widget(Widget):
                  + '|' + '|'.join(str(x) for x in [self.theTrkWidget.scale_h, self.theTrkWidget.scale_v, self.theTrkWidget.offset_h, self.theTrkWidget.offset_v, \
                     self.thePtnWidget.scale_h, self.thePtnWidget.scale_v, self.thePtnWidget.offset_h, self.thePtnWidget.offset_v, \
                     self.thePtnWidget.scale_drum_h, self.thePtnWidget.scale_drum_v, self.thePtnWidget.offset_drum_h, self.thePtnWidget.offset_drum_v]) \
-                 + '|' + str(self.getInfo('turn_down'))
+                 + '|' + str(self.getInfo('level_syn')) + '|' + str(self.getInfo('level_drum'))
 
         # write to file
         out_csv = open(filename, "w")
@@ -1588,7 +1601,9 @@ class Ma2Widget(Widget):
             .replace("//LOOPCODE", loopcode)\
             .replace("//BEATHEADER", beatheader)\
             .replace("STEREO_DELAY", GLfloat(self.getInfo('stereo_delay')))\
-            .replace("TURN_DOWN", GLfloat(self.getInfo('turn_down')))
+            .replace("LEVEL_SYN", GLfloat(self.getInfo('level_syn')))\
+            .replace("LEVEL_DRUM", GLfloat(self.getInfo('level_drum')))
+
 
         glslcode = glslcode.replace('e+00','').replace('-0.)', ')').replace('+0.)', ')')
         glslcode = self.purgeExpendables(glslcode)

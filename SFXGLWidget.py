@@ -135,10 +135,10 @@ class SFXGLWidget():
         print(len(music))
 
         music = unpack('<'+str(self.blocksize*self.nblocks*2)+'H', music)
-        music = (float32(music)-32768.)/32768.
-        self.floatmusic = music
+        self.floatmusic = (float32(music)-32768.)/32768.
+        music = [sample - pow(2, 15) for sample in music]
 
-        music = pack('<'+str(self.blocksize*self.nblocks*2)+'f', *music)
+        music = pack('<'+str(self.blocksize*self.nblocks*2)+'h', *music)
         self.music = music
 
         return 'Success.'

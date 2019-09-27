@@ -178,18 +178,29 @@ main   PercBass  src=shortenv*shortenv2*Perc_dly release=.8
 
 ########### DRUMS ###########
 
-maindrum HCybHHOp   src=0
+form HCybHHOpBase define src="exp(-2.*_t)*s_atan(3.*_HCybHHOpENV0(_t)*(.04*sinshape((.5*_sin(drop_phase(_t,.048,6000.,160.004))+.5*_sin(.727*drop_phase(_t,.048,6000.,160.004))), 1.6, 3.))+_HCybHHOpENV1(_t)*(.21*sinshape((.5*_tri(drop2_phase(_t,.023,.195,67.415,2621.624,6546.713)+6.6*_HCybHHOpENV1(_t)*_sin(drop_phase(_t,.104,901.313,14557.005)))+.5*_tri(.636*drop2_phase(_t,.023,.195,67.415,2621.624,6546.713)+6.6*_HCybHHOpENV1(_t)*_sin(drop_phase(_t,.104,901.313,14557.005)))), _HCybHHOpENV6(_t), 3.))+_HCybHHOpENV2(_t)*(.17*pseudorandom(70.025*_t)))"
+env HCybHHOpEnv2 shape=expdecay exponent=3 hold=.2
+maindrum HCybHHOp src=.5*NDVOHH0src*HCybHHOpEnv2+.5*HCybHHOpBase release=0.3 stereodelay=.002
 maindrum HCybCrsh   src=0
-maindrum HCybSnr1   src=0
-maindrum HCybNSnr   src=0
-maindrum HCybKick36 src=0
-maindrum HCybHHCl   src=0
-maindrum HCybKick26 src=0
+env HCybSnr1env shape=expdecay exponent=20 shift=.1 scale=.8 hold=.015
+maindrum HCybSnr1 src=.88*HCybSnr1env*NOISSNRshp release=.07
+# <-- this is NoisSNRdist, turns out I need "Main Sum Ampl/Dist/Volume" to recreate this
+maindrum HCybNSnr src=".7*(clamp(2.65*_tri(drop_phase(_PROG,.06,205.,52.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.91*clamp(.95*_tri(drop_phase(_PROG,.06,205.,52.)+.91*lpnoise(_PROG,8869.)),-1.,1.)*exp(-14.86*_PROG)+.04*lpnoise(_PROG,16440.)*(1.-smoothstep(0.,.77,_PROG-.52))+.16*lpnoise(_PROG,1524.)*exp(-_PROG*16.23)+.07*lpnoise(_PROG,5944.)*exp(-_PROG*13.51))*smoothstep(0.,.004,_PROG)" release=.05 stereodelay=4e-3
+# <-- this is based on SNRK1, turns out I need "Main Sum Ampl/Dist/Volume" to recreate this
+
+drum kcky_body_mod shape=protokick freq0=242 freq1=55 freqdecay=.036 hold=.03 decay=.0666 drive=1.42 detune=.02 rev_amount=0.25 rev_hold=0.01 rev_decay=0.10 rev_drive=.4
+maindrum HCybKick36 src=kcky_body_mod+kcky_trans+.7*clasp_body release=.04 stereodelay=0.01
+# <-- this is KCKY+Clasp
+
+maindrum HCybHHCl src="vel*(_HCybHHClENV0(_t)*(.13*sinshape(pseudorandom(_HCybHHClENV2(_t)*_t+1.*_HCybHHClENV0(_t)*(.5*lpnoise(_t,14142.828)+.5*lpnoise(_t,.463*14142.828))), _HCybHHClENV3(_t), 3.))+_HCybHHClENV1(_t)*(.04*(.5*lpnoise(_t,14142.828)+.5*lpnoise(_t,.463*14142.828))))" srcr="vel*(_HCybHHClENV0(_t)*(.13*sinshape(pseudorandom(_HCybHHClENV2(_t)*(_t-.00044)+1.*_HCybHHClENV0(_t)*(.5*lpnoise((_t-.00044),14142.828)+.5*lpnoise((_t-.00044),.463*14142.828))), _HCybHHClENV3(_t), 3.))+_HCybHHClENV1(_t)*(.04*(.5*lpnoise((_t-.00127),14142.828)+.5*lpnoise((_t-.00127),.463*14142.828))))" release=0.1
+drum cybkickclean shape=protokickass freq0=157 freq1=76 freqdecay=0.13 attack=0.002 decay=0.13 drive=1.15 rev1_amt=0.81 rev1_tone=2401.0 rev1_exp=14.8 rev1_drive=0.24 rev2_amt=0.5 rev2_tone=5164 rev2_exp=19.79 rev3_amt=0.76 rev3_tone=8446 rev3_exp=24 noise_amt=0.01 noise_hold=0.12 noise_decay=0.7 noise_tone=4079
+maindrum HCybKick26 src=cybkickclean release=.2 stereodelay=2e-4
 
 drum shaker shape=fmnoise attack=0.03 decay=0.1 sustain=0.1 timbre1=0.9 timbre2=0.9
 maindrum SHK src=.2*shaker
 
-maindrum    NDV.OHH0     src="lpnoise(_t,10000.)*smoothstep(0.,.01,_t)*(1.-(1.-.13)*smoothstep(0.,.12,_t-.01-0.))-.3*(1.00*lpnoise((_t-0.00),10000.)*smoothstep(0.,.01,(_t-0.00))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-0.00)-.01-0.))+6.10e-01*lpnoise((_t-1.20e-03),10000.)*smoothstep(0.,.01,(_t-1.20e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-1.20e-03)-.01-0.))+3.72e-01*lpnoise((_t-2.40e-03),10000.)*smoothstep(0.,.01,(_t-2.40e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-2.40e-03)-.01-0.)))" release=.05
+form NDVOHH0src define src="lpnoise(_t,10000.)*smoothstep(0.,.01,_t)*(1.-(1.-.13)*smoothstep(0.,.12,_t-.01-0.))-.3*(1.00*lpnoise((_t-0.00),10000.)*smoothstep(0.,.01,(_t-0.00))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-0.00)-.01-0.))+6.10e-01*lpnoise((_t-1.20e-03),10000.)*smoothstep(0.,.01,(_t-1.20e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-1.20e-03)-.01-0.))+3.72e-01*lpnoise((_t-2.40e-03),10000.)*smoothstep(0.,.01,(_t-2.40e-03))*(1.-(1.-.13)*smoothstep(0.,.12,(_t-2.40e-03)-.01-0.)))"
+maindrum    NDV.OHH0   src=NDVOHH0src   release=.05
 
 drum fmnoise1 shape=fmnoise attack=0.0 decay=0.01 sustain=0.1
 env decnoise1 shape=expdecay exponent=10
@@ -572,7 +583,8 @@ maindrum    NDV.NSNR      src="((clamp(1.43*_tri(drop_phase(_t,.182,153.909,76.0
 maindrum    NDV.CMB1     src="(.837*(.541*lpnoise(_t,2041.774)+.798*lpnoise(_t,8260.482)+.931*lpnoise(_t,8317.984))*(smoothstep(0.,.007,_t)-smoothstep(0.,.37,_t-.05))+_sin(drop_phase(_t,.033,464.443,270.029))*exp(-_t*32.249)*.841+_sin(drop_phase(_t*659.983,.033,464.443,270.029))*exp(-_t*33.)*.618)"
 maindrum    NDV.LSNR     src="(.741*(.24*lpnoise(_t,9139.286)+.961*lpnoise(_t,6306.874)+.865*lpnoise(_t,7962.971))*(smoothstep(0.,.004,_t)-smoothstep(0.,.798,_t-.05))+_sin(drop_phase(_t,.06,2239.905,159.335))*exp(-_t*15.463)*.672+_sin(drop_phase(_t*642.32,.06,2239.905,159.335))*exp(-_t*3.375)*.195)"
 
-maindrum    CLASP    src="(clamp(2.27*_tri(drop_phase(_PROG,.03,241.,72.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.01))+.91*clamp(.9*_tri(drop_phase(_PROG,.03,241.,72.)+.91*lpnoise(_PROG,8164.)),-1.,1.)*exp(-20.76*_PROG)+.05*lpnoise(_PROG,10466.)*(1.-smoothstep(0.,.18,_PROG-.56))+.56*lpnoise(_PROG,7123.)*exp(-_PROG*5.45)+.11*lpnoise(_PROG,1134.)*exp(-_PROG*13.82))*smoothstep(0.,.004,_PROG)" release=.2 relpower=3 slidetime=.125 predraw=0
+form clasp_body define src="(clamp(2.27*_tri(drop_phase(_PROG,.03,241.,72.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.01))+.91*clamp(.9*_tri(drop_phase(_PROG,.03,241.,72.)+.91*lpnoise(_PROG,8164.)),-1.,1.)*exp(-20.76*_PROG)+.05*lpnoise(_PROG,10466.)*(1.-smoothstep(0.,.18,_PROG-.56))+.56*lpnoise(_PROG,7123.)*exp(-_PROG*5.45)+.11*lpnoise(_PROG,1134.)*exp(-_PROG*13.82))*smoothstep(0.,.004,_PROG)"
+maindrum    CLASP    src=clasp_body release=.2 relpower=3 slidetime=.125 predraw=0
 maindrum    ASSK12    src="(clamp(.55*_tri(drop_phase(_PROG,.01,192.,54.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.8*clamp(.84*_tri(drop_phase(_PROG,.01,192.,54.)+.8*lpnoise(_PROG,5057.)),-1.,1.)*exp(-6.09*_PROG)+.05*lpnoise(_PROG,12188.)*(1.-smoothstep(0.,.27,_PROG-.56))+.89*lpnoise(_PROG,3778.)*exp(-_PROG*13.78)+.08*lpnoise(_PROG,5266.)*exp(-_PROG*15.79))*smoothstep(0.,.008,_PROG)" release=.00 relpower=1 slidetime=.125 predraw=0
 
 osc   bl0001  shape=madd freq=.5*f nmax=32 ninc=1 mix=0.15 cutoff=200 q=100 res=0 resq=0 pw=.48 detune=0.05
@@ -638,3 +650,12 @@ osc tri0001 shape=tri freq=.5*f phase=.4+.15*tri0200+.22*trienv002*tri0000
 env trienv001 shape=stepexpdecay exponent=7 hold=.13 decay=.01
 env trienv002 attack=.025 hold=0 decay=.1 sustain=.3
 main TriCyb src=.25*trienv001*tri0000+.76*trienv001*tri0001 release=.5 stereodelay=2e-3
+
+param include src="float _HCybHHClENV0(float t){return t <= .004? linmix(t,250.,0.,0.,1.):t <= .032? linmix(t,35.7143,-.1429,1.,0.):0.;} float _HCybHHClENV1(float t){return t <= .009? linmix(t,111.1111,0.,0.,1.):t <= .06? linmix(t,19.6078,-.1765,1.,0.):0.;} float _HCybHHClENV2(float t){return t <= .15? linmix(t,6.6667,0.,6000.,1000.):t <= .4? linmix(t,4.,-.6,1000.,200.):200.;} float _HCybHHClENV3(float t){return t <= .18? linmix(t,5.5556,0.,4.123,4.04):4.04;} "
+
+param include src="float _HCybSnr1ENV0(float t){return t <= .004? linmix(t,250.,0.,0.,1.):t <= .141? linmix(t,7.2993,-.0292,1.,0.):t <= 1.2? linmix(t,.9443,-.1331,0.,0.):0.;} float _HCybSnr1ENV1(float t){return t <= .016? linmix(t,62.5,0.,0.,1.):t <= .204? linmix(t,5.3191,-.0851,1.,0.):0.;} float _HCybSnr1ENV2(float t){return t <= .011? linmix(t,90.9091,0.,0.,1.):t <= .162? linmix(t,6.6225,-.0728,1.,.158):t <= .29? linmix(t,7.8125,-1.2656,.158,0.):0.;} float _HCybSnr1ENV3(float t){return t <= .176? linmix(t,5.6818,0.,0.,1.):t <= .458? linmix(t,3.5461,-.6241,1.,.277):t <= 1.2? linmix(t,1.3477,-.6173,.277,0.):0.;} float _HCybSnr1ENV4(float t){return t <= .058? linmix(t,17.2414,0.,280.,180.):180.;} float _HCybSnr1ENV5(float t){return t <= .048? linmix(t,20.8333,0.,6000.,160.004):160.004;} float _HCybSnr1ENV6(float t){return t <= .053? linmix(t,18.8679,0.,67.415,5341.958):t <= .15? linmix(t,10.3093,-.5464,5341.958,186.369):186.369;} float _HCybSnr1ENV7(float t){return t <= .374? linmix(t,2.6738,0.,600.108,1836.561):1836.561;} float _HCybSnr1ENV8(float t){return t <= .316? linmix(t,3.1646,0.,1.,1.636):t <= .937? linmix(t,1.6103,-.5089,1.636,.682):t <= 1.2? linmix(t,3.8023,-3.5627,.682,.2):.2;} "
+
+param include src="float _HCybHHOpENV0(float t){return t <= .034? linmix(t,29.4118,0.,0.,1.):t <= .071? linmix(t,27.027,-.9189,1.,0.):0.;} float _HCybHHOpENV1(float t){return t <= .008? linmix(t,125.,0.,0.,1.):t <= .085? linmix(t,12.987,-.1039,1.,.23):t <= .372? linmix(t,3.4843,-.2962,.23,0.):0.;} float _HCybHHOpENV2(float t){return t <= .066? linmix(t,15.1515,0.,0.,1.):t <= .458? linmix(t,2.551,-.1684,1.,.277):t <= 1.2? linmix(t,1.3477,-.6173,.277,0.):0.;} float _HCybHHOpENV3(float t){return t <= .048? linmix(t,20.8333,0.,6000.,160.004):160.004;} float _HCybHHOpENV4(float t){return t <= .023? linmix(t,43.4783,0.,67.415,2621.624):t <= .195? linmix(t,5.814,-.1337,2621.624,6546.713):6546.713;} float _HCybHHOpENV5(float t){return t <= .104? linmix(t,9.6154,0.,901.313,14557.005):14557.005;} float _HCybHHOpENV6(float t){return t <= .316? linmix(t,3.1646,0.,1.,1.636):t <= .937? linmix(t,1.6103,-.5089,1.636,.682):t <= 1.2? linmix(t,3.8023,-3.5627,.682,.2):.2;} "
+
+param include src="float _HCybNSnrENV0(float t){return t <= .05? linmix(t,20.,0.,0.,1.):t <= .5? linmix(t,2.2222,-.1111,1.,.5):t <= 1.2? linmix(t,1.4286,-.7143,.5,0.):0.;} float _HCybNSnrENV1(float t){return t <= .067? linmix(t,14.9254,0.,230.539,107.):107.;} float _HCybNSnrENV2(float t){return t <= .067? linmix(t,14.9254,0.,230.539,107.):107.;} "
+

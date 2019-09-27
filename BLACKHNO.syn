@@ -471,7 +471,7 @@ main    FQMhigh.4    src=".5*vel*waveshape(QFM(_PROG,f,0.,.00787*115.*(1.+(.225*
 
 random chpattack    min=0       max=5e-2    digits=3    store
 random chpdecay     min=0.05    max=0.2     digits=3    store
-random chpsustain   min=.05     max=1     digts=3     store
+random chpsustain   min=.05     max=1     digits=3     store
 random chprelease   min=1e-3    max=4e-2    digits=3    store
 random chplfoscale  min=200     max=950     digits=0    store
 random chplfoshift  min=1000    max=2000    digits=0    store
