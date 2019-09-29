@@ -76,6 +76,8 @@ def set_remaining_defaults(cid, cmd, form):
             elif form['shape'] == 'protocrash':
                 defaults.update({'base_freq':'310', 'base_pw':'.2', 'mod_freq':'1050', 'mod_pw':'.2', 'noise_amt':'1.5', 'noise_freq':'15',\
                                  'vibe_pw':'.2', 'vibe_freq':'20', 'comb_delay':'.445e-4', 'env_attack':'0', 'env_decay':'.6'})
+            elif form['shape'] == 'metalnoise':
+                defaults.update({'timescale':'1', 'factor1':'1', 'factor2':'2', 'modfreq':'0'})
         except:
             raise
 

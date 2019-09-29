@@ -180,12 +180,18 @@ main   PercBass  src=shortenv*shortenv2*Perc_dly release=.8
 
 form HCybHHOpBase define src="exp(-2.*_t)*s_atan(3.*_HCybHHOpENV0(_t)*(.04*sinshape((.5*_sin(drop_phase(_t,.048,6000.,160.004))+.5*_sin(.727*drop_phase(_t,.048,6000.,160.004))), 1.6, 3.))+_HCybHHOpENV1(_t)*(.21*sinshape((.5*_tri(drop2_phase(_t,.023,.195,67.415,2621.624,6546.713)+6.6*_HCybHHOpENV1(_t)*_sin(drop_phase(_t,.104,901.313,14557.005)))+.5*_tri(.636*drop2_phase(_t,.023,.195,67.415,2621.624,6546.713)+6.6*_HCybHHOpENV1(_t)*_sin(drop_phase(_t,.104,901.313,14557.005)))), _HCybHHOpENV6(_t), 3.))+_HCybHHOpENV2(_t)*(.17*pseudorandom(70.025*_t)))"
 env HCybHHOpEnv2 shape=expdecay exponent=3 hold=.2
-maindrum HCybHHOp src=.5*NDVOHH0src*HCybHHOpEnv2+.5*HCybHHOpBase release=0.3 stereodelay=.002
-maindrum HCybCrsh   src=0
+env HCybHHOpEnv3 shape=expdecay exponent=18 hold=.01
+drum HCybHHOpMetalnoise shape=metalnoise timescale=.6 factor1=1 factor2=2
+maindrum HCybHHOp src=vel*.5*HCybHHOpEnv3*HCybHHOpMetalnoise+.5*NDVOHH0src*HCybHHOpEnv2 release=0.36 stereodelay=.002
+
+drum HCybCrshMetalnoise shape=metalnoise timescale=.6 factor1=.5 factor2=2
+env HCybCrshEnv2 shape=expdecay exponent=3 hold=.25
+env HCybCrshEnv3 shape=expdecay exponent=18 hold=.03+10.*vel
+maindrum HCybCrsh   src=vel*HCybCrshEnv3*HCybCrshMetalnoise+vel*NDVOHH0src*HCybCrshEnv2 release=.5 stereodelay=.005
 env HCybSnr1env shape=expdecay exponent=20 shift=.1 scale=.8 hold=.015
 maindrum HCybSnr1 src=.88*HCybSnr1env*NOISSNRshp release=.07
 # <-- this is NoisSNRdist, turns out I need "Main Sum Ampl/Dist/Volume" to recreate this
-maindrum HCybNSnr src=".7*(clamp(2.65*_tri(drop_phase(_PROG,.06,205.,52.)),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-.09))+.91*clamp(.95*_tri(drop_phase(_PROG,.06,205.,52.)+.91*lpnoise(_PROG,8869.)),-1.,1.)*exp(-14.86*_PROG)+.04*lpnoise(_PROG,16440.)*(1.-smoothstep(0.,.77,_PROG-.52))+.16*lpnoise(_PROG,1524.)*exp(-_PROG*16.23)+.07*lpnoise(_PROG,5944.)*exp(-_PROG*13.51))*smoothstep(0.,.004,_PROG)" release=.05 stereodelay=4e-3
+maindrum HCybNSnr src="vel*((_t <= 0.004? smoothstep(0., 0.004, _t): exp(-10.6244*(_t-0.004)) )*(.87*_tri(drop_phase(_t,.067,230.539,107.)+.7*(_t <= 0.004? smoothstep(0., 0.004, _t): exp(-10.6244*(_t-0.004)) )*lpnoise(_t,8700.0)))+0.+0.)" srcr="vel*((_t <= 0.004? smoothstep(0., 0.004, _t): exp(-10.6244*(_t-0.004)) )*(.87*_tri(drop_phase((_t-.00021),.067,230.539,107.)+.7*(_t <= 0.004? smoothstep(0., 0.004, _t): exp(-10.6244*(_t-0.004)) )*lpnoise((_t-.00021),8700.0)))+0.+0.)" release=0.5
 # <-- this is based on SNRK1, turns out I need "Main Sum Ampl/Dist/Volume" to recreate this
 
 drum kcky_body_mod shape=protokick freq0=242 freq1=55 freqdecay=.036 hold=.03 decay=.0666 drive=1.42 detune=.02 rev_amount=0.25 rev_hold=0.01 rev_decay=0.10 rev_drive=.4

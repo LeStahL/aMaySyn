@@ -67,6 +67,11 @@ float drop2_phase(float time, float t1, float t2, float f0, float f1, float f2)
     return phi;
 }
 
+float metalnoise(float t, float fac1, float fac2)
+{
+    return .666*pseudorandom(t) - 1.333*pseudorandom(t-Tsample) + .333*(pseudorandom(t+fac1*Tsample)+pseudorandom(t+fac2*Tsample));
+}
+
 float blackmannoise(float t, float ton, float M)
 {
     t -= ton;

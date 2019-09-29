@@ -452,6 +452,14 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                                         + base_template.replace('_PROG','(_PROG-'+comb_delay+')') + ')' \
                                         + '*(_PROG <= ' + env_att + ' ? _PROG/' + env_att + ' : exp(-(_PROG-' + env_att + ')/' + env_dec + '))'
 
+                    elif form['shape'] == 'metalnoise':
+                        tvar = '_PROG'
+                        if form['modfreq'] != '0':
+                            tvar = f"mod({tvar},1./({instace(form['modfreq'])})"
+                        if form['timescale'] != '1':
+                            tvar = instance(form['timescale']) + '*' + tvar
+                        return f"metalnoise({tvar}, {instance(form['factor1'])}, {instance(form['factor2'])})"
+
 
             elif form['type'] == 'env' or form['type'] == 'seg':
                 tvar = '_BPROG'
@@ -484,14 +492,14 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'ss':
                     _return = 'smoothstep(0.,'+instance(form['attack'])+','+tvar+')'
                 elif form['shape'] == 'ssdrop':
-                    _return = 'theta('+'_PROG'+')*(1.-smoothstep(0.,'+instance(form['decay'])+','+tvar+'))'
+                    _return = '(1.-smoothstep(0.,'+instance(form['decay'])+','+tvar+'))'
                 elif form['shape'] == 'expdecay':
                     thold = tvar if form['hold'] == '0' else 'max(_PROG-'+form['hold']+',0.)'
-                    _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*'+thold+')'
+                    _return = f"exp(-{instance(form['exponent'])}*{thold})"
                 elif form['shape'] == 'expdecayrepeat':
-                    _return = 'theta('+'_BPROG'+')*exp(-'+instance(form['exponent'])+'*mod(_BPROG,'+instance(form['beats'])+'))'
+                    _return = 'exp(-'+instance(form['exponent'])+'*mod(_BPROG,'+instance(form['beats'])+'))'
                 elif form['shape'] == 'stepexpdecay':
-                    _return = f"theta(_BPROG)*clamp(1.+({instance(form['hold'])}-{tvar})/({instance(form['decay'])}),exp(-{instance(form['exponent'])}*{tvar}),1.)"
+                    _return = f"clamp(1.+({instance(form['hold'])}-{tvar})/({instance(form['decay'])}),exp(-{instance(form['exponent'])}*{tvar}),1.)"
                 elif form['shape'] == 'antivelattack':
                     try:
                         attack = str(round(float(form['attack'])/(float(form['velmax'])-float(form['velmin'])+1e-3), 5)) + '*('+ GLstr(form['velmax']) + '-' + instance(form['vel']) + '+1e-3)'
