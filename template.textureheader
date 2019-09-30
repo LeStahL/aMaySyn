@@ -9,7 +9,7 @@ float rshort(float off)
 {
     float hilo = mod(off, 2.);
     off *= .5;
-    vec2 ind = (vec2(mod(off, iSequenceWidth), floor(off/iSequenceWidth))+.05)/iSequenceWidth;
+    vec2 ind = (vec2(mod(off, iSequenceWidth), floor(off/iSequenceWidth)))/iSequenceWidth + 1.e-5;
     vec4 block = texture(iSequence, ind);
     vec2 data = mix(block.rg, block.ba, hilo);
     return round(dot(vec2(255., 65280.), data));
@@ -20,7 +20,7 @@ float rfloat(int off)
 {
     float d = rshort(float(off));
     float sign = floor(d/32768.),
-        exponent = floor(d/1024.-sign*32.),
+        exponent = floor(d*9.765625e-4 - sign*32.),
         significand = d-sign*32768.-exponent*1024.;
 
     if(exponent == 0.)
