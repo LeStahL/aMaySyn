@@ -617,10 +617,12 @@ osc drs001  shape=madd freq=.5009*f phase=.23  nmax=16 mix=-1. cutoff=10.*f q=1 
 #osc drsn01  shape=madd freq=.5015*f phase=.23  nmax=16 mix=-1. cutoff=10.*f q=1 res=10 resq=1 pw=1. detune=.025 phase=drsns0
 #form drsn02 mix src=drs001,-1*drsn01
 osc drs002  shape=madd freq=.25*f  nmax=32 mix=-.6  cutoff=1000 q=100 res=0 resq=1 pw=0.3 detune=.020
-form drs004 saturate src=drs000+drs001+0.8*drs002 gain=1.
+form drs004 saturate src=drs000+drs001+0.8*drs002 gain=2.
+form drs006 sinshape src=drs004 amount=6. parts=3
 form drs003 mix src=.8*drs000+drs001+0.8*drs002
-form drs005 chorus src=drs004 number=3 step=3e-3 intensity=1. rate=0.9
-main DiRtSaw src=.9*vel*drs005+0.9*vel*drs003+.5*vel*drs004 release=.08 stereodelay=0.011
+form drs005 chorus src=.4*drs006 number=3 step=3e-3 intensity=1.3 rate=0.9
+env drs101 shape=expdecay hold=.115 exponent=6
+main DiRtSaw src=.9*vel*drs005+0.9*vel*drs003*drs101+.3*vel*drs006*drs101 release=.14 stereodelay=0.007
 
 lfo joy200 shape=sin freq=.256 scale=.4 shift=.6 mode=global
 osc joy300 shape=lpnoise freq=8330

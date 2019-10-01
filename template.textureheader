@@ -4,7 +4,7 @@ uniform float iTexSize;
 uniform sampler2D iSequence;
 uniform float iSequenceWidth;
 
-#define SAFETY_SHIFT 1.e-6
+#define SAFETY_SHIFT 1.e-5
 // Read short value from texture at index off
 float rshort(float off)
 {
