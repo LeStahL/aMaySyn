@@ -215,9 +215,6 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                     return instance(form['src']).replace('_TIME','floor('+instance(form['bits']) + '*_TIME+.5)/' + instance(form['bits'])) \
                                                    .replace('_PROG','floor('+instance(form['bits']) + '*_PROG+.5)/' + instance(form['bits']))
                                                    # TODO: replace these with calls to lofi(_TIME) / lofi(_PROG). don't wanna test these right now, though.
-                elif form['op'] == 'modsync':
-                    return instance(form['src']).replace('_TIME','mod(_TIME, 1./(' + instance(form['freq']) + '))') \
-                                                   .replace('_PROG','mod(_PROG, 1./(' + instance(form['freq']) + '))')
                 elif form['op'] == 'overdrive':
                     return 'clip(' + instance(form['gain']) + '*' + instance(form['src']) + ')'
                 elif form['op'] == 'chorus':
@@ -247,6 +244,17 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         return 's_atan('+instance(form['gain']) + '*' + instance(form['src']) + ')'
                 elif form['op'] == 'lofi':
                     return 'floor('+instance(form['bits'])+'*'+instance(form['src'])+'+.5)*'+'{:.1e}'.format(1/float(form['bits']))
+                elif form['op'] == 'modsync':
+                    return instance(form['src']).replace('_TIME','mod(_TIME, 1./(' + instance(form['freq']) + '))') \
+                                                   .replace('_PROG','mod(_PROG, 1./(' + instance(form['freq']) + '))')
+                elif form['op'] == 'timescale':
+                    # TODO: have to think about it, but for now, only shift the
+                    map_string = '{}'
+                    if form['scale'] != '1':
+                        map_string = instance(form['scale']) + '*' + map_string
+                    if form['shift'] != '0':
+                        map_string = '(' + map_string + '+' + instance(form['shift']) + ')'
+                    return instance(form['src']).replace('_TIME', map_string.format('_TIME')).replace('_PROG', map_string.format('_PROG'))
                 else:
                     return '0.'
 
@@ -295,7 +303,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         inst_nmax = instance(str(int(float(form['nmax']))), force_int=True)
                         inst_ninc = instance(str(int(float(form['ninc']))), force_int=True)
                         _return ='MADD(_PROG,'+instance(form['freq']) + ',' + instance(form['phase']) + ',' + inst_nmax + ',' + inst_ninc + ',' \
-                                             + ','.join(instance(form[p]) for p in ['mix', 'cutoff', 'q', 'res', 'resq', 'detune', 'pw'])+ ',' + keyF + ')'
+                                             + ','.join(instance(form[p]) for p in ['mix', 'cutoff', 'q', 'res', 'resq', 'detune', 'pw', 'lowcut'])+ ',' + keyF + ')'
 
                     elif form['shape'] == 'badd':
                         _return ='BADD(_PROG,' + ','.join(instance(form[p]) for p in ['freq', 'phase', 'mix', 'amp', 'peak', 'sigma', 'q', 'ncut', 'detune', 'pw']) + ')'

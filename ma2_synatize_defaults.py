@@ -23,7 +23,7 @@ def set_remaining_defaults(cid, cmd, form):
 
         try:
             if form['shape'] == 'madd':
-                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'q':'10', 'res':'0', 'resq': '3', 'detune':'1e-3'})
+                defaults.update({'nmax':'128', 'ninc':'1', 'mix':'.5', 'cutoff':'1000', 'q':'10', 'res':'0', 'resq': '3', 'detune':'1e-3', 'lowcut': '0'})
                 # TODO: calibrate q (and rename)
                 # TODO: calibrate (resQ)
             elif form['shape'] == 'badd':
@@ -139,9 +139,6 @@ def set_remaining_defaults(cid, cmd, form):
             elif form['op'] == 'quantize':
                 defaults.update({'bits':'32'})
 
-            elif form['op'] == 'modsync':
-                defaults.update({'freq':'1'})
-
             elif form['op'] == 'overdrive':
                 defaults.update({'gain':'1.33'})
 
@@ -163,6 +160,12 @@ def set_remaining_defaults(cid, cmd, form):
 
             elif form['op'] == 'lofi':
                 defaults.update({'bits':'128'})
+
+            elif form['op'] == 'modsync':
+                defaults.update({'freq':'1'})
+
+            elif form['op'] == 'timescale':
+                defaults.update({'scale':'1', 'shift':'0'})
 
             elif form['op'] == 'define':
                 pass

@@ -495,7 +495,7 @@ class Ma2Widget(Widget):
 
 
     def promptSongCommand(self):
-        popup = InputPrompt(self, title = 'ENTER BPM / OFFSET / STOP / STEREO ...', title_font = self.font_name, default_text = self.lastSongCommand)
+        popup = InputPrompt(self, title = 'ENTER BPM / OFFSET / STOP / STEREO / LEVEL ...', title_font = self.font_name, default_text = self.lastSongCommand)
         popup.bind(on_dismiss = self.handlePromptSongCommand)
         popup.open()
     def handlePromptSongCommand(self, *args):

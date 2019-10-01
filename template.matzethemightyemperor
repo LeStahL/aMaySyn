@@ -164,7 +164,7 @@ float comp_TRI(int N, float inv_N, float PW) {return N % 2 == 0 ? .1 * inv_N * _
 float comp_SQU(int N, float inv_N, float PW) {return inv_N * (minus1hochN(N) * _sin(.5*float(N)*PW + .25) - 1.);}
 float comp_HAE(int N, float inv_N, float PW) {return N % 2 == 0 ? 0. : inv_N * (1. - minus1hochNminus1halbe(N))*_sin(PW);}
 
-float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW, int keyF)
+float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, float NDECAY, float RES, float RES_Q, float DET, float PW, float LOWCUT, int keyF)
 {
     float ret = 0.;
     float INR = keyF==1 ? 1./CO : f/CO;
@@ -172,7 +172,7 @@ float MADD(float t, float f, float p0, int NMAX, int NINC, float MIX, float CO, 
 
     float p = f*t;
     float float_N, inv_N, comp_mix, filter_N;
-    for(int N=1; N<=NMAX; N+=NINC)
+    for(int N = 1 + int(LOWCUT/f - 1.e-3); N<=NMAX; N+=NINC)
     {
         float_N = float(N);
         inv_N = 1./float_N;
@@ -422,7 +422,6 @@ vec2 mainSynth(float time)
             }
         }
     }
-    sidechain = 1.;
     return LEVEL_SYN * sidechain * vec2(s_atan(sL), s_atan(sR)) + LEVEL_DRUM * vec2(s_atan(dL), s_atan(dR));
 }
 
