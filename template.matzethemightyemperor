@@ -1,8 +1,10 @@
-#define PI radians(180.)
+const float PI = radians(180.);
+const float TAU = 2.*PI;
 float clip(float a) { return clamp(a,-1.,1.); }
-float theta(float x) { return smoothstep(0.,1e-3,clamp(x,0.,1e-3)); }
-float _sin(float a) { return sin(2. * PI * mod(a,1.)); }
-float _sin_(float a, float p) { return sin(2. * PI * mod(a,1.) + p); }
+float smstep(float a, float b, float x) {return smoothstep(a, b, clamp(x, a, b));}
+float theta(float x) { return smstep(0.,1e-3,x); }
+float _sin(float a) { return sin(TAU * mod(a,1.)); }
+float _sin_(float a, float p) { return sin(TAU * mod(a,1.) + p); }
 float _unisin(float a,float b) { return (.5*_sin(a) + .5*_sin((1.+b)*a)); }
 float _sq(float a) { return sign(2.*fract(a) - 1.); }
 float _sq_(float a,float pwm) { return sign(2.*fract(a) - 1. + pwm); }
@@ -10,7 +12,7 @@ float _psq(float a) { return clip(50.*_sin(a)); }
 float _psq_(float a, float pwm) { return clip(50.*(_sin(a) - pwm)); }
 float _tri(float a) { return (4.*abs(fract(a)-.5) - 1.); }
 float _saw(float a) { return (2.*fract(a) - 1.); }
-float freqC1(float note){ return 32.7 * pow(2., note/12.); }
+float freqC1(float note){ return 32.7 * exp2(note/12.); }
 float minus1hochN(int n) { return (1. - 2.*float(n % 2)); }
 float minus1hochNminus1halbe(int n) { return sin(.5*PI*float(n)); }
 float pseudorandom(float x) { return fract(sin(dot(vec2(x),vec2(12.9898,78.233))) * 43758.5453); }
@@ -29,13 +31,13 @@ const float filterthreshold = 1e-3;
 
 //TEXCODE
 
-float s_atan(float a) { return 2./PI * atan(a); }
+float s_atan(float a) { return .636 * atan(a); }
 float s_crzy(float amp) { return clamp( s_atan(amp) - 0.1*cos(0.9*amp*exp(amp)), -1., 1.); }
 float squarey(float a, float edge) { return abs(a) < edge ? a : floor(4.*a+.5)*.25; }
 
 float doubleslope(float t, float a, float d, float s)
 {
-    return smoothstep(-.00001,a,t) - (1.-s) * smoothstep(0.,d,t-a);
+    return smstep(-.00001,a,t) - (1.-s) * smstep(0.,d,t-a);
 }
 
 float drop_phase(float time, float t1, float f0, float f1)
@@ -92,7 +94,7 @@ float value_noise_1d(float t, float fq)
     // t *= fq;
     float i = floor(t);
     t = fract(t);
-    return mix(-1.+2.*pseudorandom(i), -1.+2.*pseudorandom(i+1.), smoothstep(0., 1., t));
+    return mix(-1.+2.*pseudorandom(i), -1.+2.*pseudorandom(i+1.), smstep(0., 1., t));
 }
 
 float lpnoise(float t, float fq)
@@ -100,7 +102,7 @@ float lpnoise(float t, float fq)
     t *= fq;
     float tt = fract(t);
     float tn = t - tt;
-    return mix(pseudorandom(floor(tn) / fq), pseudorandom(floor(tn + 1.0) / fq), smoothstep(0.0, 1.0, tt));
+    return mix(pseudorandom(floor(tn) / fq), pseudorandom(floor(tn + 1.0) / fq), smstep(0.0, 1.0, tt));
 }
 
 float reverb_phase(float t, float amt)
@@ -133,8 +135,8 @@ float waveshape(float s, float amt, float A, float B, float C, float D, float E)
     float m = sign(s);
     s = abs(s);
 
-    if(s<A) w = B * smoothstep(0.,A,s);
-    else if(s<C) w = C + (B-C) * smoothstep(C,A,s);
+    if(s<A) w = B * smstep(0.,A,s);
+    else if(s<C) w = C + (B-C) * smstep(C,A,s);
     else if(s<=D) w = s;
     else if(s<=1.)
     {
@@ -385,10 +387,13 @@ vec2 mainSynth(float time)
                 if(syn == DRUM_INDEX)
                 {
                     env = trk_norm(trk) * theta(Bprog) * theta(L - Bprog);
-                    if(drum == 0) { sidechain = min(sidechain, 1. - vel * (clamp(1e4 * Bprog,0.,1.) - pow(Bprog/(L-rel),8.))); }
+                    if(drum == 0) { sidechain = min(sidechain, 1. - vel * (clamp(1.e4 * Bprog,0.,1.) - pow(Bprog/(L-rel),8.)));}
                     //DRUMSYNCODE
-                    dL += amtL * s_atan(env * amaydrumL);
-                    dR += amtR * s_atan(env * amaydrumR);
+                    if(drum > 0)
+                    {
+                        dL += amtL * s_atan(env * amaydrumL);
+                        dR += amtR * s_atan(env * amaydrumR);
+                    }
                 }
                 else
                 {
@@ -409,15 +414,16 @@ vec2 mainSynth(float time)
                         }
                     }
 
-                    env = theta(Bprog) * (1. - smoothstep(Boff-rel, Boff, B));
+                    env = theta(Bprog) * (1. - smstep(Boff-rel, Boff, B));
                     //SYNCODE
-                    sL += amtL * s_atan(trk_norm(trk) * clamp(env,0.,1.) * amaysynL);
-                    sR += amtR * s_atan(trk_norm(trk) * clamp(env,0.,1.) * amaysynR);
+                    sL += amtL * trk_norm(trk) * s_atan(clamp(env,0.,1.) * amaysynL);
+                    sR += amtR * trk_norm(trk) * s_atan(clamp(env,0.,1.) * amaysynR);
                 }
             }
         }
     }
-    return vec2(LEVEL_SYN * sidechain * s_atan(sL) + LEVEL_DRUM * s_atan(dL), LEVEL_SYN * sidechain * s_atan(sR) + LEVEL_DRUM * s_atan(dR));
+    sidechain = 1.;
+    return LEVEL_SYN * sidechain * vec2(s_atan(sL), s_atan(sR)) + LEVEL_DRUM * vec2(s_atan(dL), s_atan(dR));
 }
 
 void main()

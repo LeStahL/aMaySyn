@@ -347,8 +347,8 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
                     if form['shape'] == 'kick' or form['shape'] == 'kick2':
 
-                        freq_env = '('+instance(form['freq_start'])+'+('+instance(form['freq_end'])+'-'+instance(form['freq_start'])+')*smoothstep(-'+instance(form['freq_decay'])+', 0.,-_PROG))'
-                        amp_env = 'smoothstep(0.,'+instance(form['attack'])+',_PROG)*smoothstep('+instance(form['hold'])+'+'+instance(form['decay'])+','+instance(form['decay'])+',_PROG)'
+                        freq_env = '('+instance(form['freq_start'])+'+('+instance(form['freq_end'])+'-'+instance(form['freq_start'])+')*smstep(-'+instance(form['freq_decay'])+', 0.,-_PROG))'
+                        amp_env = 'smstep(0.,'+instance(form['attack'])+',_PROG)*smstep('+instance(form['hold'])+'+'+instance(form['decay'])+','+instance(form['decay'])+',_PROG)'
 
                         if form['shape'] == 'kick':
                             return 's_atan('+amp_env+'*(clip((1.+'+instance(form['overdrive'])+')*_tri('+freq_env+'*_PROG))+_sin(.5*'+freq_env+'*_PROG)))+'+instance(form['click_amp'])+'*step(_PROG,'+instance(form['click_delay'])+')*_sin(5000.*_PROG*'+instance(form['click_timbre'])+'*_saw(1000.*_PROG*'+instance(form['click_timbre'])+'))'
@@ -379,8 +379,8 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                         ns_sus = instance(form['noise_sustain'])
                         overdr = instance(form['overdrive'])
 
-                        freq_env = '('+freq_2+'+('+freq_0+'-'+freq_1+')*(1.-smoothstep(0.,'+fdec01+',_PROG))+('+freq_1+'-'+freq_2+')*(1.-smoothstep('+fdec01+','+fdec01+'+'+fdec12+',_PROG)))'
-                        return '(clip((1.+'+overdr+')*(_tri(_PROG*'+freq_env+')*(1.-smoothstep('+fdec01+'+'+fdec12+','+envrel+'+'+fdec01+'+'+fdec12+',_PROG))) + '+ns_amt+'*pseudorandom(_PROG)*doubleslope(_PROG,'+ns_att+','+ns_dec+','+ns_sus+'))*doubleslope(_PROG,0.,'+envdec+','+envsus+'))'
+                        freq_env = '('+freq_2+'+('+freq_0+'-'+freq_1+')*(1.-smstep(0.,'+fdec01+',_PROG))+('+freq_1+'-'+freq_2+')*(1.-smstep('+fdec01+','+fdec01+'+'+fdec12+',_PROG)))'
+                        return '(clip((1.+'+overdr+')*(_tri(_PROG*'+freq_env+')*(1.-smstep('+fdec01+'+'+fdec12+','+envrel+'+'+fdec01+'+'+fdec12+',_PROG))) + '+ns_amt+'*pseudorandom(_PROG)*doubleslope(_PROG,'+ns_att+','+ns_dec+','+ns_sus+'))*doubleslope(_PROG,0.,'+envdec+','+envsus+'))'
 
                     elif form['shape'] == 'fmnoise':
                         env_attack = instance(form['attack'])
@@ -403,20 +403,20 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
                     elif form['shape'] == 'protokickass':
                         phase = 'drop_phase(_PROG,' + ','.join(instance(form[p]) for p in ['freqdecay', 'freq0', 'freq1']) + ')'
-                        return '(clamp(' + instance(form['drive']) + '*_tri(' + phase + '),-1.,1.)*(1.-smoothstep(-1e-3,0.,_PROG-'+instance(form['decay'])+'))'\
+                        return '(clamp(' + instance(form['drive']) + '*_tri(' + phase + '),-1.,1.)*(1.-smstep(-1e-3,0.,_PROG-'+instance(form['decay'])+'))'\
                          + '+' + instance(form['rev1_amt']) +'*clamp(' + instance(form['rev1_drive']) + '*_tri('+phase+'+'+ instance(form['rev1_amt'])\
                          + '*lpnoise(_PROG,' + instance(form['rev1_tone']) + ')),-1.,1.)*exp(-' + instance(form['rev1_exp']) + '*_PROG)'\
-                         + '+' + instance(form['noise_amt']) + '*lpnoise(_PROG,' + instance(form['noise_tone']) + ')*(1.-smoothstep(0.,'\
+                         + '+' + instance(form['noise_amt']) + '*lpnoise(_PROG,' + instance(form['noise_tone']) + ')*(1.-smstep(0.,'\
                          + instance(form['noise_decay']) + ',_PROG-' + instance(form['noise_hold']) + '))'\
                          + '+' + instance(form['rev2_amt']) + '*lpnoise(_PROG,' + instance(form['rev2_tone']) + ')*exp(-_PROG*' + instance(form['rev2_exp']) + ')'\
                          + '+' + instance(form['rev3_amt']) + '*lpnoise(_PROG,' + instance(form['rev3_tone']) + ')*exp(-_PROG*' + instance(form['rev3_exp']) + '))'\
-                         + '*smoothstep(0.,' + instance(form['attack']) + ',_PROG)'
+                         + '*smstep(0.,' + instance(form['attack']) + ',_PROG)'
 
                     elif form['shape'] == 'protosnare':
                         return instance(form['noise_amp']) + '*(' + instance(form['noise1_amount']) + '*lpnoise(_PROG,' + instance(form['noise1_freq']) + ')'\
                             + '+' + instance(form['noise2_amount']) + '*lpnoise(_PROG,' + instance(form['noise2_freq']) + ')'\
                             + '+' + instance(form['noise3_amount']) + '*lpnoise(_PROG,' + instance(form['noise3_freq']) + '))'\
-                            + '*(smoothstep(0.,'+instance(form['attack'])+',_PROG)-smoothstep(0.,'+instance(form['release'])+',_PROG-'+instance(form['decay'])+'))'\
+                            + '*(smstep(0.,'+instance(form['attack'])+',_PROG)-smstep(0.,'+instance(form['release'])+',_PROG-'+instance(form['decay'])+'))'\
                             + ' + _sin(drop_phase(_PROG,'+','.join(instance(form[p]) for p in ['freqdecay','freq0','freq1'])+'))'\
                             + '*exp(-_PROG*' + instance(form['tone_decayexp'])+')*' + instance(form['tone_amp'])\
                             + '+ _sin(drop_phase(_PROG*' + instance(form['fmtone_freq'])+','+','.join(instance(form[p]) for p in ['freqdecay','freq0','freq1'])+'))'\
@@ -424,7 +424,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
 
                     elif form['shape'] == 'protoshake':
                         return instance(form['amp']) + '*lpnoise(_PROG, 1.+' + instance(form['timbre']) + '*_PROG)'\
-                            + '*(smoothstep(0.,1e-3,_PROG)-smoothstep(0.,' + instance(form['release']) + ',_PROG-' + instance(form['decay']) + '))'
+                            + '*(smstep(0.,1e-3,_PROG)-smstep(0.,' + instance(form['release']) + ',_PROG-' + instance(form['decay']) + '))'
 
                     elif form['shape'] == 'protoride':
                         base_freq = instance(form['base_freq'])
@@ -490,9 +490,9 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'doubleslope':
                     _return = 'doubleslope('+tvar+','+instance(form['attack'])+','+instance(form['decay'])+','+instance(form['sustain'])+')'
                 elif form['shape'] == 'ss':
-                    _return = 'smoothstep(0.,'+instance(form['attack'])+','+tvar+')'
+                    _return = 'smstep(0.,'+instance(form['attack'])+','+tvar+')'
                 elif form['shape'] == 'ssdrop':
-                    _return = '(1.-smoothstep(0.,'+instance(form['decay'])+','+tvar+'))'
+                    _return = '(1.-smstep(0.,'+instance(form['decay'])+','+tvar+'))'
                 elif form['shape'] == 'expdecay':
                     thold = tvar if form['hold'] == '0' else 'max(_PROG-'+form['hold']+',0.)'
                     _return = f"exp(-{instance(form['exponent'])}*{thold})"
@@ -503,10 +503,10 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 elif form['shape'] == 'antivelattack':
                     try:
                         attack = str(round(float(form['attack'])/(float(form['velmax'])-float(form['velmin'])+1e-3), 5)) + '*('+ GLstr(form['velmax']) + '-' + instance(form['vel']) + '+1e-3)'
-                        _return = 'smoothstep(0.,'+instance(attack)+','+tvar+')'
+                        _return = 'smstep(0.,'+instance(attack)+','+tvar+')'
                     except:
                         attack = instance(form['attack']) + '*('+instance(form['velmax']) + '-' + instance(form['vel']) + '+1e-3)/(' + instance(form['velmax']) + '-' + instance(form['velmin']) + '+1e-3)'
-                        _return = 'smoothstep(0.,'+attack+','+tvar+')'
+                        _return = 'smstep(0.,'+attack+','+tvar+')'
 
                 elif form['shape'] == 'generic':
                     _return = instance(form['src']).replace('_BPROG', '(_BEAT-' + instance(form['offset']) + ')') # hm. might I do this better?
@@ -605,7 +605,7 @@ def synatize_build(form_list, main_list, param_list, actually_used_synths = None
                 syncode += 'else if(syn == ' + str(syncount) + '){\n' + 24*' ' + extracode + '\n' + 24*' ' \
                         +  'amaysynL = ' + syncodeL + '\n' + 24*' ' + 'amaysynR = ' + syncodeR
                 if 'relpower' in form_main and form_main['relpower'] != '1':
-                    syncode += '\nenv = theta(Bprog)*pow(1.-smoothstep(Boff-rel, Boff, B),'+form_main['relpower']+');'
+                    syncode += '\nenv = theta(Bprog)*pow(1.-smstep(Boff-rel, Boff, B),'+form_main['relpower']+');'
                 syncode += '\n' + 20*' ' + '}\n' + 20*' '
             syncount += 1
         syncode = syncode.replace('_TIME','time').replace('_PROG','_t').replace('_BPROG','Bprog').replace('_BEAT','BT').replace('_BMODPROG','B')
