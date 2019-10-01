@@ -185,9 +185,9 @@ drum HCybHHOpMetalnoise shape=metalnoise timescale=.6 factor1=1 factor2=2
 maindrum HCybHHOp src=vel*.5*HCybHHOpEnv3*HCybHHOpMetalnoise+.5*NDVOHH0src*HCybHHOpEnv2 release=0.36 stereodelay=.002
 
 drum HCybCrshMetalnoise shape=metalnoise timescale=.6 factor1=.5 factor2=2
-env HCybCrshEnv2 shape=expdecay exponent=3 hold=.25
-env HCybCrshEnv3 shape=expdecay exponent=18 hold=.03+10.*vel
-maindrum HCybCrsh   src=vel*HCybCrshEnv3*HCybCrshMetalnoise+vel*NDVOHH0src*HCybCrshEnv2 release=.5 stereodelay=.005
+env HCybCrshEnv2 shape=expdecay exponent=4 hold=.25
+env HCybCrshEnv3 shape=expdecay exponent=7 hold=.05+10.*vel
+maindrum HCybCrsh   src=vel*.8*HCybCrshEnv3*HCybCrshMetalnoise+vel*.8*NDVOHH0src*HCybCrshEnv2 release=.5 stereodelay=.005
 env HCybSnr1env shape=expdecay exponent=20 shift=.1 scale=.8 hold=.015
 maindrum HCybSnr1 src=.88*HCybSnr1env*NOISSNRshp release=.07
 # <-- this is NoisSNRdist, turns out I need "Main Sum Ampl/Dist/Volume" to recreate this
@@ -195,12 +195,12 @@ maindrum HCybNSnr src="vel*((_t <= 0.004? smoothstep(0., 0.004, _t): exp(-10.624
 # <-- this is based on SNRK1, turns out I need "Main Sum Ampl/Dist/Volume" to recreate this
 
 drum kcky_body_mod shape=protokick freq0=242 freq1=55 freqdecay=.036 hold=.03 decay=.0666 drive=1.42 detune=.02 rev_amount=0.25 rev_hold=0.01 rev_decay=0.10 rev_drive=.4
-maindrum HCybKick36 src=kcky_body_mod+kcky_trans+.7*clasp_body release=.04 stereodelay=0.01
+maindrum HCybKick36 src=kcky_body_mod+kcky_trans+.7*clasp_body release=.25 !.04 stereodelay=0.01
 # <-- this is KCKY+Clasp
 
 maindrum HCybHHCl src="vel*(_HCybHHClENV0(_t)*(.13*sinshape(pseudorandom(_HCybHHClENV2(_t)*_t+1.*_HCybHHClENV0(_t)*(.5*lpnoise(_t,14142.828)+.5*lpnoise(_t,.463*14142.828))), _HCybHHClENV3(_t), 3.))+_HCybHHClENV1(_t)*(.04*(.5*lpnoise(_t,14142.828)+.5*lpnoise(_t,.463*14142.828))))" srcr="vel*(_HCybHHClENV0(_t)*(.13*sinshape(pseudorandom(_HCybHHClENV2(_t)*(_t-.00044)+1.*_HCybHHClENV0(_t)*(.5*lpnoise((_t-.00044),14142.828)+.5*lpnoise((_t-.00044),.463*14142.828))), _HCybHHClENV3(_t), 3.))+_HCybHHClENV1(_t)*(.04*(.5*lpnoise((_t-.00127),14142.828)+.5*lpnoise((_t-.00127),.463*14142.828))))" release=0.1
 drum cybkickclean shape=protokickass freq0=157 freq1=76 freqdecay=0.13 attack=0.002 decay=0.13 drive=1.15 rev1_amt=0.81 rev1_tone=2401.0 rev1_exp=14.8 rev1_drive=0.24 rev2_amt=0.5 rev2_tone=5164 rev2_exp=19.79 rev3_amt=0.76 rev3_tone=8446 rev3_exp=24 noise_amt=0.01 noise_hold=0.12 noise_decay=0.7 noise_tone=4079
-maindrum HCybKick26 src=cybkickclean release=.2 stereodelay=2e-4
+maindrum HCybKick26 src=cybkickclean release=.36 !.2 stereodelay=2e-6
 
 drum shaker shape=fmnoise attack=0.03 decay=0.1 sustain=0.1 timbre1=0.9 timbre2=0.9
 maindrum SHK src=.2*shaker
@@ -598,8 +598,18 @@ osc   bl0010 shape=sin freq=f
 form  bl0002  saturate  src=bl0001+0.8*bl0010  gain="1.+aux"
 form  bl0003 op=chorus src=bl0002 number=3 step=1.3e-3 intensity=5. rate=0.08
 form  bl0004  sinshape src=bl0003  amount=0.8 parts=3
-env   bl1001  attack=0.034 release=.08
-main  BLies src=bl1001*bl0004 release=.08 slidetime=.8
+env   bl0101  attack=0.034 release=.08
+main  BLies src=bl0101*bl0004 release=.08 slidetime=.8
+
+lfo   bl1201 shape=sin scale=0.24 shift=0.2 freq=.09 phase=.7
+osc   bl1001  shape=madd freq=.5*f nmax=32 ninc=1 mix=bl1201 cutoff=200 q=100 res=0 resq=0 pw=.48 detune=0.05
+osc   bl1005 shape=tri freq=.999*f phase=bl1201
+osc   bl1010 shape=sin freq=f
+form  bl1002  saturate  src=bl1005+0.8*bl1010  gain="1.+aux"
+form  bl1003 op=chorus src=bl1004 number=2 step=0.3e-3 intensity=5. rate=0.08
+form  bl1004  sinshape src=bl1001+.8*bl1010  amount=0.8 parts=3
+env   bl1101  attack=0.254 release=.08
+main  BLies2 src=bl1101*bl1003+.4*bl1101*bl1005 release=.08 slidetime=.8 stereodelay=0.01
 
 osc drs000  shape=saw  freq=.2497*f phase=.02
 osc drsns0  shape=lpnoise freq=999

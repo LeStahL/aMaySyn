@@ -417,7 +417,7 @@ vec2 mainSynth(float time)
             }
         }
     }
-    return vec2(s_atan(LEVEL_SYN * sidechain * sL + LEVEL_DRUM * dL), s_atan(LEVEL_SYN * sidechain * sR + LEVEL_DRUM * dR));
+    return vec2(LEVEL_SYN * sidechain * s_atan(sL) + LEVEL_DRUM * s_atan(dL), LEVEL_SYN * sidechain * s_atan(sR) + LEVEL_DRUM * s_atan(dR));
 }
 
 void main()

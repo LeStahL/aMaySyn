@@ -4,12 +4,13 @@ uniform float iTexSize;
 uniform sampler2D iSequence;
 uniform float iSequenceWidth;
 
+#define SAFETY_SHIFT 1.e-6
 // Read short value from texture at index off
 float rshort(float off)
 {
     float hilo = mod(off, 2.);
     off *= .5;
-    vec2 ind = (vec2(mod(off, iSequenceWidth), floor(off/iSequenceWidth)))/iSequenceWidth + 1.e-5;
+    vec2 ind = (vec2(mod(off, iSequenceWidth), floor(off/iSequenceWidth)))/iSequenceWidth + SAFETY_SHIFT;
     vec4 block = texture(iSequence, ind);
     vec2 data = mix(block.rg, block.ba, hilo);
     return round(dot(vec2(255., 65280.), data));
